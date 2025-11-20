@@ -1,4 +1,4 @@
-from draw_tree.core import DefaultLayout
+from draw_tree.layout import DefaultLayout
 
 
 def make_descriptor(kind, player=None, moves=None, probs=None, payoffs=None, iset_id=None, raw=""):
