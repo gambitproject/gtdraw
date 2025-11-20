@@ -640,7 +640,7 @@ class TestCommandlineArguments:
         assert dpi == 300  # Should default to 300 for invalid values
 
 
-def test_efg_to_ef_conversion_examples():
+def test_efg_dl_ef_conversion_examples():
     """Integration test: convert the repository's example .efg files and
     require exact equality with their corresponding canonical .ef outputs.
 
@@ -655,10 +655,10 @@ def test_efg_to_ef_conversion_examples():
     ]
 
     for efg_path, expected_ef_path in examples:
-        out = draw_tree.efg_to_ef(efg_path)
+        out = draw_tree.efg_dl_ef(efg_path)
         # Converter must return a path and write the file
-        assert isinstance(out, str), "efg_to_ef must return a file path string"
-        assert os.path.exists(out), f"efg_to_ef did not create output file: {out}"
+        assert isinstance(out, str), "efg_dl_ef must return a file path string"
+        assert os.path.exists(out), f"efg_dl_ef did not create output file: {out}"
 
         with open(out, 'r', encoding='utf-8') as f:
             generated = f.read().strip().splitlines()

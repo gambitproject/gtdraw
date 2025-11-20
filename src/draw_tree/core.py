@@ -1266,11 +1266,11 @@ def generate_tikz(ef_file: str, scale_factor: float = 1.0, show_grid: bool = Fal
         Complete TikZ code ready for use in Jupyter notebooks or LaTeX documents.
     """
     # If user supplied an EFG file, convert it to .ef first so the existing
-    # ef-based pipeline can be reused. efg_to_ef returns a path string when
+    # ef-based pipeline can be reused. efg_dl_ef returns a path string when
     # it successfully writes the .ef file.
     if isinstance(ef_file, str) and ef_file.lower().endswith('.efg'):
         try:
-            ef_file = efg_to_ef(ef_file)
+            ef_file = efg_dl_ef(ef_file)
         except Exception:
             # fall through and let ef_to_tex raise a clearer error later
             pass
@@ -1423,7 +1423,7 @@ def generate_tex(ef_file: str, output_tex: Optional[str] = None, scale_factor: f
     # If input is an EFG file, convert it first
     if isinstance(ef_file, str) and ef_file.lower().endswith('.efg'):
         try:
-            ef_file = efg_to_ef(ef_file)
+            ef_file = efg_dl_ef(ef_file)
         except Exception:
             pass
 
@@ -1640,13 +1640,14 @@ def generate_png(ef_file: str, output_png: Optional[str] = None, scale_factor: f
             raise RuntimeError(f"PNG generation failed: {e}")
 
 
-def efg_to_ef(efg_file: str) -> str:
+def efg_dl_ef(efg_file: str) -> str:
     """Convert a Gambit .efg file to the `.ef` format used by generate_tikz.
 
     The function implements a focused parser and deterministic layout
-    heuristics for producing `.ef` directives from a conservative subset of
-    EFG records (chance nodes `c`, player nodes `p`, and terminals `t`). It
-    emits node level/position lines and information-set (`iset`) groupings.
+    heuristics via the DefaultLayout class for producing `.ef` directives
+    from a conservative subset of EFG records (chance nodes `c`, player nodes
+    `p`, and terminals `t`). It emits node level/position lines and
+    information-set (`iset`) groupings.
 
     Args:
         efg_file: Path to the input .efg file.

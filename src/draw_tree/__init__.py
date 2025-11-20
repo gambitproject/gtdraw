@@ -15,7 +15,7 @@ from .core import (
     generate_png,
     ef_to_tex,
     latex_wrapper,
-    efg_to_ef
+    efg_dl_ef
 )
 
 __all__ = [
@@ -26,5 +26,5 @@ __all__ = [
     "generate_png",
     "ef_to_tex",
     "latex_wrapper",
-    "efg_to_ef"
+    "efg_dl_ef"
 ]
