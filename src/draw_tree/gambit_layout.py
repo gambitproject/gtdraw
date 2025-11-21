@@ -1,4 +1,4 @@
-import pygambit
+import pygambit as gbt
 
 
 def determine_node_level(gbt_level, gbt_sublevel):
@@ -28,29 +28,38 @@ def gambit_layout_to_ef(game: pygambit.gambit.Game) -> str:
 
     # Add the nodes
     levels_nodecount = {}
+    node_levels = {}
     offsets = []
     for node, node_coords in layout.items():
-        levels_nodecount[determine_node_level(node_coords.level, node_coords.sublevel)] = 1
+        level = determine_node_level(node_coords.level, node_coords.sublevel)
+        if level not in levels_nodecount:
+            levels_nodecount[level] = 1
+        else:
+            levels_nodecount[level] += 1
+        node_levels[node] = (level, levels_nodecount[level])
         offsets.append(node_coords.offset)
     midpoint = (min(offsets) + max(offsets)) / 2
     nodes_with_normalised_offsets = {}
     for node, node_coords in layout.items():
         nodes_with_normalised_offsets[node] = -(node_coords.offset - midpoint)
     for node, node_coords in layout.items():
-        level = determine_node_level(node_coords.level, node_coords.sublevel)
         player = None
         if node.player:
             if node.player.is_chance:
                 player = "0"
             else:
                 player = player_ids[node.player]
-        ef += f"level {level} node {levels_nodecount[level]} "
+        level, nodecount = node_levels[node]
+        ef += f"level {level} node {nodecount} "
         if player:
             ef += f"player {player} "
         if level > 0:
             xshift = nodes_with_normalised_offsets[node] - (nodes_with_normalised_offsets[node.parent] if node.parent else 0)
             ef += f"xshift {xshift} "
+        
+        if node.parent:
+            parent_level, parent_nodecount = node_levels[node.parent]
+            ef += f"from {parent_level},{parent_nodecount} "
         ef += "\n"
-        levels_nodecount[level] += 1
 
     return ef
