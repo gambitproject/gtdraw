@@ -63,7 +63,12 @@ def gambit_layout_to_ef(game: pygambit.gambit.Game) -> str:
             ef += f"move {node.prior_action.label}"
             if node.parent.player.is_chance:
                 prob = str(node.prior_action.prob).split("/")
-                ef += f"~(\\frac{{{prob[0]}}}{{{prob[1]}}}) "
+                ef += f"~(\\frac{{{prob[0]}}}{{{prob[1]}}})"
+            ef += " "
+        if node.is_terminal:
+            ef += "payoffs "
+            for player in game.players:
+                ef += f"{node.outcome.__getitem__(player.label)} "
         ef += "\n"
 
     return ef
