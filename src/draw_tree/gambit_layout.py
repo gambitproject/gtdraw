@@ -2,7 +2,8 @@ import pygambit
 
 
 def determine_node_level(gbt_level, gbt_sublevel):
-    return (gbt_level * 2) + gbt_sublevel
+    # return (gbt_level * 2) + (gbt_sublevel-1)
+    return gbt_level * 2
 
 
 def gambit_layout_to_ef(game: pygambit.gambit.Game) -> str:
