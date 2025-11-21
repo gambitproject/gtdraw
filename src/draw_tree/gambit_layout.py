@@ -60,6 +60,7 @@ def gambit_layout_to_ef(game: pygambit.gambit.Game) -> str:
         if node.parent:
             parent_level, parent_nodecount = node_levels[node.parent]
             ef += f"from {parent_level},{parent_nodecount} "
+            ef += f"move {node.prior_action.label} "
         ef += "\n"
 
     return ef
