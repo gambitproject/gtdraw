@@ -36,7 +36,7 @@ def gambit_layout_to_ef(game: pygambit.gambit.Game) -> str:
         player = None
         if node.player:
             if node.player.is_chance:
-                player = 0
+                player = "0"
             else:
                 player = player_ids[node.player]
         ef += f"level {level} node {levels_nodecount[level]} "
