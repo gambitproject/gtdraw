@@ -25,12 +25,17 @@ def gambit_layout_to_ef(game: pygambit.gambit.Game) -> str:
         ef += f"player {p} name {player.label}\n"
         player_ids[player] = p
         p += 1
+
     # Add the nodes
     levels_nodecount = {}
+    offsets = []
     for node, node_coords in layout.items():
-        levels_nodecount[
-            determine_node_level(node_coords.level, node_coords.sublevel)
-        ] = 1
+        levels_nodecount[determine_node_level(node_coords.level, node_coords.sublevel)] = 1
+        offsets.append(node_coords.offset)
+    midpoint = (min(offsets) + max(offsets)) / 2
+    nodes_with_normalised_offsets = {}
+    for node, node_coords in layout.items():
+        nodes_with_normalised_offsets[node] = -(node_coords.offset - midpoint)
     for node, node_coords in layout.items():
         level = determine_node_level(node_coords.level, node_coords.sublevel)
         player = None
@@ -41,7 +46,9 @@ def gambit_layout_to_ef(game: pygambit.gambit.Game) -> str:
                 player = player_ids[node.player]
         ef += f"level {level} node {levels_nodecount[level]} "
         if player:
-            ef += f"player {player}"
+            ef += f"player {player} "
+        xshift = nodes_with_normalised_offsets[node] - (nodes_with_normalised_offsets[node.parent] if node.parent else 0)
+        ef += f"xshift {xshift} "
         ef += "\n"
         levels_nodecount[level] += 1
 
