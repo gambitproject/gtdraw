@@ -42,6 +42,7 @@ def gambit_layout_to_ef(game: pygambit.gambit.Game) -> str:
     nodes_with_normalised_offsets = {}
     for node, node_coords in layout.items():
         nodes_with_normalised_offsets[node] = -(node_coords.offset - midpoint)
+    infoset_groups = {}
     for node, node_coords in layout.items():
         player = None
         if node.player:
@@ -54,9 +55,11 @@ def gambit_layout_to_ef(game: pygambit.gambit.Game) -> str:
         if player:
             ef += f"player {player} "
         if level > 0:
-            xshift = nodes_with_normalised_offsets[node] - (nodes_with_normalised_offsets[node.parent] if node.parent else 0)
+            xshift = nodes_with_normalised_offsets[node] - (
+                nodes_with_normalised_offsets[node.parent] if node.parent else 0
+            )
             ef += f"xshift {xshift} "
-        
+
         if node.parent:
             parent_level, parent_nodecount = node_levels[node.parent]
             ef += f"from {parent_level},{parent_nodecount} "
@@ -70,5 +73,16 @@ def gambit_layout_to_ef(game: pygambit.gambit.Game) -> str:
             for player in game.players:
                 ef += f"{node.outcome.__getitem__(player.label)} "
         ef += "\n"
-
+        if node.infoset:
+            if node.infoset not in infoset_groups:
+                infoset_groups[node.infoset] = []
+            infoset_groups[node.infoset].append(node)
+    for infoset, nodes in infoset_groups.items():
+        if len(nodes) > 1:
+            ef += "iset "
+            for node in nodes:
+                level, nodecount = node_levels[node]
+                ef += f"{level},{nodecount} "
+            ef += f"player {player_ids[node.player]} "
+            ef += "\n"
     return ef
