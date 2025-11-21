@@ -2,7 +2,8 @@ import pygambit as gbt
 
 
 def determine_node_level(gbt_level, gbt_sublevel):
-    # return (gbt_level * 2) + (gbt_sublevel-1)
+    if gbt_level > 1:
+        return (gbt_level * 2) + (gbt_sublevel - 1)
     return gbt_level * 2
 
 
