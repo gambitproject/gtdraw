@@ -1,8 +1,7 @@
-from re import sub
 import pygambit
 from typing import Optional
 
-LEVEL_MULTIPLIER = 4
+LEVEL_MULTIPLIER = 6
 XSHIFT_MULTIPLIER = 2
 
 def determine_node_level(gbt_level, gbt_sublevel) -> int:
