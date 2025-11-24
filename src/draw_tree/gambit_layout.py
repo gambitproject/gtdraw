@@ -2,13 +2,14 @@ import pygambit
 from typing import Optional
 
 LEVEL_MULTIPLIER = 6
+SUBLEVEL_MULTIPLIER = 2
 XSHIFT_MULTIPLIER = 2
 
 def determine_node_level(gbt_level, gbt_sublevel) -> int:
     """Determine the node level in the .ef format based on Gambit layout levels."""
     # If node is in an infoset
     if gbt_level > 1 and gbt_sublevel != 0:
-        return (gbt_level * LEVEL_MULTIPLIER) + (gbt_sublevel - 1) - (LEVEL_MULTIPLIER / 2)
+        return (gbt_level * LEVEL_MULTIPLIER) + ((gbt_sublevel - 1) * SUBLEVEL_MULTIPLIER) - (LEVEL_MULTIPLIER / 2)
     return gbt_level * LEVEL_MULTIPLIER
 
 
