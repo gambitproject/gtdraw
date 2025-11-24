@@ -1,4 +1,4 @@
-import pygambit as gbt
+import pygambit
 
 
 def determine_node_level(gbt_level, gbt_sublevel):
