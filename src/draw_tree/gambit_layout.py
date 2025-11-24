@@ -1,3 +1,4 @@
+from re import sub
 import pygambit
 from typing import Optional
 
@@ -60,13 +61,15 @@ def gambit_layout_to_ef(
     node_levels = {}
     offsets = []
     for node, node_coords in layout.items():
+
+        # Calculate the node level, using gambit level and sublevel
+        # Ignore sublevel for nodes that don't share an infoset
+        sublevel = node_coords.sublevel
         if node.infoset in infoset_groups:
-            if len(infoset_groups[node.infoset]) > 1:
-                level = determine_node_level(node_coords.level, node_coords.sublevel)
-            else:
-                level = determine_node_level(node_coords.level, 0)
-        else:
-            level = determine_node_level(node_coords.level, node_coords.sublevel)
+            if len(infoset_groups[node.infoset]) == 1:
+                sublevel = 0
+        level = determine_node_level(node_coords.level, sublevel)
+            
         if level not in levels_nodecount:
             levels_nodecount[level] = 1
         else:
