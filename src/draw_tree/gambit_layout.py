@@ -2,9 +2,11 @@ import pygambit
 from typing import Optional
 
 
-def determine_node_level(gbt_level, gbt_sublevel):
+def determine_node_level(gbt_level, gbt_sublevel) -> int:
+    """Determine the node level in the .ef format based on Gambit layout levels."""
+    sublevel = (gbt_level * 2) + (gbt_sublevel - 1)
     if gbt_level > 1:
-        return (gbt_level * 2) + (gbt_sublevel - 1)
+        return sublevel
     return gbt_level * 2
 
 
@@ -37,12 +39,20 @@ def gambit_layout_to_ef(
         p += 1
 
     # Group nodes by their infosets
+    # Also collect child node levels for level determination
     infoset_groups = {}
+    gbt_child_levels = {}
     for node, node_coords in layout.items():
         if node.infoset:
             if node.infoset not in infoset_groups:
                 infoset_groups[node.infoset] = []
             infoset_groups[node.infoset].append(node)
+        # Get the level of a child node, if applicable
+        if not node.is_terminal:
+            child_coords = layout[node.children[0]]
+            gbt_child_levels[node] = child_coords.level
+        else:
+            gbt_child_levels[node] = None
 
     # For each node, determine its level and node count within that level
     # Also collect offsets for normalisation
