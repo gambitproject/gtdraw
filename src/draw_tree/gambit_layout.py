@@ -3,7 +3,7 @@ import pygambit
 from typing import Optional
 
 LEVEL_MULTIPLIER = 4
-
+XSHIFT_MULTIPLIER = 2
 
 def determine_node_level(gbt_level, gbt_sublevel) -> int:
     """Determine the node level in the .ef format based on Gambit layout levels."""
@@ -94,7 +94,7 @@ def gambit_layout_to_ef(
     # Normalise offsets based on the midpoint
     nodes_with_normalised_offsets = {}
     for node, node_coords in layout.items():
-        nodes_with_normalised_offsets[node] = -(node_coords.offset - midpoint)
+        nodes_with_normalised_offsets[node] = -(node_coords.offset - midpoint) * XSHIFT_MULTIPLIER
     
     # Now, build the node lines in the .ef string
     for node, node_coords in layout.items():
