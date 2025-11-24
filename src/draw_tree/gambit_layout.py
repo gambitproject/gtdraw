@@ -1,4 +1,5 @@
 import pygambit
+from typing import Optional
 
 
 def determine_node_level(gbt_level, gbt_sublevel):
@@ -7,12 +8,15 @@ def determine_node_level(gbt_level, gbt_sublevel):
     return gbt_level * 2
 
 
-def gambit_layout_to_ef(game: pygambit.gambit.Game) -> str:
+def gambit_layout_to_ef(
+    game: pygambit.gambit.Game, output_path: Optional[str] = None
+) -> str:
     """Convert an extensive form Gambit game to the `.ef` format
     using the layout tree defined by pygambit.layout_tree(game.)
 
     Args:
         game: A pygambit.gambit.Game object representing the game.
+        output_path: Optional path to save the generated `.ef` file.
 
     Returns:
         The filename of the generated `.ef` file.
@@ -125,6 +129,9 @@ def gambit_layout_to_ef(game: pygambit.gambit.Game) -> str:
             ef += "\n"
 
     # Save the constructed .ef string to file based on the game's name
-    with open(game.title + ".ef", "w", encoding="utf-8") as f:
+    ef_file = game.title + ".ef"
+    if output_path:
+        ef_file = output_path + "/" + ef_file
+    with open(ef_file, "w", encoding="utf-8") as f:
         f.write(ef)
-    return game.title + ".ef"
+    return ef_file
