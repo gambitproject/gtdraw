@@ -37,7 +37,8 @@ def gambit_layout_to_ef(
     player_ids = {}
     p = 1
     for player in game.players:
-        ef += f"player {p} name {player.label}\n"
+        player_name = player.label.replace(" ", "~")
+        ef += f"player {p} name {player_name}\n"
         player_ids[player] = p
         p += 1
 
