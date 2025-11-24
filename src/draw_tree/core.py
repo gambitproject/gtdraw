@@ -1253,7 +1253,15 @@ def ef_to_tex(ef_file: str, scale_factor: float = 1.0, show_grid: bool = False) 
         scale = original_scale
         grid = original_grid
 
-def generate_tikz(game, output_path: Optional[str] = None, scale_factor: float = 1.0, show_grid: bool = False) -> str:
+def generate_tikz(
+        game,
+        output_path: Optional[str] = None,
+        scale_factor: float = 1.0,
+        level_spacing: int = 6,
+        sublevel_spacing: int = 2,
+        width_spacing: int = 2,
+        show_grid: bool = False
+        ) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
     
@@ -1278,8 +1286,13 @@ def generate_tikz(game, output_path: Optional[str] = None, scale_factor: float =
                 pass
     else:
         from .gambit_layout import gambit_layout_to_ef
-        ef_file = gambit_layout_to_ef(game, output_path=output_path)
-
+        ef_file = gambit_layout_to_ef(
+            game,
+            output_path=output_path,
+            level_multiplier=level_spacing,
+            sublevel_multiplier=sublevel_spacing,
+            xshift_multiplier=width_spacing
+        )
 
     # Step 1: Generate the tikzpicture content using ef_to_tex logic
     tikz_picture_content = ef_to_tex(ef_file, scale_factor, show_grid)
@@ -1332,7 +1345,15 @@ def generate_tikz(game, output_path: Optional[str] = None, scale_factor: float =
     return tikz_code
 
 
-def draw_tree(ef_file: str, output_path: Optional[str] = None, scale_factor: float = 1.0, show_grid: bool = False) -> Optional[str]:
+def draw_tree(
+    ef_file: str,
+    output_path: Optional[str] = None,
+    scale_factor: float = 1.0,
+    level_spacing: int = 6,
+    sublevel_spacing: int = 2,
+    width_spacing: int = 2,
+    show_grid: bool = False,
+) -> Optional[str]:
     """
     Generate TikZ code and display in Jupyter notebooks.
     
@@ -1359,7 +1380,15 @@ def draw_tree(ef_file: str, output_path: Optional[str] = None, scale_factor: flo
             ip.run_line_magic("load_ext", "jupyter_tikz")
 
         # Generate TikZ code and execute cell magic
-        tikz_code = generate_tikz(ef_file, output_path=output_path, scale_factor=scale_factor, show_grid=show_grid)
+        tikz_code = generate_tikz(
+            ef_file,
+            output_path=output_path,
+            scale_factor=scale_factor,
+            level_spacing=level_spacing,
+            sublevel_spacing=sublevel_spacing,
+            width_spacing=width_spacing,
+            show_grid=show_grid
+        )
         return ip.run_cell_magic("tikz", "", tikz_code)
     else:
         raise EnvironmentError("draw_tree function requires a Jupyter notebook environment.")
