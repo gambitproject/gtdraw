@@ -17,7 +17,7 @@ def gambit_layout_to_ef(game: pygambit.gambit.Game) -> str:
     Returns:
         A string containing the `.ef` formatted representation of the game.
     """
-    layout = gbt.layout_tree(game)
+    layout = pygambit.layout_tree(game)
     ef = ""
     # Add the players
     player_ids = {}
