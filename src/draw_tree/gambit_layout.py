@@ -15,7 +15,7 @@ def gambit_layout_to_ef(game: pygambit.gambit.Game) -> str:
         game: A pygambit.gambit.Game object representing the game.
 
     Returns:
-        A string containing the `.ef` formatted representation of the game.
+        The filename of the generated `.ef` file.
     """
 
     # Get the layout from pygambit
@@ -123,4 +123,8 @@ def gambit_layout_to_ef(game: pygambit.gambit.Game) -> str:
                 ef += f"{level},{nodecount} "
             ef += f"player {player_ids[node.player]} "
             ef += "\n"
-    return ef
+
+    # Save the constructed .ef string to file based on the game's name
+    with open(game.title + ".ef", "w", encoding="utf-8") as f:
+        f.write(ef)
+    return game.title + ".ef"

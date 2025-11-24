@@ -1253,12 +1253,12 @@ def ef_to_tex(ef_file: str, scale_factor: float = 1.0, show_grid: bool = False) 
         scale = original_scale
         grid = original_grid
 
-def generate_tikz(ef_file: str, scale_factor: float = 1.0, show_grid: bool = False) -> str:
+def generate_tikz(game, scale_factor: float = 1.0, show_grid: bool = False) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
     
     Args:
-        ef_file: Path to the .ef file to process.
+        game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
         scale_factor: Scale factor for the diagram (default: 1.0).
         show_grid: Whether to show grid lines (default: False).
         
@@ -1268,12 +1268,18 @@ def generate_tikz(ef_file: str, scale_factor: float = 1.0, show_grid: bool = Fal
     # If user supplied an EFG file, convert it to .ef first so the existing
     # ef-based pipeline can be reused. efg_dl_ef returns a path string when
     # it successfully writes the .ef file.
-    if isinstance(ef_file, str) and ef_file.lower().endswith('.efg'):
-        try:
-            ef_file = efg_dl_ef(ef_file)
-        except Exception:
-            # fall through and let ef_to_tex raise a clearer error later
-            pass
+    ef_file = game
+    if isinstance(game, str):
+        if game.lower().endswith('.efg'):
+            try:
+                ef_file = efg_dl_ef(game)
+            except Exception:
+                # fall through and let ef_to_tex raise a clearer error later
+                pass
+    else:
+        from .gambit_layout import gambit_layout_to_ef
+        ef_file = gambit_layout_to_ef(game)
+
 
     # Step 1: Generate the tikzpicture content using ef_to_tex logic
     tikz_picture_content = ef_to_tex(ef_file, scale_factor, show_grid)
