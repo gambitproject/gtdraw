@@ -60,12 +60,12 @@ def gambit_layout_to_ef(
     node_levels = {}
     offsets = []
     for node, node_coords in layout.items():
-        try:
+        if node.infoset in infoset_groups:
             if len(infoset_groups[node.infoset]) > 1:
                 level = determine_node_level(node_coords.level, node_coords.sublevel)
             else:
                 level = determine_node_level(node_coords.level, 0)
-        except:
+        else:
             level = determine_node_level(node_coords.level, node_coords.sublevel)
         if level not in levels_nodecount:
             levels_nodecount[level] = 1
