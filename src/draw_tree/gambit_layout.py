@@ -113,7 +113,8 @@ def gambit_layout_to_ef(
         ef += f"level {level} node {nodecount} "
 
         # Add player if applicable to this node
-        if player:
+        # Do not add player if in infoset with multiple nodes (will be defined by `iset` later)
+        if player and len(infoset_groups[node.infoset]) == 1:
             ef += f"player {player} "
         
         # Calculate xshift and add to .ef string not root node
@@ -143,7 +144,7 @@ def gambit_layout_to_ef(
                     ef += f"{node.outcome.__getitem__(player)} "
         ef += "\n"
 
-    # Build the infoset lines in the .ef string
+    # Build the infoset lines in the .ef string with `iset`
     for _, nodes in infoset_groups.items():
         if len(nodes) > 1:
             ef += "iset "
