@@ -7,9 +7,9 @@ LEVEL_MULTIPLIER = 4
 
 def determine_node_level(gbt_level, gbt_sublevel) -> int:
     """Determine the node level in the .ef format based on Gambit layout levels."""
-    sublevel = (gbt_level * LEVEL_MULTIPLIER) + (gbt_sublevel - 1)
-    if gbt_level > 1:
-        return sublevel
+    # If node is in an infoset
+    if gbt_level > 1 and gbt_sublevel != 0:
+        return (gbt_level * LEVEL_MULTIPLIER) + (gbt_sublevel - 1) - (LEVEL_MULTIPLIER / 2)
     return gbt_level * LEVEL_MULTIPLIER
 
 
@@ -64,11 +64,11 @@ def gambit_layout_to_ef(
 
         # Calculate the node level, using gambit level and sublevel
         # Ignore sublevel for nodes that don't share an infoset
-        sublevel = node_coords.sublevel
+        gbt_sublevel = node_coords.sublevel
         if node.infoset in infoset_groups:
             if len(infoset_groups[node.infoset]) == 1:
-                sublevel = 0
-        level = determine_node_level(node_coords.level, sublevel)
+                gbt_sublevel = 0
+        level = determine_node_level(node_coords.level, gbt_sublevel)
 
         # Ensure child nodes have levels greater than their parents
         if not node == game.root:
