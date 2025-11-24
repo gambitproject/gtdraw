@@ -135,15 +135,16 @@ def gambit_layout_to_ef(
                 ef += f"~(\\frac{{{prob[0]}}}{{{prob[1]}}})"
             ef += " "
         
-        # Add payoffs to terminal nodes
+        # Add payoffs to terminal nodes, if applicable
         if node.is_terminal:
             ef += "payoffs "
-            for player in game.players:
-                ef += f"{node.outcome.__getitem__(player.label)} "
+            if node.outcome:
+                for player in game.players:
+                    ef += f"{node.outcome.__getitem__(player)} "
         ef += "\n"
 
     # Build the infoset lines in the .ef string
-    for infoset, nodes in infoset_groups.items():
+    for _, nodes in infoset_groups.items():
         if len(nodes) > 1:
             ef += "iset "
             for node in nodes:
