@@ -40,20 +40,18 @@ def gambit_layout_to_ef(
         p += 1
 
     # Group nodes by their infosets
-    # Also collect child node levels for level determination
+    # Also collect parent node levels for level determination
     infoset_groups = {}
-    gbt_child_levels = {}
+    gbt_parent_levels = {}
     for node, node_coords in layout.items():
         if node.infoset:
             if node.infoset not in infoset_groups:
                 infoset_groups[node.infoset] = []
             infoset_groups[node.infoset].append(node)
-        # Get the level of a child node, if applicable
-        if not node.is_terminal:
-            child_coords = layout[node.children[0]]
-            gbt_child_levels[node] = child_coords.level
-        else:
-            gbt_child_levels[node] = None
+        # Get the level of a parent node, if applicable
+        if not node == game.root:
+            parent_coords = layout[node.parent]
+            gbt_parent_levels[node] = (parent_coords.level, parent_coords.sublevel)
 
     # For each node, determine its level and node count within that level
     # Also collect offsets for normalisation
@@ -69,6 +67,11 @@ def gambit_layout_to_ef(
             if len(infoset_groups[node.infoset]) == 1:
                 sublevel = 0
         level = determine_node_level(node_coords.level, sublevel)
+        if not node == game.root:
+            gbt_parent_level, gbt_parent_sublevel = gbt_parent_levels[node]
+            parent_level = determine_node_level(gbt_parent_level, gbt_parent_sublevel)
+            while level <= parent_level:
+                level += 1
             
         if level not in levels_nodecount:
             levels_nodecount[level] = 1
