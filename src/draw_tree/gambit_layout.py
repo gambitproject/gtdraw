@@ -1,20 +1,26 @@
 import pygambit
 from typing import Optional
 
-LEVEL_MULTIPLIER = 6
-SUBLEVEL_MULTIPLIER = 2
-XSHIFT_MULTIPLIER = 2
 
-def determine_node_level(gbt_level, gbt_sublevel) -> int:
+def determine_node_level(
+    gbt_level: int,
+    gbt_sublevel: int,
+    level_multiplier: int = 6,
+    sublevel_multiplier: int = 2,
+) -> int:
     """Determine the node level in the .ef format based on Gambit layout levels."""
     # If node is in an infoset
     if gbt_level > 1 and gbt_sublevel != 0:
-        return (gbt_level * LEVEL_MULTIPLIER) + ((gbt_sublevel - 1) * SUBLEVEL_MULTIPLIER) - (LEVEL_MULTIPLIER / 2)
-    return gbt_level * LEVEL_MULTIPLIER
+        return (gbt_level * level_multiplier) + ((gbt_sublevel - 1) * sublevel_multiplier) - (level_multiplier / 2)
+    return gbt_level * level_multiplier
 
 
 def gambit_layout_to_ef(
-    game: pygambit.gambit.Game, output_path: Optional[str] = None
+    game: pygambit.gambit.Game,
+    output_path: Optional[str] = None,
+    level_multiplier: int = 6,
+    sublevel_multiplier: int = 2,
+    xshift_multiplier: int = 2
 ) -> str:
     """Convert an extensive form Gambit game to the `.ef` format
     using the layout tree defined by pygambit.layout_tree(game.)
@@ -69,14 +75,14 @@ def gambit_layout_to_ef(
         if node.infoset in infoset_groups:
             if len(infoset_groups[node.infoset]) == 1:
                 gbt_sublevel = 0
-        level = determine_node_level(node_coords.level, gbt_sublevel)
+        level = determine_node_level(node_coords.level, gbt_sublevel, level_multiplier, sublevel_multiplier)
 
         # Ensure child nodes have levels greater than their parents
         if not node == game.root:
             gbt_parent_level, gbt_parent_sublevel = gbt_parent_levels[node]
-            parent_level = determine_node_level(gbt_parent_level, gbt_parent_sublevel)
+            parent_level = determine_node_level(gbt_parent_level, gbt_parent_sublevel, level_multiplier, sublevel_multiplier)
             while level <= parent_level:
-                level += LEVEL_MULTIPLIER
+                level += level_multiplier
         
         # Track node counts per level
         if level not in levels_nodecount:
@@ -94,7 +100,7 @@ def gambit_layout_to_ef(
     # Normalise offsets based on the midpoint
     nodes_with_normalised_offsets = {}
     for node, node_coords in layout.items():
-        nodes_with_normalised_offsets[node] = -(node_coords.offset - midpoint) * XSHIFT_MULTIPLIER
+        nodes_with_normalised_offsets[node] = -(node_coords.offset - midpoint) * xshift_multiplier
     
     # Now, build the node lines in the .ef string
     for node, node_coords in layout.items():
