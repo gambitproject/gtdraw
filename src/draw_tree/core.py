@@ -1463,7 +1463,7 @@ def generate_tex(ef_file: str, output_tex: Optional[str] = None, scale_factor: f
             pass
 
     # Generate TikZ content using generate_tikz
-    tikz_content = generate_tikz(ef_file, scale_factor, show_grid)
+    tikz_content = generate_tikz(ef_file, scale_factor=scale_factor, show_grid=show_grid)
     
     # Wrap in complete LaTeX document
     latex_document = latex_wrapper(tikz_content)
