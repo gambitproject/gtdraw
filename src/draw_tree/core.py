@@ -1502,7 +1502,7 @@ def generate_pdf(ef_file: str, output_pdf: Optional[str] = None, scale_factor: f
         output_pdf = ef_path.with_suffix('.pdf').name
     
     # Generate TikZ content using generate_tikz
-    tikz_content = generate_tikz(ef_file, scale_factor, show_grid)
+    tikz_content = generate_tikz(ef_file, scale_factor=scale_factor, show_grid=show_grid)
     
     # Create LaTeX wrapper document
     latex_document = latex_wrapper(tikz_content)
