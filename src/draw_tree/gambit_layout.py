@@ -17,7 +17,7 @@ def determine_node_level(
 
 def gambit_layout_to_ef(
     game: pygambit.gambit.Game,
-    output_path: Optional[str] = None,
+    save_to: Optional[str] = None,
     level_multiplier: int = 6,
     sublevel_multiplier: int = 2,
     xshift_multiplier: int = 2
@@ -27,7 +27,7 @@ def gambit_layout_to_ef(
 
     Args:
         game: A pygambit.gambit.Game object representing the game.
-        output_path: Optional path to save the generated `.ef` file.
+        save_to: Optional path to save the generated `.ef` file.
 
     Returns:
         The filename of the generated `.ef` file.
@@ -161,9 +161,13 @@ def gambit_layout_to_ef(
             ef += "\n"
 
     # Save the constructed .ef string to file based on the game's name
-    ef_file = game.title + ".ef"
-    if output_path:
-        ef_file = output_path + "/" + ef_file
+    if save_to:
+        ef_file = save_to
+        if ".ef" not in save_to:
+            ef_file = save_to + ".ef"
+    else:
+        ef_file = game.title + ".ef"
     with open(ef_file, "w", encoding="utf-8") as f:
+        print("Writing .ef file to:", ef_file)
         f.write(ef)
     return ef_file

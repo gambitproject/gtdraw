@@ -1255,7 +1255,7 @@ def ef_to_tex(ef_file: str, scale_factor: float = 1.0, show_grid: bool = False) 
 
 def generate_tikz(
         game,
-        output_path: Optional[str] = None,
+        save_to: Optional[str] = None,
         scale_factor: float = 1.0,
         level_spacing: int = 6,
         sublevel_spacing: int = 2,
@@ -1288,7 +1288,7 @@ def generate_tikz(
         from .gambit_layout import gambit_layout_to_ef
         ef_file = gambit_layout_to_ef(
             game,
-            output_path=output_path,
+            save_to=save_to,
             level_multiplier=level_spacing,
             sublevel_multiplier=sublevel_spacing,
             xshift_multiplier=width_spacing
@@ -1347,7 +1347,7 @@ def generate_tikz(
 
 def draw_tree(
     ef_file: str,
-    output_path: Optional[str] = None,
+    save_to: Optional[str] = None,
     scale_factor: float = 1.0,
     level_spacing: int = 6,
     sublevel_spacing: int = 2,
@@ -1382,7 +1382,7 @@ def draw_tree(
         # Generate TikZ code and execute cell magic
         tikz_code = generate_tikz(
             ef_file,
-            output_path=output_path,
+            save_to=save_to,
             scale_factor=scale_factor,
             level_spacing=level_spacing,
             sublevel_spacing=sublevel_spacing,
