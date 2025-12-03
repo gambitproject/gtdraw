@@ -1165,7 +1165,7 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
     
     return (output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi)
 
-def ef_to_tex(ef_file: str, scale_factor: float = 1.0, show_grid: bool = False) -> str:
+def ef_to_tex(ef_file: str, scale_factor: float = 0.8, show_grid: bool = False) -> str:
     """
     Convert an extensive form (.ef) file to TikZ code.
     
@@ -1256,7 +1256,7 @@ def ef_to_tex(ef_file: str, scale_factor: float = 1.0, show_grid: bool = False) 
 def generate_tikz(
         game,
         save_to: Optional[str] = None,
-        scale_factor: float = 1.0,
+        scale_factor: float = 0.8,
         level_spacing: int = 6,
         sublevel_spacing: int = 2,
         width_spacing: int = 2,
@@ -1352,7 +1352,7 @@ def generate_tikz(
 def draw_tree(
     game,
     save_to: Optional[str] = None,
-    scale_factor: float = 1.0,
+    scale_factor: float = 0.8,
     level_spacing: int = 6,
     sublevel_spacing: int = 2,
     width_spacing: int = 2,
@@ -1439,7 +1439,7 @@ def latex_wrapper(tikz_code: str) -> str:
     return latex_document
 
 
-def generate_tex(ef_file: str, output_tex: Optional[str] = None, scale_factor: float = 1.0, show_grid: bool = False) -> str:
+def generate_tex(ef_file: str, output_tex: Optional[str] = None, scale_factor: float = 0.8, show_grid: bool = False) -> str:
     """
     Generate a complete LaTeX document file directly from an extensive form (.ef) file.
     
@@ -1483,7 +1483,7 @@ def generate_tex(ef_file: str, output_tex: Optional[str] = None, scale_factor: f
     return str(Path(output_tex).absolute())
 
 
-def generate_pdf(ef_file: str, output_pdf: Optional[str] = None, scale_factor: float = 1.0, show_grid: bool = False, cleanup: bool = True) -> str:
+def generate_pdf(ef_file: str, output_pdf: Optional[str] = None, scale_factor: float = 0.8, show_grid: bool = False, cleanup: bool = True) -> str:
     """
     Generate a PDF directly from an extensive form (.ef) file.
     
@@ -1554,7 +1554,7 @@ def generate_pdf(ef_file: str, output_pdf: Optional[str] = None, scale_factor: f
             raise RuntimeError("pdflatex not found. Please install a LaTeX distribution (e.g., TeX Live, MiKTeX).")
 
 
-def generate_png(ef_file: str, output_png: Optional[str] = None, scale_factor: float = 1.0, 
+def generate_png(ef_file: str, output_png: Optional[str] = None, scale_factor: float = 0.8, 
                 show_grid: bool = False, dpi: int = 300, cleanup: bool = True) -> str:
     """
     Generate a PNG image directly from an extensive form (.ef) file.
