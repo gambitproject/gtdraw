@@ -1264,12 +1264,16 @@ def generate_tikz(
         ) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
-    
+
     Args:
         game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
-        scale_factor: Scale factor for the diagram (default: 1.0).
-        show_grid: Whether to show grid lines (default: False).
-        
+        save_to: Optional path to save intermediate .ef file when generating from a pygambit.gambit.Game object.
+        scale_factor: Scale factor for the diagram.
+        level_spacing: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
+        sublevel_spacing: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
+        width_spacing: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        show_grid: Whether to show grid lines.
+
     Returns:
         Complete TikZ code ready for use in Jupyter notebooks or LaTeX documents.
     """
@@ -1346,7 +1350,7 @@ def generate_tikz(
 
 
 def draw_tree(
-    ef_file: str,
+    game,
     save_to: Optional[str] = None,
     scale_factor: float = 1.0,
     level_spacing: int = 6,
@@ -1356,12 +1360,16 @@ def draw_tree(
 ) -> Optional[str]:
     """
     Generate TikZ code and display in Jupyter notebooks.
-    
+
     Args:
-        ef_file: Path to the .ef file to process.
-        scale_factor: Scale factor for the diagram (default: 1.0).
-        show_grid: Whether to show grid lines (default: False).
-        
+        game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
+        save_to: Optional path to save intermediate .ef file when generating from a pygambit.gambit.Game object.
+        scale_factor: Scale factor for the diagram.
+        level_spacing: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
+        sublevel_spacing: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
+        width_spacing: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        show_grid: Whether to show grid lines.
+
     Returns:
         The result of the Jupyter cell magic execution, or the TikZ code string
         if cell magic fails.
@@ -1381,7 +1389,7 @@ def draw_tree(
 
         # Generate TikZ code and execute cell magic
         tikz_code = generate_tikz(
-            ef_file,
+            game,
             save_to=save_to,
             scale_factor=scale_factor,
             level_spacing=level_spacing,
