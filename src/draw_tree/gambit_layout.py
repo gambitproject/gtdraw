@@ -168,6 +168,5 @@ def gambit_layout_to_ef(
     else:
         ef_file = game.title + ".ef"
     with open(ef_file, "w", encoding="utf-8") as f:
-        print("Writing .ef file to:", ef_file)
         f.write(ef)
     return ef_file
