@@ -12,6 +12,10 @@ import math
 import subprocess
 import tempfile
 import re
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pygambit
 
 from pathlib import Path
 from typing import List, Optional 
@@ -1254,14 +1258,14 @@ def ef_to_tex(ef_file: str, scale_factor: float = 0.8, show_grid: bool = False) 
         grid = original_grid
 
 def generate_tikz(
-        game,
-        save_to: Optional[str] = None,
-        scale_factor: float = 0.8,
-        level_spacing: int = 6,
-        sublevel_spacing: int = 2,
-        width_spacing: int = 2,
-        show_grid: bool = False
-        ) -> str:
+    game: str | "pygambit.gambit.Game",
+    save_to: Optional[str] = None,
+    scale_factor: float = 0.8,
+    level_spacing: int = 6,
+    sublevel_spacing: int = 2,
+    width_spacing: int = 2,
+    show_grid: bool = False,
+) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
 
@@ -1350,7 +1354,7 @@ def generate_tikz(
 
 
 def draw_tree(
-    game,
+    game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
     scale_factor: float = 0.8,
     level_spacing: int = 6,
