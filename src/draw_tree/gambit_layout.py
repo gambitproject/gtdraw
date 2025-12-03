@@ -134,7 +134,8 @@ def gambit_layout_to_ef(
         if node.parent:
             parent_level, parent_nodecount = node_levels[node.parent]
             ef += f"from {parent_level},{parent_nodecount} "
-            ef += f"move {node.prior_action.label}"
+            prior_action_label = node.prior_action.label.replace(" ", "~")
+            ef += f"move {prior_action_label}"
 
             # Add probability if the parent is a chance player
             if node.parent.player.is_chance:
