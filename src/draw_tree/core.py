@@ -1,6 +1,5 @@
 """
 Game tree drawing as TikZ file from .ef file
-Version 0.1.0
 
 This module provides functionality to generate TikZ code for game trees
 from extensive form (.ef) files, with support for Jupyter notebooks.
