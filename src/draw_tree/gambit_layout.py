@@ -5,7 +5,7 @@ from typing import Optional
 def determine_node_level(
     gbt_level: int,
     gbt_sublevel: int,
-    level_multiplier: int = 6,
+    level_multiplier: int = 4,
     sublevel_multiplier: int = 2,
 ) -> int:
     """Determine the node level in the .ef format based on Gambit layout levels."""
@@ -18,7 +18,7 @@ def determine_node_level(
 def gambit_layout_to_ef(
     game: pygambit.gambit.Game,
     save_to: Optional[str] = None,
-    level_multiplier: int = 6,
+    level_multiplier: int = 4,
     sublevel_multiplier: int = 2,
     xshift_multiplier: int = 2
 ) -> str:
