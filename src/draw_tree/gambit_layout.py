@@ -10,9 +10,9 @@ def determine_node_level(
 ) -> int:
     """Determine the node level in the .ef format based on Gambit layout levels."""
     # If node is in an infoset
-    if gbt_level > 1 and gbt_sublevel != 0:
+    if gbt_sublevel != 0:
         return (gbt_level * level_multiplier) + ((gbt_sublevel - 1) * sublevel_multiplier) - (level_multiplier / 2)
-    return gbt_level * level_multiplier
+    return (gbt_level * level_multiplier) - (level_multiplier / 2)
 
 
 def gambit_layout_to_ef(
