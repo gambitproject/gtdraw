@@ -100,7 +100,7 @@ draw_tree('games/example.ef')
 
 Take a look in the `tutorial/` folder for example notebooks.
 
-> ⚠️⚠️⚠️ Warning: Images do not render correctly in notebooks opened in VSCode; open notebooks in Jupyter Lab.
+> ⚠️ Warning: Images do not render correctly in notebooks opened in VSCode; open notebooks in Jupyter Lab.
 
 ### Interoperability with pygambit
 
