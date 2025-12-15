@@ -4,7 +4,8 @@
 - [Requirements](#requirements)
 - [CLI](#cli)
 - [Python API](#python-api)
-- [Rendering in Jupyter Notebooks](#rendering-in-jupyter-notebooks)
+    - [Rendering in Jupyter Notebooks](#rendering-in-jupyter-notebooks)
+    - [Interoperability with pygambit](#interoperability-with-pygambit)
 - [Developer docs: Testing](#developer-docs-testing)
 
 `draw_tree` is a game tree drawing tool for publication-ready extensive form games in Game Theory. Generates TikZ code, LaTeX documents, PDFs, and PNGs.
@@ -96,7 +97,15 @@ from draw_tree import draw_tree
 draw_tree('games/example.ef')
 ```
 
+Take a look in the `tutorial/` folder for example notebooks.
+
 > ⚠️⚠️⚠️ Warning: Images do not render correctly in notebooks opened in VSCode; open notebooks in Jupyter Lab. ⚠️⚠️⚠️
+
+### Interoperability with pygambit
+
+Check out the `pygambit` documentation which contains tutorials that use `draw_tree` to render game trees from `pygambit` game objects:
+- [Tutorial 2: Extensive-form games](https://gambitproject.readthedocs.io/en/latest/tutorials/02_extensive_form.html)
+- [Tutorial 3: Stripped-down poker](https://gambitproject.readthedocs.io/en/latest/tutorials/03_stripped_down_poker.html)
 
 ## Developer docs: Testing
 
