@@ -59,6 +59,9 @@ playercolors: List[str] = [
     "\\playersixcolor",
 ]
 
+# Add a global dictionary to track node-to-player mappings from isets
+node_to_iset_player: dict[str, int] = {}
+
 numepsilon: float = 1e-9  # checking for almost equality
 
 # Parameters for info set drawings
@@ -907,6 +910,44 @@ def cleannodeid(ns: str) -> str:
 # "payoffs" list of payoffs, comes last
 # "inner" boolean: inner node, draw disk/square
 
+def parse_isets_first(lines: List[str]) -> None:
+    """
+    Pre-parse all iset commands to build node-to-player mappings.
+
+    This function is called before processing level commands to ensure
+    nodes know their player assignment from information sets.
+
+    Args:
+        lines: All lines from the .ef file.
+    """
+    global node_to_iset_player
+    node_to_iset_player.clear()
+
+    for line in lines:
+        words = line.split()
+        if len(words) > 0 and words[0] == "iset":
+            p = -1
+            count = 1
+            nodes_in_iset = []
+
+            # Parse the iset command
+            while count < len(words):
+                if words[count] == "player":
+                    try:
+                        p = int(words[count + 1])
+                        count += 2
+                    except (ValueError, IndexError):
+                        count += 1
+                else:
+                    nodeid = cleannodeid(words[count])
+                    nodes_in_iset.append(nodeid)
+                    count += 1
+
+            # Map all nodes in this iset to the player
+            if p > 0:
+                for nodeid in nodes_in_iset:
+                    node_to_iset_player[nodeid] = p
+
 def level(words: List[str]) -> None:
     """
     Process a complete level command to create a game tree node.
@@ -972,10 +1013,14 @@ def level(words: List[str]) -> None:
         else:  # unknown keyword
             error("unknown keyword " + words[count])
             count += 1
+
+    # If no player explicitly assigned, check if this node is in an iset
+    if p < 0 and nodeid in node_to_iset_player:
+        p = node_to_iset_player[nodeid]
+
     # now line has been processed, update data from
     # nodeid, p, xs, fromn, move, lev
     # create x coordinate
-    # existsfrom = not (fromn == "") and (fromn in nodes)
     existsfrom = fromn in nodes
     xfrom = 0.0  # Initialize to avoid unbound variable warnings
     yfrom = 0.0  # Initialize to avoid unbound variable warnings
@@ -996,7 +1041,7 @@ def level(words: List[str]) -> None:
     # root node always printed
     nodes[nodeid]["inner"] = (pay == []) or (lev == 0)
 
-    # Draw the node immediately if it's an inner node
+    # Draw the node immediately if it's an inner node (now with correct player!)
     if nodes[nodeid]["inner"]:
         drawnode([xx, yy], p)
 
@@ -1066,10 +1111,10 @@ def level(words: List[str]) -> None:
 def isetgen(words: List[str]) -> None:
     """
     Process 'iset' command to generate information set visualization.
-    
+
     Creates TikZ code to draw information sets (connecting multiple nodes
     that belong to the same player and decision point).
-    
+
     Args:
         words: List of command words starting with 'iset'.
     """
@@ -1078,7 +1123,7 @@ def isetgen(words: List[str]) -> None:
     nodelist = []
     p = -1
     count = 1
-    where = 0 # where "player" was found
+    where = 0  # where "player" was found
     while count < len(words):
         if words[count] == "player":
             p, advance = player(words[count:])
@@ -1087,15 +1132,15 @@ def isetgen(words: List[str]) -> None:
         else:
             nodeid = cleannodeid(words[count])
             if nodeid not in nodes:
-                error(" ".join(words)+" :", stream0)
-                error("Node '"+nodeid+"' in iset not defined", stream0)
+                error(" ".join(words) + " :", stream0)
+                error("Node '" + nodeid + "' in iset not defined", stream0)
             else:
                 v = [nodes[nodeid]["x"], nodes[nodeid]["y"]]
                 nodelist.append(v)
             count += 1
     # generate and ship iset
     if len(nodelist) == 0:
-        error(" ".join(words)+" :", stream0)
+        error(" ".join(words) + " :", stream0)
         error("No valid nodes in iset", stream0)
         return
 
@@ -1120,7 +1165,7 @@ def isetgen(words: List[str]) -> None:
         if len(nodelist) == 1:
             n = nodelist[0]
             # tikz code
-            s = "\\draw "+ coord(n[0], n[1])
+            s = "\\draw " + coord(n[0], n[1])
             # player to the right of node (for later expansion)
             s += " node[right,xshift="
             s += spx + ",yshift=" + spy
@@ -1129,7 +1174,7 @@ def isetgen(words: List[str]) -> None:
             s += "] {\\"
             s += playertexname[p] + "} ;"
             outs(s)
-        else: # at least two nodes
+        else:  # at least two nodes
             if where > len(nodelist):  # "player" at end
                 where = int(len(nodelist) / 2) + 1
             if where < 2:
@@ -1234,20 +1279,20 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
 def ef_to_tex(ef_file: str, scale_factor: float = 0.8, show_grid: bool = False) -> str:
     """
     Convert an extensive form (.ef) file to TikZ code.
-    
+
     This function replicates the main processing logic but returns the TikZ code
     as a string instead of printing it to stdout.
-    
+
     Args:
         ef_file: Path to the .ef file to process.
         scale_factor: Scale factor for the diagram (default: 1.0).
         show_grid: Whether to show grid lines (default: False).
-        
+
     Returns:
         Complete TikZ code as a string.
     """
-    global scale, grid
-    
+    global scale, grid, node_to_iset_player
+
     # Save original state
     original_outstream = outstream.copy()
     original_stream0 = stream0.copy()
@@ -1256,31 +1301,36 @@ def ef_to_tex(ef_file: str, scale_factor: float = 0.8, show_grid: bool = False) 
     original_playerdefined = playerdefined.copy()
     original_scale = scale
     original_grid = grid
-    
+    original_node_to_iset_player = node_to_iset_player.copy()
+
     try:
         # Reset global state
         outstream.clear()
         stream0.clear()
         nodes.clear()
         xshifts.clear()
+        node_to_iset_player.clear()
         for i in range(len(playerdefined)):
             playerdefined[i] = False
-        
+
         # Set parameters
         scale = scale_factor
         grid = show_grid
-        
-        # Process the .ef file (same logic as main)
+
+        # Process the .ef file
         lines = readfile(ef_file)
 
+        # FIRST: Pre-parse all iset commands to build node-to-player mapping
+        parse_isets_first(lines)
+
         # begin tikz picture
-        outs("\\begin{tikzpicture}[scale="+str(scale), stream0)
+        outs("\\begin{tikzpicture}[scale=" + str(scale), stream0)
         ss = "  , StealthFill/.tip={Stealth[line width=.7pt"
-        outs(ss+",inset=0pt,length=13pt,angle'=30]}]", stream0)
+        outs(ss + ",inset=0pt,length=13pt,angle'=30]}]", stream0)
         ss = ""
         if not grid:
             ss = "% "
-        outs(ss+"\\draw [help lines, color=green] (-5,0) grid (5,-6);", stream0)
+        outs(ss + "\\draw [help lines, color=green] (-5,0) grid (5,-6);", stream0)
 
         # main loop
         for line in lines:
@@ -1293,14 +1343,14 @@ def ef_to_tex(ef_file: str, scale_factor: float = 0.8, show_grid: bool = False) 
                     level(words)
                 elif words[0] == "iset":
                     isetgen(words)
-        
+
         # end tikz picture - add to outstream so it comes after nodes
         outs("\\end{tikzpicture}", outstream)
-        
+
         # Combine all output into a single string
         all_lines = stream0 + outstream
         return "\n".join(all_lines)
-        
+
     finally:
         # Restore original state
         outstream.clear()
@@ -1311,6 +1361,8 @@ def ef_to_tex(ef_file: str, scale_factor: float = 0.8, show_grid: bool = False) 
         nodes.update(original_nodes)
         xshifts.clear()
         xshifts.update(original_xshifts)
+        node_to_iset_player.clear()
+        node_to_iset_player.update(original_node_to_iset_player)
         for i in range(len(playerdefined)):
             playerdefined[i] = original_playerdefined[i]
         scale = original_scale
