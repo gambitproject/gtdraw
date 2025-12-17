@@ -855,20 +855,6 @@ def drawnode(v: List[float], player: int = 1) -> str:
     outs(out)
     return out
 
-def drawnodes() -> None:
-    """
-    Draw all inner (non-leaf) nodes in the game tree.
-    
-    Iterates through all nodes and draws those marked as 'inner' nodes
-    using appropriate shapes based on player type.
-    """
-    for n in nodes:
-        if nodes[n]["inner"]:
-            v = [nodes[n]["x"], nodes[n]["y"]]
-            p = nodes[n]["player"] 
-            drawnode(v, p)
-    return
-
 def setnodeid(lev: float, s: str) -> str:
     """
     Create node identifier from level and name.
@@ -924,11 +910,11 @@ def cleannodeid(ns: str) -> str:
 def level(words: List[str]) -> None:
     """
     Process a complete level command to create a game tree node.
-    
+
     This is the main parsing function that handles the 'level' command and all
     its associated sub-commands (player, xshift, from, move, payoffs, arrow).
     Creates TikZ output for drawing the node and connecting lines.
-    
+
     Args:
         words: List of command words starting with 'level'.
     """
@@ -950,20 +936,20 @@ def level(words: List[str]) -> None:
         return
     nodeid = setnodeid(lev, s)
     count = 4
-    p = -1     # no player yet
-    xs = 0     # no xshift yet
-    factor = 1 # used for positioning move
-    fromn = "" # no father yet
-    mov = "" # no move yet
-    movpos = "" # no move position (l/r) yet
-    convex = -1 # no move position along line yet
+    p = -1  # no player yet
+    xs = 0  # no xshift yet
+    factor = 1  # used for positioning move
+    fromn = ""  # no father yet
+    mov = ""  # no move yet
+    movpos = ""  # no move position (l/r) yet
+    convex = -1  # no move position along line yet
     pay = []
     arrowposlist = []
     arrowcolorlist = []
     # process remaining words:
     # xshift, from, player, move, payoffs, arrow
     while count < len(words):
-        if words[count] == "player": # set player
+        if words[count] == "player":  # set player
             p, advance = player(words[count:])
             count += advance
         elif words[count] == "xshift":
@@ -980,27 +966,27 @@ def level(words: List[str]) -> None:
             arrowposlist.append(arrowpos)
             arrowcolorlist.append(arrowcolor)
             count += advance
-        elif words[count] == "payoffs": # automatically last
+        elif words[count] == "payoffs":  # automatically last
             pay = payoffs(words[count:])
             break
-        else: # unknown keyword 
-            error ("unknown keyword "+words[count])
+        else:  # unknown keyword
+            error("unknown keyword " + words[count])
             count += 1
     # now line has been processed, update data from
     # nodeid, p, xs, fromn, move, lev
     # create x coordinate
     # existsfrom = not (fromn == "") and (fromn in nodes)
-    existsfrom = (fromn in nodes)
+    existsfrom = fromn in nodes
     xfrom = 0.0  # Initialize to avoid unbound variable warnings
     yfrom = 0.0  # Initialize to avoid unbound variable warnings
-    if existsfrom: # father exists
+    if existsfrom:  # father exists
         xfrom = nodes[fromn]["x"]
         yfrom = nodes[fromn]["y"]
         xx = xfrom + xs
-    else: # no father
+    else:  # no father
         xx = xs
         if fromn:
-            error("No 'from' node, move '" + mov +"' ignored")
+            error("No 'from' node, move '" + mov + "' ignored")
     # direction down (for later expansion)
     yy = -lev
     nodes[nodeid] = {"x": xx, "y": yy, "player": p}
@@ -1009,53 +995,65 @@ def level(words: List[str]) -> None:
     nodes[nodeid]["from"] = fromn
     # root node always printed
     nodes[nodeid]["inner"] = (pay == []) or (lev == 0)
+
+    # Draw the node immediately if it's an inner node
+    if nodes[nodeid]["inner"]:
+        drawnode([xx, yy], p)
+
+    # Get player color for styling text labels
+    player_color = get_player_color(p) if p > 0 else ""
+    color_style = f"color={player_color}" if player_color else ""
+
     # tikz code
-    s = "\\draw ["+thickn+"] "+ coord(xx, yy)
-    if p >= 0 and playername[p]: # nonempty player name
+    s = "\\draw [" + thickn + "] " + coord(xx, yy)
+    if p >= 0 and playername[p]:  # nonempty player name
         # default: player to the right of node. perhaps left?
         if existsfrom and xs < 0:
             s += " node[left,xshift=-"
         else:
             s += " node[right,xshift="
-        s += spx + ",yshift=" + spy + "] {\\"
+        s += spx + ",yshift=" + spy
+        if color_style:
+            s += "," + color_style
+        s += "] {\\"
         s += playertexname[p] + "\\strut}"
     outs(s)
-    outlist(pay) # possibly empty
-    if existsfrom: # draw line to father
-        outs("   -- "+coord(xfrom, yfrom) + ";")
+    outlist(pay)  # possibly empty
+    if existsfrom:  # draw line to father
+        outs("   -- " + coord(xfrom, yfrom) + ";")
         # annotate moves above
         if convex < 0:
-            convex = 0.5/factor
-        xmove = xx * convex + xfrom * (1-convex)
-        ymove = yy * convex + yfrom * (1-convex)
-        s = "\\draw "+ coord(xmove, ymove)
+            convex = 0.5 / factor
+        xmove = xx * convex + xfrom * (1 - convex)
+        ymove = yy * convex + yfrom * (1 - convex)
+        s = "\\draw " + coord(xmove, ymove)
         # decide if left or right
         if movpos == "r":
             side = "right,xshift=0.0cm"
         elif movpos == "l":
             side = "left,xshift=0.0cm"
-        elif xs > 0: # default
+        elif xs > 0:  # default
             side = "right"
         else:
             side = "left"
-        s += " node["+side+",yshift="
+        s += " node[" + side + ",yshift="
         if "frac" in mov:
             s += yfracup
-        else:   
+        else:
             s += yup
-        s += "] {$"+mov+"$\\strut};"
+        s += "] {$" + mov + "$\\strut};"
         outs(s)
         # output arrows
         while arrowposlist:
             arrowpos = arrowposlist.pop(0)
             arrowcolor = arrowcolorlist.pop(0)
-            xtip  = xfrom * (1 - arrowpos) + xx * arrowpos
-            ytip  = yfrom * (1 - arrowpos) + yy * arrowpos
-            xback = xfrom * (1.01 - arrowpos) + xx * (arrowpos-0.01)
-            yback = yfrom * (1.01 - arrowpos) + yy * (arrowpos-0.01)
+            xtip = xfrom * (1 - arrowpos) + xx * arrowpos
+            ytip = yfrom * (1 - arrowpos) + yy * arrowpos
+            xback = xfrom * (1.01 - arrowpos) + xx * (arrowpos - 0.01)
+            yback = yfrom * (1.01 - arrowpos) + yy * (arrowpos - 0.01)
             if not arrowcolor == "":
-                arrowcolor = "[fill="+arrowcolor+"]"
-            s = "\\draw [-{StealthFill" + arrowcolor+"}]"
+                arrowcolor = "[fill=" + arrowcolor + "]"
+            s = "\\draw [-{StealthFill" + arrowcolor + "}]"
             s += coord(xback, yback)
             s += " -- " + coord(xtip, ytip) + ";"
             outs(s)
@@ -1295,9 +1293,6 @@ def ef_to_tex(ef_file: str, scale_factor: float = 0.8, show_grid: bool = False) 
                     level(words)
                 elif words[0] == "iset":
                     isetgen(words)
-
-        # Output nodes
-        drawnodes()
         
         # end tikz picture - add to outstream so it comes after nodes
         outs("\\end{tikzpicture}", outstream)
