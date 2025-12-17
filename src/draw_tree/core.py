@@ -1015,7 +1015,8 @@ def level(words: List[str]) -> None:
             count += 1
 
     # If no player explicitly assigned, check if this node is in an iset
-    if p < 0 and nodeid in node_to_iset_player:
+    node_in_iset = nodeid in node_to_iset_player
+    if p < 0 and node_in_iset:
         p = node_to_iset_player[nodeid]
 
     # now line has been processed, update data from
@@ -1051,7 +1052,11 @@ def level(words: List[str]) -> None:
 
     # tikz code
     s = "\\draw [" + thickn + "] " + coord(xx, yy)
-    if p >= 0 and playername[p]:  # nonempty player name
+    # Only show player label if node is NOT in an information set
+    # (information sets display their own player labels)
+    if (
+        p >= 0 and playername[p] and not node_in_iset
+    ):  # nonempty player name and not in iset
         # default: player to the right of node. perhaps left?
         if existsfrom and xs < 0:
             s += " node[left,xshift=-"
