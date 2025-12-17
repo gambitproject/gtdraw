@@ -23,6 +23,7 @@ def gambit_layout_to_ef(
     sublevel_multiplier: int = 2,
     xshift_multiplier: int = 2,
     hide_action_labels: bool = False,
+    shared_terminal_depth: bool = False,
 ) -> str:
     """Convert an extensive form Gambit game to the `.ef` format
     using the layout tree defined by pygambit.layout_tree(game.)
@@ -34,6 +35,7 @@ def gambit_layout_to_ef(
         sublevel_multiplier: Multiplier for sublevels in the layout.
         xshift_multiplier: Multiplier for xshift values in the layout.
         hide_action_labels: Whether to hide action labels in the output.
+        shared_terminal_depth: Whether to force all terminal nodes to the same depth.
 
     Returns:
         The filename of the generated `.ef` file.
@@ -56,8 +58,11 @@ def gambit_layout_to_ef(
 
     # Group nodes by their infosets
     # Also collect parent node levels for level determination
+    # Also collect highest level for level determination
     infoset_groups = {}
     gbt_parent_levels = {}
+    gbt_highest_level = 0
+    gbt_highest_sublevel = 0
     for node, node_coords in layout.items():
         if node.infoset:
             if node.infoset not in infoset_groups:
@@ -67,6 +72,9 @@ def gambit_layout_to_ef(
         if not node == game.root:
             parent_coords = layout[node.parent]
             gbt_parent_levels[node] = (parent_coords.level, parent_coords.sublevel)
+        # Update highest level
+        gbt_highest_level = max(node_coords.level, gbt_highest_level)
+        gbt_highest_sublevel = max(node_coords.sublevel, gbt_highest_sublevel)
 
     # For each node, determine its level and node count within that level
     # Also collect offsets for normalisation
@@ -81,7 +89,10 @@ def gambit_layout_to_ef(
         if node.infoset in infoset_groups:
             if len(infoset_groups[node.infoset]) == 1:
                 gbt_sublevel = 0
-        level = determine_node_level(node_coords.level, gbt_sublevel, level_multiplier, sublevel_multiplier)
+        if node.is_terminal and shared_terminal_depth:
+            level = determine_node_level(gbt_highest_level, gbt_highest_sublevel, level_multiplier, sublevel_multiplier)
+        else:
+            level = determine_node_level(node_coords.level, gbt_sublevel, level_multiplier, sublevel_multiplier)
 
         # Ensure child nodes have levels greater than their parents
         if not node == game.root:

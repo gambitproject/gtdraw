@@ -1264,6 +1264,7 @@ def generate_tikz(
     sublevel_spacing: int = 2,
     width_spacing: int = 2,
     hide_action_labels: bool = False,
+    shared_terminal_depth: bool = False,
     show_grid: bool = False,
 ) -> str:
     """
@@ -1277,6 +1278,7 @@ def generate_tikz(
         sublevel_spacing: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
         width_spacing: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
         hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
+        shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
         show_grid: Whether to show grid lines.
 
     Returns:
@@ -1302,6 +1304,7 @@ def generate_tikz(
             sublevel_multiplier=sublevel_spacing,
             xshift_multiplier=width_spacing,
             hide_action_labels=hide_action_labels,
+            shared_terminal_depth=shared_terminal_depth,
         )
 
     # Step 1: Generate the tikzpicture content using ef_to_tex logic
@@ -1363,6 +1366,7 @@ def draw_tree(
     sublevel_spacing: int = 2,
     width_spacing: int = 2,
     hide_action_labels: bool = False,
+    shared_terminal_depth: bool = False,
     show_grid: bool = False,
 ) -> Optional[str]:
     """
@@ -1376,6 +1380,7 @@ def draw_tree(
         sublevel_spacing: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
         width_spacing: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
         hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
+        shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
         show_grid: Whether to show grid lines.
 
     Returns:
@@ -1404,6 +1409,7 @@ def draw_tree(
             sublevel_spacing=sublevel_spacing,
             width_spacing=width_spacing,
             show_grid=show_grid,
+            shared_terminal_depth=shared_terminal_depth,
             hide_action_labels=hide_action_labels,
         )
         return ip.run_cell_magic("tikz", "", tikz_code)
