@@ -1050,8 +1050,19 @@ def level(words: List[str]) -> None:
     player_color = get_player_color(p) if p > 0 else ""
     color_style = f"color={player_color}" if player_color else ""
 
-    # tikz code
-    s = "\\draw [" + thickn + "] " + coord(xx, yy)
+    # For edges, use the PARENT node's color, not the current node's color
+    edge_color_style = ""
+    if existsfrom and fromn in nodes:
+        parent_player = nodes[fromn]["player"]
+        if parent_player > 0:
+            parent_color = get_player_color(parent_player)
+            edge_color_style = f"color={parent_color}"
+
+    # tikz code - add color to the draw command for edges based on parent
+    s = "\\draw [" + thickn
+    if edge_color_style:
+        s += "," + edge_color_style
+    s += "] " + coord(xx, yy)
     # Only show player label if node is NOT in an information set
     # (information sets display their own player labels)
     if (
