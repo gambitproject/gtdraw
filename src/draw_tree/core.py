@@ -49,6 +49,16 @@ sqwidth: str = "\\sqwidth"  # 1.6 mm % node diameter disks
 thickn: str = "line width=\\treethickn"  # {1pt} % line thickness
 chancecolor: str = "\\chancecolor"  # gray color of chance node
 
+# Player colors - up to 6 players
+playercolors: List[str] = [
+    "\\playeronecolor",
+    "\\playertwocolor",
+    "\\playerthreecolor",
+    "\\playerfourcolor",
+    "\\playerfivecolor",
+    "\\playersixcolor",
+]
+
 numepsilon: float = 1e-9  # checking for almost equality
 
 # Parameters for info set drawings
@@ -787,6 +797,39 @@ def payoffs(words: List[str]) -> List[str]:
     #     print s
     # quit()
 
+def get_player_color(player: int) -> str:
+    """
+    Get the TeX color macro name for a given player number.
+
+    Args:
+        player: Player number (1-6 for regular players).
+
+    Returns:
+        TeX color macro name for the player, or "black" as fallback.
+    """
+    # Color mapping for up to 6 players
+    color_map = {
+        1: "\\playeronecolor",
+        2: "\\playertwocolor",
+        3: "\\playerthreecolor",
+        4: "\\playerfourcolor",
+        5: "\\playerfivecolor",
+        6: "\\playersixcolor",
+    }
+
+    return color_map.get(player, "black")
+
+def color_definitions() -> list[str]:
+    return [
+        "\\newcommand\\chancecolor{red}",
+        "\\newcommand\\playeronecolor{blue}",
+        "\\newcommand\\playertwocolor{green}",
+        "\\newcommand\\playerthreecolor{orange}",
+        "\\newcommand\\playerfourcolor{purple}",
+        "\\newcommand\\playerfivecolor{cyan}",
+        "\\newcommand\\playersixcolor{magenta}",
+    ]
+
 def drawnode(v: List[float], player: int = 1) -> str:
     """
     Generate TikZ code to draw a game tree node.
@@ -806,7 +849,8 @@ def drawnode(v: List[float], player: int = 1) -> str:
         out += sqwidth + ",draw,fill="
         out += chancecolor + ",shape=rectangle] at "
     else:
-        out += ndiam + ", draw, fill, shape=circle] at "
+        fillcolor = get_player_color(player)
+        out += ndiam + f", draw, fill={fillcolor}, shape=circle] at "
     out += coord(v[0], v[1]) + " {};"
     outs(out)
     return out
@@ -1031,6 +1075,7 @@ def isetgen(words: List[str]) -> None:
     Args:
         words: List of command words starting with 'iset'.
     """
+    global isetparams
     assert words[0] == "iset"
     nodelist = []
     p = -1
@@ -1055,31 +1100,51 @@ def isetgen(words: List[str]) -> None:
         error(" ".join(words)+" :", stream0)
         error("No valid nodes in iset", stream0)
         return
-    outs( iset(nodelist, radius/scale), stream0)
+
+    # Set isetparams to use player color if player is defined
+    if p > 0:
+        player_color = get_player_color(p)
+        isetparams = f"color={player_color}"
+    else:
+        isetparams = ""
+
+    outs(iset(nodelist, radius / scale), stream0)
+
+    # Reset isetparams after drawing
+    isetparams = ""
+
     # locate and print player
     if p >= 0 and playername[p]:
+        # Get player color for styling
+        player_color = get_player_color(p) if p > 0 else ""
+        color_style = f"color={player_color}" if player_color else ""
+
         if len(nodelist) == 1:
             n = nodelist[0]
             # tikz code
             s = "\\draw "+ coord(n[0], n[1])
             # player to the right of node (for later expansion)
             s += " node[right,xshift="
-            s += spx + ",yshift=" + spy + "] {\\"
-            # s += playertexname[p] + "\strut} ;"
+            s += spx + ",yshift=" + spy
+            if color_style:
+                s += "," + color_style
+            s += "] {\\"
             s += playertexname[p] + "} ;"
             outs(s)
         else: # at least two nodes
-            if where > len(nodelist): # "player" at end
-                where = int(len(nodelist)/2) + 1
+            if where > len(nodelist):  # "player" at end
+                where = int(len(nodelist) / 2) + 1
             if where < 2:
                 where = 2
-            n1 = nodelist[where-2]
-            n2 = nodelist[where-1]
+            n1 = nodelist[where - 2]
+            n2 = nodelist[where - 1]
             # tikz code
             s = "\\draw "
-            s += coord((n1[0]+n2[0])/2, (n1[1]+n2[1])/2)
-            # s += " node[xshift=0.0cm] {\\" + playertexname[p] + "\strut} ;"
-            s += " node[xshift=0.0cm] {\\" + playertexname[p] + "} ;"
+            s += coord((n1[0] + n2[0]) / 2, (n1[1] + n2[1]) / 2)
+            s += " node[xshift=0.0cm"
+            if color_style:
+                s += "," + color_style
+            s += "] {\\" + playertexname[p] + "} ;"
             outs(s)
     return
 
@@ -1312,10 +1377,9 @@ def generate_tikz(
     
     # Step 2: Define built-in macro definitions (from macros-drawtree.tex)
     macro_definitions = [
-        "\\newcommand\\chancecolor{red}",
         "\\newdimen\\ndiam",
         "\\ndiam1.5mm",
-        "\\newdimen\\sqwidth", 
+        "\\newdimen\\sqwidth",
         "\\sqwidth1.6mm",
         "\\newdimen\\spx",
         "\\spx.7mm",
@@ -1328,8 +1392,10 @@ def generate_tikz(
         "\\newdimen\\paydown",
         "\\paydown2.5ex",
         "\\newdimen\\treethickn",
-        "\\treethickn1pt"
+        "\\treethickn1pt",
     ]
+    # Step 2a: Define player color macros
+    macro_definitions.extend(color_definitions())
 
     # Step 3: Combine everything into complete TikZ code
     tikz_code = """% TikZ code with built-in styling for game trees
