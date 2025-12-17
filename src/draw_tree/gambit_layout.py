@@ -140,7 +140,13 @@ def gambit_layout_to_ef(
             # Add probability if the parent is a chance player
             if node.parent.player.is_chance:
                 prob = str(node.prior_action.prob).split("/")
-                ef += f"~(\\frac{{{prob[0]}}}{{{prob[1]}}})"
+                if len(prob) == 2:
+                    ef += f"~(\\frac{{{prob[0]}}}{{{prob[1]}}})"
+                elif len(prob) == 1:
+                    ef += f"~{prob[0]}"
+                else:
+                    # Throw error for unexpected probability format
+                    raise ValueError(f"Unexpected probability format: {node.prior_action.prob}")
             ef += " "
         
         # Add payoffs to terminal nodes, if applicable
