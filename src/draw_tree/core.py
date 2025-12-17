@@ -1263,6 +1263,7 @@ def generate_tikz(
     level_spacing: int = 4,
     sublevel_spacing: int = 2,
     width_spacing: int = 2,
+    hide_action_labels: bool = False,
     show_grid: bool = False,
 ) -> str:
     """
@@ -1275,6 +1276,7 @@ def generate_tikz(
         level_spacing: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
         sublevel_spacing: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
         width_spacing: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
         show_grid: Whether to show grid lines.
 
     Returns:
@@ -1298,7 +1300,8 @@ def generate_tikz(
             save_to=save_to,
             level_multiplier=level_spacing,
             sublevel_multiplier=sublevel_spacing,
-            xshift_multiplier=width_spacing
+            xshift_multiplier=width_spacing,
+            hide_action_labels=hide_action_labels,
         )
 
     # Step 1: Generate the tikzpicture content using ef_to_tex logic
@@ -1359,6 +1362,7 @@ def draw_tree(
     level_spacing: int = 4,
     sublevel_spacing: int = 2,
     width_spacing: int = 2,
+    hide_action_labels: bool = False,
     show_grid: bool = False,
 ) -> Optional[str]:
     """
@@ -1371,6 +1375,7 @@ def draw_tree(
         level_spacing: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
         sublevel_spacing: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
         width_spacing: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
         show_grid: Whether to show grid lines.
 
     Returns:
@@ -1398,7 +1403,8 @@ def draw_tree(
             level_spacing=level_spacing,
             sublevel_spacing=sublevel_spacing,
             width_spacing=width_spacing,
-            show_grid=show_grid
+            show_grid=show_grid,
+            hide_action_labels=hide_action_labels,
         )
         return ip.run_cell_magic("tikz", "", tikz_code)
     else:

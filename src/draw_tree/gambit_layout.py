@@ -20,7 +20,8 @@ def gambit_layout_to_ef(
     save_to: Optional[str] = None,
     level_multiplier: int = 4,
     sublevel_multiplier: int = 2,
-    xshift_multiplier: int = 2
+    xshift_multiplier: int = 2,
+    hide_action_labels: bool = False,
 ) -> str:
     """Convert an extensive form Gambit game to the `.ef` format
     using the layout tree defined by pygambit.layout_tree(game.)
@@ -28,6 +29,10 @@ def gambit_layout_to_ef(
     Args:
         game: A pygambit.gambit.Game object representing the game.
         save_to: Optional path to save the generated `.ef` file.
+        level_multiplier: Multiplier for levels in the layout.
+        sublevel_multiplier: Multiplier for sublevels in the layout.
+        xshift_multiplier: Multiplier for xshift values in the layout.
+        hide_action_labels: Whether to hide action labels in the output.
 
     Returns:
         The filename of the generated `.ef` file.
@@ -134,8 +139,9 @@ def gambit_layout_to_ef(
         if node.parent:
             parent_level, parent_nodecount = node_levels[node.parent]
             ef += f"from {parent_level},{parent_nodecount} "
-            prior_action_label = node.prior_action.label.replace(" ", "~")
-            ef += f"move {prior_action_label}"
+            if not hide_action_labels:
+                prior_action_label = node.prior_action.label.replace(" ", "~")
+                ef += f"move {prior_action_label}"
 
             # Add probability if the parent is a chance player
             if node.parent.player.is_chance:
