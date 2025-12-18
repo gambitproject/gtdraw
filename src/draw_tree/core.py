@@ -812,6 +812,7 @@ def get_player_color(player: int) -> str:
     """
     # Color mapping for up to 6 players
     color_map = {
+        0: "\\chancecolor",
         1: "\\playeronecolor",
         2: "\\playertwocolor",
         3: "\\playerthreecolor",
@@ -1054,9 +1055,8 @@ def level(words: List[str]) -> None:
     edge_color_style = ""
     if existsfrom and fromn in nodes:
         parent_player = nodes[fromn]["player"]
-        if parent_player > 0:
-            parent_color = get_player_color(parent_player)
-            edge_color_style = f"color={parent_color}"
+        parent_color = get_player_color(parent_player)
+        edge_color_style = f"color={parent_color}"
 
     # tikz code - add color to the draw command for edges based on parent
     s = "\\draw [" + thickn
