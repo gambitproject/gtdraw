@@ -986,9 +986,17 @@ def generate_legend(player_list: List[int], color_scheme: str = "gambit") -> str
     if not player_list or color_scheme == "default":
         return ""
 
-    legend_code = "\n% Player color legend\n"
-    legend_code += "\\begin{scope}[shift={(-6,0)}]\n"  # Position legend to the left
+    # Calculate x and y coordinates for legend placement
+    min_x = 0
+    max_y = 0
+    if nodes:
+        min_x = min(nodes[nodeid]["x"] for nodeid in nodes)
+        max_y = max(nodes[nodeid]["y"] for nodeid in nodes)
 
+    # Position legend in top left corner
+    legend_code = "\n% Player color legend\n"
+    x_offset = min_x - 1.5
+    legend_code += f"\\begin{{scope}}[shift={{({x_offset},{max_y})}}]\n"
     # Add each player with their color (no title)
     y_offset = 0
     for player in sorted(player_list):
