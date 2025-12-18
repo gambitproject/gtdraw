@@ -972,13 +972,16 @@ def parse_isets_first(lines: List[str]) -> None:
                 for nodeid in nodes_in_iset:
                     node_to_iset_player[nodeid] = p
 
-def generate_legend(player_list: List[int], color_scheme: str = "gambit") -> str:
+def generate_legend(
+    player_list: List[int], color_scheme: str = "gambit", scale_factor: float = 1.0
+) -> str:
     """
     Generate TikZ code for a color legend showing player colors.
 
     Args:
         player_list: List of player numbers that appear in the game.
         color_scheme: Color scheme being used.
+        scale_factor: The scale factor applied to the main tree (used to adjust spacing).
 
     Returns:
         TikZ code string for the legend.
@@ -996,9 +999,15 @@ def generate_legend(player_list: List[int], color_scheme: str = "gambit") -> str
     # Position legend in top left corner
     legend_code = "\n% Player color legend\n"
     x_offset = min_x - 1.5
-    legend_code += f"\\begin{{scope}}[shift={{({x_offset},{max_y})}}]\n"
+    legend_code += f"\\begin{{scope}}[scale=1,shift={{({x_offset},{max_y})}}]\n"
+
     # Add each player with their color (no title)
+    # Adjust vertical spacing to compensate for the tree's scale factor
+    # When tree is scaled down, we need more space in absolute coordinates
+    base_spacing = 0.5
+    y_spacing = base_spacing / scale_factor
     y_offset = 0
+
     for player in sorted(player_list):
         if player < 0:
             continue
@@ -1017,7 +1026,7 @@ def generate_legend(player_list: List[int], color_scheme: str = "gambit") -> str
         # Add player label
         legend_code += f"\\node[anchor=west] at (0.3,{y_offset}) {{{player_name}}};\n"
 
-        y_offset -= 0.5
+        y_offset -= y_spacing
 
     legend_code += "\\end{scope}\n"
 
@@ -1454,7 +1463,7 @@ def ef_to_tex(
                 if p >= 0:
                     player_set.add(p)
 
-            legend_code = generate_legend(list(player_set), color_scheme)
+            legend_code = generate_legend(list(player_set), color_scheme, scale_factor)
             if legend_code:
                 outs(legend_code, outstream)
 
