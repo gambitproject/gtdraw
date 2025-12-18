@@ -1048,8 +1048,8 @@ def level(words: List[str]) -> None:
         drawnode([xx, yy], p)
 
     # Get player color for styling text labels
-    player_color = get_player_color(p) if p > 0 else ""
-    color_style = f"color={player_color}" if player_color else ""
+    player_color = get_player_color(p)
+    color_style = f"color={player_color}"
 
     # For edges, use the PARENT node's color, not the current node's color
     edge_color_style = ""
