@@ -850,11 +850,11 @@ def drawnode(v: List[float], player: int = 1) -> str:
     # tikz code
     out = "\\node[inner sep=0pt,minimum size="
     if player == 0:
-        out += sqwidth + ",draw,fill="
+        out += sqwidth + ",draw=" + chancecolor + ",fill="
         out += chancecolor + ",shape=rectangle] at "
     else:
         fillcolor = get_player_color(player)
-        out += ndiam + f", draw, fill={fillcolor}, shape=circle] at "
+        out += ndiam + f", draw={fillcolor}, fill={fillcolor}, shape=circle] at "
     out += coord(v[0], v[1]) + " {};"
     outs(out)
     return out
