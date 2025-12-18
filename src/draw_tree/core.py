@@ -1102,6 +1102,9 @@ def level(words: List[str]) -> None:
             s += yfracup
         else:
             s += yup
+        # Add edge color to action label
+        if edge_color_style:
+            s += "," + edge_color_style
         s += "] {$" + mov + "$\\strut};"
         outs(s)
         # output arrows
