@@ -861,6 +861,25 @@ def drawnode(v: List[float], player: int = 1, color_scheme: str = "default") -> 
     outs(out)
     return out
 
+def drawnodes(color_scheme: str = "default") -> None:
+    """
+    Draw all inner (non-leaf) nodes in the game tree.
+
+    Iterates through all nodes and draws those marked as 'inner' nodes
+    using appropriate shapes based on player type.
+
+    This function is called after all edges have been drawn to ensure
+    nodes appear on top of edges in the final rendering.
+
+    Args:
+        color_scheme: Color scheme for player nodes.
+    """
+    for nodeid in nodes:
+        if nodes[nodeid]["inner"]:
+            v = [nodes[nodeid]["x"], nodes[nodeid]["y"]]
+            p = nodes[nodeid]["player"]
+            drawnode(v, p, color_scheme)
+
 def setnodeid(lev: float, s: str) -> str:
     """
     Create node identifier from level and name.
@@ -1045,10 +1064,6 @@ def level(words: List[str], color_scheme: str = "default") -> None:
     nodes[nodeid]["from"] = fromn
     # root node always printed
     nodes[nodeid]["inner"] = (pay == []) or (lev == 0)
-
-    # Draw the node immediately if it's an inner node (now with correct player!)
-    if nodes[nodeid]["inner"]:
-        drawnode([xx, yy], p, color_scheme)
 
     # Get player color for styling text labels
     player_color = get_player_color(p, color_scheme)
@@ -1300,11 +1315,11 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
     return (output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi)
 
 def ef_to_tex(
-        ef_file: str,
-        scale_factor: float = 0.8,
-        show_grid: bool = False,
-        color_scheme: str = "default",
-        ) -> str:
+    ef_file: str,
+    scale_factor: float = 0.8,
+    show_grid: bool = False,
+    color_scheme: str = "default",
+) -> str:
     """
     Convert an extensive form (.ef) file to TikZ code.
 
@@ -1315,6 +1330,7 @@ def ef_to_tex(
         ef_file: Path to the .ef file to process.
         scale_factor: Scale factor for the diagram (default: 1.0).
         show_grid: Whether to show grid lines (default: False).
+        color_scheme: Color scheme for player nodes.
 
     Returns:
         Complete TikZ code as a string.
@@ -1360,7 +1376,7 @@ def ef_to_tex(
             ss = "% "
         outs(ss + "\\draw [help lines, color=green] (-5,0) grid (5,-6);", stream0)
 
-        # main loop
+        # main loop - draw edges and information sets first
         for line in lines:
             comment(line)
             words = line.split()
@@ -1371,6 +1387,9 @@ def ef_to_tex(
                     level(words, color_scheme)
                 elif words[0] == "iset":
                     isetgen(words, color_scheme)
+
+        # Draw all nodes on top of edges
+        drawnodes(color_scheme)
 
         # end tikz picture - add to outstream so it comes after nodes
         outs("\\end{tikzpicture}", outstream)
