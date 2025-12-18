@@ -1428,6 +1428,7 @@ def generate_tikz(
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
     color_scheme: str = "default",
+    edge_thickness: float = 1.0,
 ) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
@@ -1443,6 +1444,7 @@ def generate_tikz(
         shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
         show_grid: Whether to show grid lines.
         color_scheme: Color scheme for player nodes.
+        edge_thickness: Thickness of edges.
 
     Returns:
         Complete TikZ code ready for use in Jupyter notebooks or LaTeX documents.
@@ -1490,7 +1492,7 @@ def generate_tikz(
         "\\newdimen\\paydown",
         "\\paydown2.5ex",
         "\\newdimen\\treethickn",
-        "\\treethickn1pt",
+        f"\\treethickn{edge_thickness}pt",
     ]
     # Step 2a: Define player color macros
     macro_definitions.extend(color_definitions())
@@ -1533,6 +1535,7 @@ def draw_tree(
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
     color_scheme: str = "default",
+    edge_thickness: float = 1.0,
 ) -> Optional[str]:
     """
     Generate TikZ code and display in Jupyter notebooks.
@@ -1548,6 +1551,7 @@ def draw_tree(
         shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
         show_grid: Whether to show grid lines.
         color_scheme: Color scheme for player nodes.
+        edge_thickness: Thickness of edges.
 
     Returns:
         The result of the Jupyter cell magic execution, or the TikZ code string
@@ -1578,6 +1582,7 @@ def draw_tree(
             shared_terminal_depth=shared_terminal_depth,
             hide_action_labels=hide_action_labels,
             color_scheme=color_scheme,
+            edge_thickness=edge_thickness,
         )
         return ip.run_cell_magic("tikz", "", tikz_code)
     else:
