@@ -1032,7 +1032,11 @@ def generate_legend(
 
     return legend_code
 
-def level(words: List[str], color_scheme: str = "default") -> None:
+def level(
+        words: List[str],
+        color_scheme: str = "default",
+        action_label_position: float = 0.5,
+        ) -> None:
     """
     Process a complete level command to create a game tree node.
 
@@ -1165,7 +1169,9 @@ def level(words: List[str], color_scheme: str = "default") -> None:
         outs("   -- " + coord(xfrom, yfrom) + ";")
         # annotate moves above
         if convex < 0:
-            convex = 0.5 / factor
+            convex = (
+                action_label_position / factor
+            )
         xmove = xx * convex + xfrom * (1 - convex)
         ymove = yy * convex + yfrom * (1 - convex)
         s = "\\draw " + coord(xmove, ymove)
@@ -1382,6 +1388,7 @@ def ef_to_tex(
     scale_factor: float = 0.8,
     show_grid: bool = False,
     color_scheme: str = "default",
+    action_label_position: float = 0.5,
 ) -> str:
     """
     Convert an extensive form (.ef) file to TikZ code.
@@ -1394,6 +1401,7 @@ def ef_to_tex(
         scale_factor: Scale factor for the diagram (default: 1.0).
         show_grid: Whether to show grid lines (default: False).
         color_scheme: Color scheme for player nodes.
+        action_label_position: Position of action labels along edges.
 
     Returns:
         Complete TikZ code as a string.
@@ -1447,7 +1455,7 @@ def ef_to_tex(
                 if words[0] == "player":
                     player(words)
                 elif words[0] == "level":
-                    level(words, color_scheme)
+                    level(words, color_scheme, action_label_position)
                 elif words[0] == "iset":
                     isetgen(words, color_scheme)
 
@@ -1503,6 +1511,7 @@ def generate_tikz(
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
+    action_label_position: float = 0.5,
 ) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
@@ -1519,6 +1528,7 @@ def generate_tikz(
         show_grid: Whether to show grid lines.
         color_scheme: Color scheme for player nodes.
         edge_thickness: Thickness of edges.
+        action_label_position: Position of action labels along edges.
 
     Returns:
         Complete TikZ code ready for use in Jupyter notebooks or LaTeX documents.
@@ -1547,7 +1557,7 @@ def generate_tikz(
         )
 
     # Step 1: Generate the tikzpicture content using ef_to_tex logic
-    tikz_picture_content = ef_to_tex(ef_file, scale_factor, show_grid, color_scheme)
+    tikz_picture_content = ef_to_tex(ef_file, scale_factor, show_grid, color_scheme, action_label_position)
     
     # Step 2: Define built-in macro definitions (from macros-drawtree.tex)
     macro_definitions = [
@@ -1610,6 +1620,7 @@ def draw_tree(
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
+    action_label_position: float = 0.5,
 ) -> Optional[str]:
     """
     Generate TikZ code and display in Jupyter notebooks.
@@ -1626,6 +1637,7 @@ def draw_tree(
         show_grid: Whether to show grid lines.
         color_scheme: Color scheme for player nodes.
         edge_thickness: Thickness of edges.
+        action_label_position: Position of action labels along edges.
 
     Returns:
         The result of the Jupyter cell magic execution, or the TikZ code string
@@ -1657,6 +1669,7 @@ def draw_tree(
             hide_action_labels=hide_action_labels,
             color_scheme=color_scheme,
             edge_thickness=edge_thickness,
+            action_label_position=action_label_position,
         )
         return ip.run_cell_magic("tikz", "", tikz_code)
     else:
