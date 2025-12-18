@@ -47,7 +47,9 @@ spy: str = "\\spy"  # .5 mm % single player node yshift
 ndiam: str = "\\ndiam"  # 1.5mm % node diameter disks
 sqwidth: str = "\\sqwidth"  # 1.6 mm % node diameter disks
 thickn: str = "line width=\\treethickn"  # {1pt} % line thickness
-chancecolor: str = "\\chancecolor"  # gray color of chance node
+
+# Add a global dictionary to track node-to-player mappings from isets
+node_to_iset_player: dict[str, int] = {}
 
 numepsilon: float = 1e-9  # checking for almost equality
 
@@ -69,6 +71,46 @@ allowcomments: bool = True
 outstream: List[str] = []
 stream0: List[str] = []
 
+
+def get_player_color(player: int, color_scheme: str = "default") -> str:
+    """
+    Get the TeX color macro name for a given player number.
+
+    Args:
+        player: Player number (1-6 for regular players).
+        color_scheme: Optional color scheme name.
+
+    Returns:
+        TeX color macro name for the player, or "black" as fallback.
+    """
+    if color_scheme == "gambit":
+        # Color mapping for up to 6 players
+        color_map = {
+            0: "\\chancecolor",
+            1: "\\playeronecolor",
+            2: "\\playertwocolor",
+            3: "\\playerthreecolor",
+            4: "\\playerfourcolor",
+            5: "\\playerfivecolor",
+            6: "\\playersixcolor",
+        }
+
+        return color_map.get(player, "black")
+    return "black"
+
+
+def color_definitions() -> list[str]:
+    return [
+        "\\definecolor{chancecolorrgb}{RGB}{117,145,56}",
+        "\\definecolor{gambitredrgb}{RGB}{234,51,35}",
+        "\\newcommand\\chancecolor{chancecolorrgb}",
+        "\\newcommand\\playeronecolor{gambitredrgb}",
+        "\\newcommand\\playertwocolor{blue}",
+        "\\newcommand\\playerthreecolor{orange}",
+        "\\newcommand\\playerfourcolor{purple}",
+        "\\newcommand\\playerfivecolor{cyan}",
+        "\\newcommand\\playersixcolor{magenta}",
+    ]
 
 def outall(stream: Optional[List[str]] = None) -> None:
     """
@@ -787,7 +829,7 @@ def payoffs(words: List[str]) -> List[str]:
     #     print s
     # quit()
 
-def drawnode(v: List[float], player: int = 1) -> str:
+def drawnode(v: List[float], player: int = 1, color_scheme: str = "default") -> str:
     """
     Generate TikZ code to draw a game tree node.
     
@@ -796,34 +838,49 @@ def drawnode(v: List[float], player: int = 1) -> str:
     Args:
         v: Node position as [x, y] coordinates.
         player: Player number (0 for chance node, >0 for player node).
+        color_scheme: Color scheme for player nodes.
         
     Returns:
         TikZ node command string.
     """
     # tikz code
     out = "\\node[inner sep=0pt,minimum size="
+    fillcolor = get_player_color(player, color_scheme)
+
+    # chance nodes
     if player == 0:
-        out += sqwidth + ",draw,fill="
-        out += chancecolor + ",shape=rectangle] at "
+        if color_scheme == "default":
+            out += sqwidth + ",draw=black,fill="
+            out += "red,shape=rectangle] at "
+        else:
+            out += sqwidth + ",draw=" + fillcolor + ",fill="
+            out += fillcolor + ",shape=rectangle] at "
+    # player nodes
     else:
-        out += ndiam + ", draw, fill, shape=circle] at "
+        out += ndiam + f", draw={fillcolor}, fill="
+        out += fillcolor + ", shape=circle] at "
     out += coord(v[0], v[1]) + " {};"
     outs(out)
     return out
 
-def drawnodes() -> None:
+def drawnodes(color_scheme: str = "default") -> None:
     """
     Draw all inner (non-leaf) nodes in the game tree.
-    
+
     Iterates through all nodes and draws those marked as 'inner' nodes
     using appropriate shapes based on player type.
+
+    This function is called after all edges have been drawn to ensure
+    nodes appear on top of edges in the final rendering.
+
+    Args:
+        color_scheme: Color scheme for player nodes.
     """
-    for n in nodes:
-        if nodes[n]["inner"]:
-            v = [nodes[n]["x"], nodes[n]["y"]]
-            p = nodes[n]["player"] 
-            drawnode(v, p)
-    return
+    for nodeid in nodes:
+        if nodes[nodeid]["inner"]:
+            v = [nodes[nodeid]["x"], nodes[nodeid]["y"]]
+            p = nodes[nodeid]["player"]
+            drawnode(v, p, color_scheme)
 
 def setnodeid(lev: float, s: str) -> str:
     """
@@ -877,16 +934,119 @@ def cleannodeid(ns: str) -> str:
 # "payoffs" list of payoffs, comes last
 # "inner" boolean: inner node, draw disk/square
 
-def level(words: List[str]) -> None:
+def parse_isets_first(lines: List[str]) -> None:
+    """
+    Pre-parse all iset commands to build node-to-player mappings.
+
+    This function is called before processing level commands to ensure
+    nodes know their player assignment from information sets.
+
+    Args:
+        lines: All lines from the .ef file.
+    """
+    global node_to_iset_player
+    node_to_iset_player.clear()
+
+    for line in lines:
+        words = line.split()
+        if len(words) > 0 and words[0] == "iset":
+            p = -1
+            count = 1
+            nodes_in_iset = []
+
+            # Parse the iset command
+            while count < len(words):
+                if words[count] == "player":
+                    try:
+                        p = int(words[count + 1])
+                        count += 2
+                    except (ValueError, IndexError):
+                        count += 1
+                else:
+                    nodeid = cleannodeid(words[count])
+                    nodes_in_iset.append(nodeid)
+                    count += 1
+
+            # Map all nodes in this iset to the player
+            if p > 0:
+                for nodeid in nodes_in_iset:
+                    node_to_iset_player[nodeid] = p
+
+def generate_legend(
+    player_list: List[int], color_scheme: str = "gambit", scale_factor: float = 1.0
+) -> str:
+    """
+    Generate TikZ code for a color legend showing player colors.
+
+    Args:
+        player_list: List of player numbers that appear in the game.
+        color_scheme: Color scheme being used.
+        scale_factor: The scale factor applied to the main tree (used to adjust spacing).
+
+    Returns:
+        TikZ code string for the legend.
+    """
+    if not player_list or color_scheme == "default":
+        return ""
+
+    # Calculate x and y coordinates for legend placement
+    min_x = 0
+    max_y = 0
+    if nodes:
+        min_x = min(nodes[nodeid]["x"] for nodeid in nodes)
+        max_y = max(nodes[nodeid]["y"] for nodeid in nodes)
+
+    # Position legend in top left corner
+    legend_code = "\n% Player color legend\n"
+    x_offset = min_x - 1.5
+    legend_code += f"\\begin{{scope}}[scale=1,shift={{({x_offset},{max_y})}}]\n"
+
+    # Add each player with their color (no title)
+    # Adjust vertical spacing to compensate for the tree's scale factor
+    # When tree is scaled down, we need more space in absolute coordinates
+    base_spacing = 0.5
+    y_spacing = base_spacing / scale_factor
+    y_offset = 0
+
+    for player in sorted(player_list):
+        if player < 0:
+            continue
+
+        player_color = get_player_color(player, color_scheme)
+        player_name = playername[player] if player < len(playername) else str(player)
+
+        # Draw colored circle/square
+        if player == 0:
+            # Chance node - square
+            legend_code += f"\\node[inner sep=0pt,minimum size=\\sqwidth,draw={player_color},fill={player_color},shape=rectangle] at (0,{y_offset}) {{}};\n"
+        else:
+            # Player node - circle
+            legend_code += f"\\node[inner sep=0pt,minimum size=\\ndiam,draw={player_color},fill={player_color},shape=circle] at (0,{y_offset}) {{}};\n"
+
+        # Add player label
+        legend_code += f"\\node[anchor=west] at (0.3,{y_offset}) {{{player_name}}};\n"
+
+        y_offset -= y_spacing
+
+    legend_code += "\\end{scope}\n"
+
+    return legend_code
+
+def level(
+        words: List[str],
+        color_scheme: str = "default",
+        action_label_position: float = 0.5,
+        ) -> None:
     """
     Process a complete level command to create a game tree node.
-    
+
     This is the main parsing function that handles the 'level' command and all
     its associated sub-commands (player, xshift, from, move, payoffs, arrow).
     Creates TikZ output for drawing the node and connecting lines.
-    
+
     Args:
         words: List of command words starting with 'level'.
+        color_scheme: Color scheme for player nodes.
     """
     assert words[0] == "level"
     try:
@@ -906,20 +1066,20 @@ def level(words: List[str]) -> None:
         return
     nodeid = setnodeid(lev, s)
     count = 4
-    p = -1     # no player yet
-    xs = 0     # no xshift yet
-    factor = 1 # used for positioning move
-    fromn = "" # no father yet
-    mov = "" # no move yet
-    movpos = "" # no move position (l/r) yet
-    convex = -1 # no move position along line yet
+    p = -1  # no player yet
+    xs = 0  # no xshift yet
+    factor = 1  # used for positioning move
+    fromn = ""  # no father yet
+    mov = ""  # no move yet
+    movpos = ""  # no move position (l/r) yet
+    convex = -1  # no move position along line yet
     pay = []
     arrowposlist = []
     arrowcolorlist = []
     # process remaining words:
     # xshift, from, player, move, payoffs, arrow
     while count < len(words):
-        if words[count] == "player": # set player
+        if words[count] == "player":  # set player
             p, advance = player(words[count:])
             count += advance
         elif words[count] == "xshift":
@@ -936,27 +1096,32 @@ def level(words: List[str]) -> None:
             arrowposlist.append(arrowpos)
             arrowcolorlist.append(arrowcolor)
             count += advance
-        elif words[count] == "payoffs": # automatically last
+        elif words[count] == "payoffs":  # automatically last
             pay = payoffs(words[count:])
             break
-        else: # unknown keyword 
-            error ("unknown keyword "+words[count])
+        else:  # unknown keyword
+            error("unknown keyword " + words[count])
             count += 1
+
+    # If no player explicitly assigned, check if this node is in an iset
+    node_in_iset = nodeid in node_to_iset_player
+    if p < 0 and node_in_iset:
+        p = node_to_iset_player[nodeid]
+
     # now line has been processed, update data from
     # nodeid, p, xs, fromn, move, lev
     # create x coordinate
-    # existsfrom = not (fromn == "") and (fromn in nodes)
-    existsfrom = (fromn in nodes)
+    existsfrom = fromn in nodes
     xfrom = 0.0  # Initialize to avoid unbound variable warnings
     yfrom = 0.0  # Initialize to avoid unbound variable warnings
-    if existsfrom: # father exists
+    if existsfrom:  # father exists
         xfrom = nodes[fromn]["x"]
         yfrom = nodes[fromn]["y"]
         xx = xfrom + xs
-    else: # no father
+    else:  # no father
         xx = xs
         if fromn:
-            error("No 'from' node, move '" + mov +"' ignored")
+            error("No 'from' node, move '" + mov + "' ignored")
     # direction down (for later expansion)
     yy = -lev
     nodes[nodeid] = {"x": xx, "y": yy, "player": p}
@@ -965,53 +1130,81 @@ def level(words: List[str]) -> None:
     nodes[nodeid]["from"] = fromn
     # root node always printed
     nodes[nodeid]["inner"] = (pay == []) or (lev == 0)
-    # tikz code
-    s = "\\draw ["+thickn+"] "+ coord(xx, yy)
-    if p >= 0 and playername[p]: # nonempty player name
+
+    # Get player color for styling text labels
+    player_color = get_player_color(p, color_scheme)
+    color_style = f"color={player_color}"
+
+    # For edges, use the PARENT node's color, not the current node's color
+    edge_color_style = ""
+    if existsfrom and fromn in nodes:
+        parent_player = nodes[fromn]["player"]
+        parent_color = get_player_color(parent_player, color_scheme)
+        edge_color_style = f"color={parent_color}"
+
+    # tikz code - add color to the draw command for edges based on parent
+    s = "\\draw [" + thickn
+    if edge_color_style:
+        s += "," + edge_color_style
+    s += "] " + coord(xx, yy)
+    # Only show player label if node is NOT in an information set AND color scheme is default
+    # (information sets display their own player labels, and non-default schemes use legend)
+    show_label = (
+        p >= 0 and playername[p] and not node_in_iset and color_scheme == "default"
+    )
+    if show_label:
         # default: player to the right of node. perhaps left?
         if existsfrom and xs < 0:
             s += " node[left,xshift=-"
         else:
             s += " node[right,xshift="
-        s += spx + ",yshift=" + spy + "] {\\"
+        s += spx + ",yshift=" + spy
+        if color_style:
+            s += "," + color_style
+        s += "] {\\"
         s += playertexname[p] + "\\strut}"
     outs(s)
-    outlist(pay) # possibly empty
-    if existsfrom: # draw line to father
-        outs("   -- "+coord(xfrom, yfrom) + ";")
+    outlist(pay)  # possibly empty
+    if existsfrom:  # draw line to father
+        outs("   -- " + coord(xfrom, yfrom) + ";")
         # annotate moves above
         if convex < 0:
-            convex = 0.5/factor
-        xmove = xx * convex + xfrom * (1-convex)
-        ymove = yy * convex + yfrom * (1-convex)
-        s = "\\draw "+ coord(xmove, ymove)
+            convex = (
+                action_label_position / factor
+            )
+        xmove = xx * convex + xfrom * (1 - convex)
+        ymove = yy * convex + yfrom * (1 - convex)
+        s = "\\draw " + coord(xmove, ymove)
         # decide if left or right
         if movpos == "r":
             side = "right,xshift=0.0cm"
         elif movpos == "l":
             side = "left,xshift=0.0cm"
-        elif xs > 0: # default
+        elif xs > 0:  # default
             side = "right"
         else:
             side = "left"
-        s += " node["+side+",yshift="
+        s += " node[" + side + ",yshift="
         if "frac" in mov:
             s += yfracup
-        else:   
+        else:
             s += yup
-        s += "] {$"+mov+"$\\strut};"
+        # Add edge color to action label
+        if edge_color_style:
+            s += "," + edge_color_style
+        s += "] {$" + mov + "$\\strut};"
         outs(s)
         # output arrows
         while arrowposlist:
             arrowpos = arrowposlist.pop(0)
             arrowcolor = arrowcolorlist.pop(0)
-            xtip  = xfrom * (1 - arrowpos) + xx * arrowpos
-            ytip  = yfrom * (1 - arrowpos) + yy * arrowpos
-            xback = xfrom * (1.01 - arrowpos) + xx * (arrowpos-0.01)
-            yback = yfrom * (1.01 - arrowpos) + yy * (arrowpos-0.01)
+            xtip = xfrom * (1 - arrowpos) + xx * arrowpos
+            ytip = yfrom * (1 - arrowpos) + yy * arrowpos
+            xback = xfrom * (1.01 - arrowpos) + xx * (arrowpos - 0.01)
+            yback = yfrom * (1.01 - arrowpos) + yy * (arrowpos - 0.01)
             if not arrowcolor == "":
-                arrowcolor = "[fill="+arrowcolor+"]"
-            s = "\\draw [-{StealthFill" + arrowcolor+"}]"
+                arrowcolor = "[fill=" + arrowcolor + "]"
+            s = "\\draw [-{StealthFill" + arrowcolor + "}]"
             s += coord(xback, yback)
             s += " -- " + coord(xtip, ytip) + ";"
             outs(s)
@@ -1021,21 +1214,23 @@ def level(words: List[str]) -> None:
 
 ######################## isets
 
-def isetgen(words: List[str]) -> None:
+def isetgen(words: List[str], color_scheme: str = "default") -> None:
     """
     Process 'iset' command to generate information set visualization.
-    
+
     Creates TikZ code to draw information sets (connecting multiple nodes
     that belong to the same player and decision point).
-    
+
     Args:
         words: List of command words starting with 'iset'.
+        color_scheme: Color scheme for player nodes.
     """
+    global isetparams
     assert words[0] == "iset"
     nodelist = []
     p = -1
     count = 1
-    where = 0 # where "player" was found
+    where = 0  # where "player" was found
     while count < len(words):
         if words[count] == "player":
             p, advance = player(words[count:])
@@ -1044,42 +1239,62 @@ def isetgen(words: List[str]) -> None:
         else:
             nodeid = cleannodeid(words[count])
             if nodeid not in nodes:
-                error(" ".join(words)+" :", stream0)
-                error("Node '"+nodeid+"' in iset not defined", stream0)
+                error(" ".join(words) + " :", stream0)
+                error("Node '" + nodeid + "' in iset not defined", stream0)
             else:
                 v = [nodes[nodeid]["x"], nodes[nodeid]["y"]]
                 nodelist.append(v)
             count += 1
     # generate and ship iset
     if len(nodelist) == 0:
-        error(" ".join(words)+" :", stream0)
+        error(" ".join(words) + " :", stream0)
         error("No valid nodes in iset", stream0)
         return
-    outs( iset(nodelist, radius/scale), stream0)
-    # locate and print player
-    if p >= 0 and playername[p]:
+
+    # Set isetparams to use player color if player is defined
+    if p > 0:
+        player_color = get_player_color(p, color_scheme)
+        isetparams = f"color={player_color}"
+    else:
+        isetparams = ""
+
+    outs(iset(nodelist, radius / scale), stream0)
+
+    # Reset isetparams after drawing
+    isetparams = ""
+
+    # Only show player labels for information sets if using default color scheme
+    if p >= 0 and playername[p] and color_scheme == "default":
+        # Get player color for styling
+        player_color = get_player_color(p, color_scheme)
+        color_style = f"color={player_color}"
+
         if len(nodelist) == 1:
             n = nodelist[0]
             # tikz code
-            s = "\\draw "+ coord(n[0], n[1])
+            s = "\\draw " + coord(n[0], n[1])
             # player to the right of node (for later expansion)
             s += " node[right,xshift="
-            s += spx + ",yshift=" + spy + "] {\\"
-            # s += playertexname[p] + "\strut} ;"
+            s += spx + ",yshift=" + spy
+            if color_style:
+                s += "," + color_style
+            s += "] {\\"
             s += playertexname[p] + "} ;"
             outs(s)
-        else: # at least two nodes
-            if where > len(nodelist): # "player" at end
-                where = int(len(nodelist)/2) + 1
+        else:  # at least two nodes
+            if where > len(nodelist):  # "player" at end
+                where = int(len(nodelist) / 2) + 1
             if where < 2:
                 where = 2
-            n1 = nodelist[where-2]
-            n2 = nodelist[where-1]
+            n1 = nodelist[where - 2]
+            n2 = nodelist[where - 1]
             # tikz code
             s = "\\draw "
-            s += coord((n1[0]+n2[0])/2, (n1[1]+n2[1])/2)
-            # s += " node[xshift=0.0cm] {\\" + playertexname[p] + "\strut} ;"
-            s += " node[xshift=0.0cm] {\\" + playertexname[p] + "} ;"
+            s += coord((n1[0] + n2[0]) / 2, (n1[1] + n2[1]) / 2)
+            s += " node[xshift=0.0cm"
+            if color_style:
+                s += "," + color_style
+            s += "] {\\" + playertexname[p] + "} ;"
             outs(s)
     return
 
@@ -1168,23 +1383,31 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
     
     return (output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi)
 
-def ef_to_tex(ef_file: str, scale_factor: float = 0.8, show_grid: bool = False) -> str:
+def ef_to_tex(
+    ef_file: str,
+    scale_factor: float = 0.8,
+    show_grid: bool = False,
+    color_scheme: str = "default",
+    action_label_position: float = 0.5,
+) -> str:
     """
     Convert an extensive form (.ef) file to TikZ code.
-    
+
     This function replicates the main processing logic but returns the TikZ code
     as a string instead of printing it to stdout.
-    
+
     Args:
         ef_file: Path to the .ef file to process.
         scale_factor: Scale factor for the diagram (default: 1.0).
         show_grid: Whether to show grid lines (default: False).
-        
+        color_scheme: Color scheme for player nodes.
+        action_label_position: Position of action labels along edges.
+
     Returns:
         Complete TikZ code as a string.
     """
-    global scale, grid
-    
+    global scale, grid, node_to_iset_player
+
     # Save original state
     original_outstream = outstream.copy()
     original_stream0 = stream0.copy()
@@ -1193,33 +1416,38 @@ def ef_to_tex(ef_file: str, scale_factor: float = 0.8, show_grid: bool = False) 
     original_playerdefined = playerdefined.copy()
     original_scale = scale
     original_grid = grid
-    
+    original_node_to_iset_player = node_to_iset_player.copy()
+
     try:
         # Reset global state
         outstream.clear()
         stream0.clear()
         nodes.clear()
         xshifts.clear()
+        node_to_iset_player.clear()
         for i in range(len(playerdefined)):
             playerdefined[i] = False
-        
+
         # Set parameters
         scale = scale_factor
         grid = show_grid
-        
-        # Process the .ef file (same logic as main)
+
+        # Process the .ef file
         lines = readfile(ef_file)
 
+        # FIRST: Pre-parse all iset commands to build node-to-player mapping
+        parse_isets_first(lines)
+
         # begin tikz picture
-        outs("\\begin{tikzpicture}[scale="+str(scale), stream0)
+        outs("\\begin{tikzpicture}[scale=" + str(scale), stream0)
         ss = "  , StealthFill/.tip={Stealth[line width=.7pt"
-        outs(ss+",inset=0pt,length=13pt,angle'=30]}]", stream0)
+        outs(ss + ",inset=0pt,length=13pt,angle'=30]}]", stream0)
         ss = ""
         if not grid:
             ss = "% "
-        outs(ss+"\\draw [help lines, color=green] (-5,0) grid (5,-6);", stream0)
+        outs(ss + "\\draw [help lines, color=green] (-5,0) grid (5,-6);", stream0)
 
-        # main loop
+        # main loop - draw edges and information sets first
         for line in lines:
             comment(line)
             words = line.split()
@@ -1227,20 +1455,33 @@ def ef_to_tex(ef_file: str, scale_factor: float = 0.8, show_grid: bool = False) 
                 if words[0] == "player":
                     player(words)
                 elif words[0] == "level":
-                    level(words)
+                    level(words, color_scheme, action_label_position)
                 elif words[0] == "iset":
-                    isetgen(words)
+                    isetgen(words, color_scheme)
 
-        # Output nodes
-        drawnodes()
-        
+        # Draw all nodes on top of edges
+        drawnodes(color_scheme)
+
+        # Add legend if using non-default color scheme
+        if color_scheme != "default":
+            # Collect all unique players from the tree
+            player_set = set()
+            for nodeid in nodes:
+                p = nodes[nodeid]["player"]
+                if p >= 0:
+                    player_set.add(p)
+
+            legend_code = generate_legend(list(player_set), color_scheme, scale_factor)
+            if legend_code:
+                outs(legend_code, outstream)
+
         # end tikz picture - add to outstream so it comes after nodes
         outs("\\end{tikzpicture}", outstream)
-        
+
         # Combine all output into a single string
         all_lines = stream0 + outstream
         return "\n".join(all_lines)
-        
+
     finally:
         # Restore original state
         outstream.clear()
@@ -1251,6 +1492,8 @@ def ef_to_tex(ef_file: str, scale_factor: float = 0.8, show_grid: bool = False) 
         nodes.update(original_nodes)
         xshifts.clear()
         xshifts.update(original_xshifts)
+        node_to_iset_player.clear()
+        node_to_iset_player.update(original_node_to_iset_player)
         for i in range(len(playerdefined)):
             playerdefined[i] = original_playerdefined[i]
         scale = original_scale
@@ -1266,6 +1509,9 @@ def generate_tikz(
     hide_action_labels: bool = False,
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
+    color_scheme: str = "default",
+    edge_thickness: float = 1.0,
+    action_label_position: float = 0.5,
 ) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
@@ -1280,6 +1526,9 @@ def generate_tikz(
         hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
         shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
         show_grid: Whether to show grid lines.
+        color_scheme: Color scheme for player nodes.
+        edge_thickness: Thickness of edges.
+        action_label_position: Position of action labels along edges.
 
     Returns:
         Complete TikZ code ready for use in Jupyter notebooks or LaTeX documents.
@@ -1308,14 +1557,13 @@ def generate_tikz(
         )
 
     # Step 1: Generate the tikzpicture content using ef_to_tex logic
-    tikz_picture_content = ef_to_tex(ef_file, scale_factor, show_grid)
+    tikz_picture_content = ef_to_tex(ef_file, scale_factor, show_grid, color_scheme, action_label_position)
     
     # Step 2: Define built-in macro definitions (from macros-drawtree.tex)
     macro_definitions = [
-        "\\newcommand\\chancecolor{red}",
         "\\newdimen\\ndiam",
         "\\ndiam1.5mm",
-        "\\newdimen\\sqwidth", 
+        "\\newdimen\\sqwidth",
         "\\sqwidth1.6mm",
         "\\newdimen\\spx",
         "\\spx.7mm",
@@ -1328,8 +1576,10 @@ def generate_tikz(
         "\\newdimen\\paydown",
         "\\paydown2.5ex",
         "\\newdimen\\treethickn",
-        "\\treethickn1pt"
+        f"\\treethickn{edge_thickness}pt",
     ]
+    # Step 2a: Define player color macros
+    macro_definitions.extend(color_definitions())
 
     # Step 3: Combine everything into complete TikZ code
     tikz_code = """% TikZ code with built-in styling for game trees
@@ -1368,6 +1618,9 @@ def draw_tree(
     hide_action_labels: bool = False,
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
+    color_scheme: str = "default",
+    edge_thickness: float = 1.0,
+    action_label_position: float = 0.5,
 ) -> Optional[str]:
     """
     Generate TikZ code and display in Jupyter notebooks.
@@ -1382,6 +1635,9 @@ def draw_tree(
         hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
         shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
         show_grid: Whether to show grid lines.
+        color_scheme: Color scheme for player nodes.
+        edge_thickness: Thickness of edges.
+        action_label_position: Position of action labels along edges.
 
     Returns:
         The result of the Jupyter cell magic execution, or the TikZ code string
@@ -1411,6 +1667,9 @@ def draw_tree(
             show_grid=show_grid,
             shared_terminal_depth=shared_terminal_depth,
             hide_action_labels=hide_action_labels,
+            color_scheme=color_scheme,
+            edge_thickness=edge_thickness,
+            action_label_position=action_label_position,
         )
         return ip.run_cell_magic("tikz", "", tikz_code)
     else:
