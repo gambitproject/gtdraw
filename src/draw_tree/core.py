@@ -71,18 +71,6 @@ allowcomments: bool = True
 outstream: List[str] = []
 stream0: List[str] = []
 
-chancecolor: str = "\\chancecolor"  # gray color of chance node
-
-# Player colors - up to 6 players
-playercolors: List[str] = [
-    "\\playeronecolor",
-    "\\playertwocolor",
-    "\\playerthreecolor",
-    "\\playerfourcolor",
-    "\\playerfivecolor",
-    "\\playersixcolor",
-]
-
 
 def get_player_color(player: int, color_scheme: str = "default") -> str:
     """
@@ -855,12 +843,20 @@ def drawnode(v: List[float], player: int = 1, color_scheme: str = "default") -> 
     """
     # tikz code
     out = "\\node[inner sep=0pt,minimum size="
+    fillcolor = get_player_color(player, color_scheme)
+
+    # chance nodes
     if player == 0:
-        out += sqwidth + ",draw=" + chancecolor + ",fill="
-        out += chancecolor + ",shape=rectangle] at "
+        if color_scheme == "default":
+            out += sqwidth + ",draw=black,fill="
+            out += "red,shape=rectangle] at "
+        else:
+            out += sqwidth + ",draw=" + fillcolor + ",fill="
+            out += fillcolor + ",shape=rectangle] at "
+    # player nodes
     else:
-        fillcolor = get_player_color(player, color_scheme)
-        out += ndiam + f", draw={fillcolor}, fill={fillcolor}, shape=circle] at "
+        out += ndiam + f", draw={fillcolor}, fill="
+        out += fillcolor + ", shape=circle] at "
     out += coord(v[0], v[1]) + " {};"
     outs(out)
     return out
