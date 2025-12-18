@@ -972,6 +972,49 @@ def parse_isets_first(lines: List[str]) -> None:
                 for nodeid in nodes_in_iset:
                     node_to_iset_player[nodeid] = p
 
+def generate_legend(player_list: List[int], color_scheme: str = "gambit") -> str:
+    """
+    Generate TikZ code for a color legend showing player colors.
+
+    Args:
+        player_list: List of player numbers that appear in the game.
+        color_scheme: Color scheme being used.
+
+    Returns:
+        TikZ code string for the legend.
+    """
+    if not player_list or color_scheme == "default":
+        return ""
+
+    legend_code = "\n% Player color legend\n"
+    legend_code += "\\begin{scope}[shift={(-6,0)}]\n"  # Position legend to the left
+
+    # Add each player with their color (no title)
+    y_offset = 0
+    for player in sorted(player_list):
+        if player < 0:
+            continue
+
+        player_color = get_player_color(player, color_scheme)
+        player_name = playername[player] if player < len(playername) else str(player)
+
+        # Draw colored circle/square
+        if player == 0:
+            # Chance node - square
+            legend_code += f"\\node[inner sep=0pt,minimum size=\\sqwidth,draw={player_color},fill={player_color},shape=rectangle] at (0,{y_offset}) {{}};\n"
+        else:
+            # Player node - circle
+            legend_code += f"\\node[inner sep=0pt,minimum size=\\ndiam,draw={player_color},fill={player_color},shape=circle] at (0,{y_offset}) {{}};\n"
+
+        # Add player label
+        legend_code += f"\\node[anchor=west] at (0.3,{y_offset}) {{{player_name}}};\n"
+
+        y_offset -= 0.5
+
+    legend_code += "\\end{scope}\n"
+
+    return legend_code
+
 def level(words: List[str], color_scheme: str = "default") -> None:
     """
     Process a complete level command to create a game tree node.
@@ -1083,11 +1126,12 @@ def level(words: List[str], color_scheme: str = "default") -> None:
     if edge_color_style:
         s += "," + edge_color_style
     s += "] " + coord(xx, yy)
-    # Only show player label if node is NOT in an information set
-    # (information sets display their own player labels)
-    if (
-        p >= 0 and playername[p] and not node_in_iset
-    ):  # nonempty player name and not in iset
+    # Only show player label if node is NOT in an information set AND color scheme is default
+    # (information sets display their own player labels, and non-default schemes use legend)
+    show_label = (
+        p >= 0 and playername[p] and not node_in_iset and color_scheme == "default"
+    )
+    if show_label:
         # default: player to the right of node. perhaps left?
         if existsfrom and xs < 0:
             s += " node[left,xshift=-"
@@ -1196,8 +1240,8 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
     # Reset isetparams after drawing
     isetparams = ""
 
-    # locate and print player
-    if p >= 0 and playername[p]:
+    # Only show player labels for information sets if using default color scheme
+    if p >= 0 and playername[p] and color_scheme == "default":
         # Get player color for styling
         player_color = get_player_color(p, color_scheme)
         color_style = f"color={player_color}"
@@ -1392,6 +1436,19 @@ def ef_to_tex(
 
         # Draw all nodes on top of edges
         drawnodes(color_scheme)
+
+        # Add legend if using non-default color scheme
+        if color_scheme != "default":
+            # Collect all unique players from the tree
+            player_set = set()
+            for nodeid in nodes:
+                p = nodes[nodeid]["player"]
+                if p >= 0:
+                    player_set.add(p)
+
+            legend_code = generate_legend(list(player_set), color_scheme)
+            if legend_code:
+                outs(legend_code, outstream)
 
         # end tikz picture - add to outstream so it comes after nodes
         outs("\\end{tikzpicture}", outstream)
