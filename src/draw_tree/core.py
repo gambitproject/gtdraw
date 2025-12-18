@@ -83,7 +83,7 @@ def get_player_color(player: int, color_scheme: str = "default") -> str:
     Returns:
         TeX color macro name for the player, or "black" as fallback.
     """
-    if color_scheme == "distinct":
+    if color_scheme == "gambit":
         # Color mapping for up to 6 players
         color_map = {
             0: "\\chancecolor",
@@ -101,9 +101,11 @@ def get_player_color(player: int, color_scheme: str = "default") -> str:
 
 def color_definitions() -> list[str]:
     return [
-        "\\newcommand\\chancecolor{red}",
-        "\\newcommand\\playeronecolor{blue}",
-        "\\newcommand\\playertwocolor{green}",
+        "\\definecolor{chancecolorrgb}{RGB}{117,145,56}",
+        "\\definecolor{gambitredrgb}{RGB}{234,51,35}",
+        "\\newcommand\\chancecolor{chancecolorrgb}",
+        "\\newcommand\\playeronecolor{gambitredrgb}",
+        "\\newcommand\\playertwocolor{blue}",
         "\\newcommand\\playerthreecolor{orange}",
         "\\newcommand\\playerfourcolor{purple}",
         "\\newcommand\\playerfivecolor{cyan}",
