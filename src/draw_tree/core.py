@@ -84,28 +84,31 @@ playercolors: List[str] = [
 ]
 
 
-def get_player_color(player: int) -> str:
+def get_player_color(player: int, color_scheme: str = "default") -> str:
     """
     Get the TeX color macro name for a given player number.
 
     Args:
         player: Player number (1-6 for regular players).
+        color_scheme: Optional color scheme name.
 
     Returns:
         TeX color macro name for the player, or "black" as fallback.
     """
-    # Color mapping for up to 6 players
-    color_map = {
-        0: "\\chancecolor",
-        1: "\\playeronecolor",
-        2: "\\playertwocolor",
-        3: "\\playerthreecolor",
-        4: "\\playerfourcolor",
-        5: "\\playerfivecolor",
-        6: "\\playersixcolor",
-    }
+    if color_scheme == "distinct":
+        # Color mapping for up to 6 players
+        color_map = {
+            0: "\\chancecolor",
+            1: "\\playeronecolor",
+            2: "\\playertwocolor",
+            3: "\\playerthreecolor",
+            4: "\\playerfourcolor",
+            5: "\\playerfivecolor",
+            6: "\\playersixcolor",
+        }
 
-    return color_map.get(player, "black")
+        return color_map.get(player, "black")
+    return "black"
 
 
 def color_definitions() -> list[str]:
@@ -836,7 +839,7 @@ def payoffs(words: List[str]) -> List[str]:
     #     print s
     # quit()
 
-def drawnode(v: List[float], player: int = 1) -> str:
+def drawnode(v: List[float], player: int = 1, color_scheme: str = "default") -> str:
     """
     Generate TikZ code to draw a game tree node.
     
@@ -845,6 +848,7 @@ def drawnode(v: List[float], player: int = 1) -> str:
     Args:
         v: Node position as [x, y] coordinates.
         player: Player number (0 for chance node, >0 for player node).
+        color_scheme: Color scheme for player nodes.
         
     Returns:
         TikZ node command string.
@@ -855,7 +859,7 @@ def drawnode(v: List[float], player: int = 1) -> str:
         out += sqwidth + ",draw=" + chancecolor + ",fill="
         out += chancecolor + ",shape=rectangle] at "
     else:
-        fillcolor = get_player_color(player)
+        fillcolor = get_player_color(player, color_scheme)
         out += ndiam + f", draw={fillcolor}, fill={fillcolor}, shape=circle] at "
     out += coord(v[0], v[1]) + " {};"
     outs(out)
@@ -951,7 +955,7 @@ def parse_isets_first(lines: List[str]) -> None:
                 for nodeid in nodes_in_iset:
                     node_to_iset_player[nodeid] = p
 
-def level(words: List[str]) -> None:
+def level(words: List[str], color_scheme: str = "default") -> None:
     """
     Process a complete level command to create a game tree node.
 
@@ -961,6 +965,7 @@ def level(words: List[str]) -> None:
 
     Args:
         words: List of command words starting with 'level'.
+        color_scheme: Color scheme for player nodes.
     """
     assert words[0] == "level"
     try:
@@ -1047,17 +1052,17 @@ def level(words: List[str]) -> None:
 
     # Draw the node immediately if it's an inner node (now with correct player!)
     if nodes[nodeid]["inner"]:
-        drawnode([xx, yy], p)
+        drawnode([xx, yy], p, color_scheme)
 
     # Get player color for styling text labels
-    player_color = get_player_color(p)
+    player_color = get_player_color(p, color_scheme)
     color_style = f"color={player_color}"
 
     # For edges, use the PARENT node's color, not the current node's color
     edge_color_style = ""
     if existsfrom and fromn in nodes:
         parent_player = nodes[fromn]["player"]
-        parent_color = get_player_color(parent_player)
+        parent_color = get_player_color(parent_player, color_scheme)
         edge_color_style = f"color={parent_color}"
 
     # tikz code - add color to the draw command for edges based on parent
@@ -1129,7 +1134,7 @@ def level(words: List[str]) -> None:
 
 ######################## isets
 
-def isetgen(words: List[str]) -> None:
+def isetgen(words: List[str], color_scheme: str = "default") -> None:
     """
     Process 'iset' command to generate information set visualization.
 
@@ -1138,6 +1143,7 @@ def isetgen(words: List[str]) -> None:
 
     Args:
         words: List of command words starting with 'iset'.
+        color_scheme: Color scheme for player nodes.
     """
     global isetparams
     assert words[0] == "iset"
@@ -1167,7 +1173,7 @@ def isetgen(words: List[str]) -> None:
 
     # Set isetparams to use player color if player is defined
     if p > 0:
-        player_color = get_player_color(p)
+        player_color = get_player_color(p, color_scheme)
         isetparams = f"color={player_color}"
     else:
         isetparams = ""
@@ -1180,8 +1186,8 @@ def isetgen(words: List[str]) -> None:
     # locate and print player
     if p >= 0 and playername[p]:
         # Get player color for styling
-        player_color = get_player_color(p) if p > 0 else ""
-        color_style = f"color={player_color}" if player_color else ""
+        player_color = get_player_color(p, color_scheme)
+        color_style = f"color={player_color}"
 
         if len(nodelist) == 1:
             n = nodelist[0]
@@ -1297,7 +1303,12 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
     
     return (output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi)
 
-def ef_to_tex(ef_file: str, scale_factor: float = 0.8, show_grid: bool = False) -> str:
+def ef_to_tex(
+        ef_file: str,
+        scale_factor: float = 0.8,
+        show_grid: bool = False,
+        color_scheme: str = "default",
+        ) -> str:
     """
     Convert an extensive form (.ef) file to TikZ code.
 
@@ -1361,9 +1372,9 @@ def ef_to_tex(ef_file: str, scale_factor: float = 0.8, show_grid: bool = False) 
                 if words[0] == "player":
                     player(words)
                 elif words[0] == "level":
-                    level(words)
+                    level(words, color_scheme)
                 elif words[0] == "iset":
-                    isetgen(words)
+                    isetgen(words, color_scheme)
 
         # end tikz picture - add to outstream so it comes after nodes
         outs("\\end{tikzpicture}", outstream)
@@ -1399,6 +1410,7 @@ def generate_tikz(
     hide_action_labels: bool = False,
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
+    color_scheme: str = "default",
 ) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
@@ -1413,6 +1425,7 @@ def generate_tikz(
         hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
         shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
         show_grid: Whether to show grid lines.
+        color_scheme: Color scheme for player nodes.
 
     Returns:
         Complete TikZ code ready for use in Jupyter notebooks or LaTeX documents.
@@ -1441,7 +1454,7 @@ def generate_tikz(
         )
 
     # Step 1: Generate the tikzpicture content using ef_to_tex logic
-    tikz_picture_content = ef_to_tex(ef_file, scale_factor, show_grid)
+    tikz_picture_content = ef_to_tex(ef_file, scale_factor, show_grid, color_scheme)
     
     # Step 2: Define built-in macro definitions (from macros-drawtree.tex)
     macro_definitions = [
@@ -1502,6 +1515,7 @@ def draw_tree(
     hide_action_labels: bool = False,
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
+    color_scheme: str = "default",
 ) -> Optional[str]:
     """
     Generate TikZ code and display in Jupyter notebooks.
@@ -1516,6 +1530,7 @@ def draw_tree(
         hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
         shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
         show_grid: Whether to show grid lines.
+        color_scheme: Color scheme for player nodes.
 
     Returns:
         The result of the Jupyter cell magic execution, or the TikZ code string
@@ -1545,6 +1560,7 @@ def draw_tree(
             show_grid=show_grid,
             shared_terminal_depth=shared_terminal_depth,
             hide_action_labels=hide_action_labels,
+            color_scheme=color_scheme,
         )
         return ip.run_cell_magic("tikz", "", tikz_code)
     else:
