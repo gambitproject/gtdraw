@@ -9,10 +9,11 @@ def determine_node_level(
     sublevel_multiplier: int = 2,
 ) -> int:
     """Determine the node level in the .ef format based on Gambit layout levels."""
-    # If node is in an infoset
+    depth = gbt_level * level_multiplier - (level_multiplier / 2)
+    extra_depth = 0
     if gbt_sublevel != 0:
-        return (gbt_level * level_multiplier) + ((gbt_sublevel - 1) * sublevel_multiplier) - (level_multiplier / 2)
-    return (gbt_level * level_multiplier) - (level_multiplier / 2)
+        extra_depth = ((gbt_sublevel - 1) * sublevel_multiplier)
+    return depth + extra_depth
 
 
 def gambit_layout_to_ef(
@@ -20,7 +21,9 @@ def gambit_layout_to_ef(
     save_to: Optional[str] = None,
     level_multiplier: int = 4,
     sublevel_multiplier: int = 2,
-    xshift_multiplier: int = 2
+    xshift_multiplier: int = 2,
+    hide_action_labels: bool = False,
+    shared_terminal_depth: bool = False,
 ) -> str:
     """Convert an extensive form Gambit game to the `.ef` format
     using the layout tree defined by pygambit.layout_tree(game.)
@@ -28,6 +31,11 @@ def gambit_layout_to_ef(
     Args:
         game: A pygambit.gambit.Game object representing the game.
         save_to: Optional path to save the generated `.ef` file.
+        level_multiplier: Multiplier for levels in the layout.
+        sublevel_multiplier: Multiplier for sublevels in the layout.
+        xshift_multiplier: Multiplier for xshift values in the layout.
+        hide_action_labels: Whether to hide action labels in the output.
+        shared_terminal_depth: Whether to force all terminal nodes to the same depth.
 
     Returns:
         The filename of the generated `.ef` file.
@@ -50,8 +58,11 @@ def gambit_layout_to_ef(
 
     # Group nodes by their infosets
     # Also collect parent node levels for level determination
+    # Also collect highest level for level determination
     infoset_groups = {}
     gbt_parent_levels = {}
+    gbt_highest_level = 0
+    gbt_highest_sublevel = 0
     for node, node_coords in layout.items():
         if node.infoset:
             if node.infoset not in infoset_groups:
@@ -61,6 +72,9 @@ def gambit_layout_to_ef(
         if not node == game.root:
             parent_coords = layout[node.parent]
             gbt_parent_levels[node] = (parent_coords.level, parent_coords.sublevel)
+        # Update highest level
+        gbt_highest_level = max(node_coords.level, gbt_highest_level)
+        gbt_highest_sublevel = max(node_coords.sublevel, gbt_highest_sublevel)
 
     # For each node, determine its level and node count within that level
     # Also collect offsets for normalisation
@@ -75,7 +89,10 @@ def gambit_layout_to_ef(
         if node.infoset in infoset_groups:
             if len(infoset_groups[node.infoset]) == 1:
                 gbt_sublevel = 0
-        level = determine_node_level(node_coords.level, gbt_sublevel, level_multiplier, sublevel_multiplier)
+        if node.is_terminal and shared_terminal_depth:
+            level = determine_node_level(gbt_highest_level, gbt_highest_sublevel, level_multiplier, sublevel_multiplier)
+        else:
+            level = determine_node_level(node_coords.level, gbt_sublevel, level_multiplier, sublevel_multiplier)
 
         # Ensure child nodes have levels greater than their parents
         if not node == game.root:
@@ -134,13 +151,20 @@ def gambit_layout_to_ef(
         if node.parent:
             parent_level, parent_nodecount = node_levels[node.parent]
             ef += f"from {parent_level},{parent_nodecount} "
-            prior_action_label = node.prior_action.label.replace(" ", "~")
-            ef += f"move {prior_action_label}"
+            if not hide_action_labels:
+                prior_action_label = node.prior_action.label.replace(" ", "~")
+                ef += f"move {prior_action_label}"
 
             # Add probability if the parent is a chance player
             if node.parent.player.is_chance:
                 prob = str(node.prior_action.prob).split("/")
-                ef += f"~(\\frac{{{prob[0]}}}{{{prob[1]}}})"
+                if len(prob) == 2:
+                    ef += f"~(\\frac{{{prob[0]}}}{{{prob[1]}}})"
+                elif len(prob) == 1:
+                    ef += f"~{prob[0]}"
+                else:
+                    # Throw error for unexpected probability format
+                    raise ValueError(f"Unexpected probability format: {node.prior_action.prob}")
             ef += " "
         
         # Add payoffs to terminal nodes, if applicable

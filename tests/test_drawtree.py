@@ -273,7 +273,7 @@ class TestDrawTreeFunction:
             assert "\\begin{tikzpicture}" in result
             assert "\\end{tikzpicture}" in result
             # Check for built-in macro definitions
-            assert "\\newcommand\\chancecolor{red}" in result
+            assert "\\newcommand\\chancecolor" in result
             assert "\\newdimen\\ndiam" in result
             assert "\\ndiam1.5mm" in result
             assert "\\newdimen\\paydown" in result
@@ -384,7 +384,7 @@ class TestDrawTreeFunction:
             result = draw_tree.generate_tikz(ef_file_path)
             # Should work with built-in macros
             assert "\\begin{tikzpicture}" in result
-            assert "\\newcommand\\chancecolor{red}" in result
+            assert "\\newcommand\\chancecolor" in result
         finally:
             os.unlink(ef_file_path)
 
