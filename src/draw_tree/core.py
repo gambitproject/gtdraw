@@ -47,17 +47,6 @@ spy: str = "\\spy"  # .5 mm % single player node yshift
 ndiam: str = "\\ndiam"  # 1.5mm % node diameter disks
 sqwidth: str = "\\sqwidth"  # 1.6 mm % node diameter disks
 thickn: str = "line width=\\treethickn"  # {1pt} % line thickness
-chancecolor: str = "\\chancecolor"  # gray color of chance node
-
-# Player colors - up to 6 players
-playercolors: List[str] = [
-    "\\playeronecolor",
-    "\\playertwocolor",
-    "\\playerthreecolor",
-    "\\playerfourcolor",
-    "\\playerfivecolor",
-    "\\playersixcolor",
-]
 
 # Add a global dictionary to track node-to-player mappings from isets
 node_to_iset_player: dict[str, int] = {}
@@ -82,6 +71,53 @@ allowcomments: bool = True
 outstream: List[str] = []
 stream0: List[str] = []
 
+chancecolor: str = "\\chancecolor"  # gray color of chance node
+
+# Player colors - up to 6 players
+playercolors: List[str] = [
+    "\\playeronecolor",
+    "\\playertwocolor",
+    "\\playerthreecolor",
+    "\\playerfourcolor",
+    "\\playerfivecolor",
+    "\\playersixcolor",
+]
+
+
+def get_player_color(player: int) -> str:
+    """
+    Get the TeX color macro name for a given player number.
+
+    Args:
+        player: Player number (1-6 for regular players).
+
+    Returns:
+        TeX color macro name for the player, or "black" as fallback.
+    """
+    # Color mapping for up to 6 players
+    color_map = {
+        0: "\\chancecolor",
+        1: "\\playeronecolor",
+        2: "\\playertwocolor",
+        3: "\\playerthreecolor",
+        4: "\\playerfourcolor",
+        5: "\\playerfivecolor",
+        6: "\\playersixcolor",
+    }
+
+    return color_map.get(player, "black")
+
+
+def color_definitions() -> list[str]:
+    return [
+        "\\newcommand\\chancecolor{red}",
+        "\\newcommand\\playeronecolor{blue}",
+        "\\newcommand\\playertwocolor{green}",
+        "\\newcommand\\playerthreecolor{orange}",
+        "\\newcommand\\playerfourcolor{purple}",
+        "\\newcommand\\playerfivecolor{cyan}",
+        "\\newcommand\\playersixcolor{magenta}",
+    ]
 
 def outall(stream: Optional[List[str]] = None) -> None:
     """
@@ -799,40 +835,6 @@ def payoffs(words: List[str]) -> List[str]:
     # for s in a:
     #     print s
     # quit()
-
-def get_player_color(player: int) -> str:
-    """
-    Get the TeX color macro name for a given player number.
-
-    Args:
-        player: Player number (1-6 for regular players).
-
-    Returns:
-        TeX color macro name for the player, or "black" as fallback.
-    """
-    # Color mapping for up to 6 players
-    color_map = {
-        0: "\\chancecolor",
-        1: "\\playeronecolor",
-        2: "\\playertwocolor",
-        3: "\\playerthreecolor",
-        4: "\\playerfourcolor",
-        5: "\\playerfivecolor",
-        6: "\\playersixcolor",
-    }
-
-    return color_map.get(player, "black")
-
-def color_definitions() -> list[str]:
-    return [
-        "\\newcommand\\chancecolor{red}",
-        "\\newcommand\\playeronecolor{blue}",
-        "\\newcommand\\playertwocolor{green}",
-        "\\newcommand\\playerthreecolor{orange}",
-        "\\newcommand\\playerfourcolor{purple}",
-        "\\newcommand\\playerfivecolor{cyan}",
-        "\\newcommand\\playersixcolor{magenta}",
-    ]
 
 def drawnode(v: List[float], player: int = 1) -> str:
     """
