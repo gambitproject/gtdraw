@@ -30,6 +30,11 @@ class TestUtilityFunctions:
         assert draw_tree.fformat(3.14159, 0) == "3"
         assert draw_tree.fformat(3.14159, 5) == "3.14159"
 
+    def test_fformat_trailing_zeros(self):
+        """Test fformat removes trailing zeros."""
+        assert draw_tree.fformat(2.5000) == "2.5"
+        assert draw_tree.fformat(2.0000) == "2"
+
     def test_coord(self):
         """Test coordinate pair formatting."""
         assert draw_tree.coord(1.0, 2.0) == "(1,2)"

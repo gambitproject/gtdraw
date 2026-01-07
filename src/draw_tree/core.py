@@ -242,6 +242,8 @@ def fformat(x: float, places: int = 3) -> str:
         '3'
         >>> fformat(3.100, 2)
         '3.1'
+        >>> fformat(0.5000000)
+        '0.5'
     """
     fstring = "%." + ("%df" % places)
     s = fstring % x
@@ -1102,6 +1104,15 @@ def level(
         else:  # unknown keyword
             error("unknown keyword " + words[count])
             count += 1
+    
+    # If move contains a float, apply fformat
+    if "~" in mov:
+        movlist = mov.split("~")
+        try:
+            num = float(movlist[1])
+            mov = movlist[0] + "~" + str(fformat(num))
+        except ValueError:
+            pass
 
     # If no player explicitly assigned, check if this node is in an iset
     node_in_iset = nodeid in node_to_iset_player
