@@ -1724,42 +1724,81 @@ def latex_wrapper(tikz_code: str) -> str:
     return latex_document
 
 
-def generate_tex(ef_file: str, output_tex: Optional[str] = None, scale_factor: float = 0.8, show_grid: bool = False) -> str:
+def generate_tex(
+    game: str | "pygambit.gambit.Game",
+    save_to: Optional[str] = None,
+    scale_factor: float = 0.8,
+    level_spacing: int = 4,
+    sublevel_spacing: int = 2,
+    width_spacing: int = 2,
+    hide_action_labels: bool = False,
+    shared_terminal_depth: bool = False,
+    show_grid: bool = False,
+    color_scheme: str = "default",
+    edge_thickness: float = 1.0,
+    action_label_position: float = 0.5,
+) -> str:
     """
     Generate a complete LaTeX document file directly from an extensive form (.ef) file.
-    
+
     This function creates a complete LaTeX document with embedded TikZ code
     and saves it to a .tex file.
-    
+
     Args:
-        ef_file: Path to the .ef file to process.
-        output_tex: Output LaTeX filename. If None, derives from ef_file name.
-        scale_factor: Scale factor for the diagram (default: 1.0).
-        show_grid: Whether to show grid lines (default: False).
-        
+        game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
+        save_to: path to save intermediate .ef file when generating from a pygambit.gambit.Game object and output tex file.
+        scale_factor: Scale factor for the diagram.
+        level_spacing: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
+        sublevel_spacing: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
+        width_spacing: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
+        shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
+        show_grid: Whether to show grid lines.
+        color_scheme: Color scheme for player nodes.
+        edge_thickness: Thickness of edges.
+        action_label_position: Position of action labels along edges.
+
     Returns:
         Path to the generated LaTeX file.
-        
+
     Raises:
         FileNotFoundError: If the .ef file doesn't exist.
     """
     # Determine output filename
-    if output_tex is None:
-        ef_path = Path(ef_file)
-        output_tex = ef_path.with_suffix('.tex').name
+    if save_to is None:
+        if isinstance(game, str):
+            game_path = Path(game)
+        else:
+            game_path = Path(game.title + '.ef')
+        output_tex = game_path.with_suffix('.tex').name
+    else:
+        output_tex = save_to + '.tex'
     
-    # If input is an EFG file, convert it first
-    if isinstance(ef_file, str) and ef_file.lower().endswith('.efg'):
+    # If game is an EFG file, convert it first
+    if isinstance(game, str) and game.lower().endswith(".efg"):
         try:
-            ef_file = efg_dl_ef(ef_file)
+            game = efg_dl_ef(game)
         except Exception:
             pass
 
     # Generate TikZ content using generate_tikz
-    tikz_content = generate_tikz(ef_file, scale_factor=scale_factor, show_grid=show_grid)
+    tikz_code = generate_tikz(
+        game,
+        save_to=save_to,
+        scale_factor=scale_factor,
+        level_spacing=level_spacing,
+        sublevel_spacing=sublevel_spacing,
+        width_spacing=width_spacing,
+        show_grid=show_grid,
+        shared_terminal_depth=shared_terminal_depth,
+        hide_action_labels=hide_action_labels,
+        color_scheme=color_scheme,
+        edge_thickness=edge_thickness,
+        action_label_position=action_label_position,
+    )
     
     # Wrap in complete LaTeX document
-    latex_document = latex_wrapper(tikz_content)
+    latex_document = latex_wrapper(tikz_code)
     
     # Write to file
     with open(output_tex, 'w') as f:
