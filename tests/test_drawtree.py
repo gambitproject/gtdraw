@@ -465,7 +465,7 @@ class TestPngGeneration:
                 mock_run.side_effect = FileNotFoundError("Command not found")
                 
                 with pytest.raises(RuntimeError):
-                    draw_tree.generate_png(ef_file_path, output_png="custom_name.png")
+                    draw_tree.generate_png(ef_file_path, save_to="custom_name.png")
         finally:
             os.unlink(ef_file_path)
 
@@ -518,7 +518,7 @@ class TestTexGeneration:
 
         try:
             custom_filename = "custom_output.tex"
-            tex_path = draw_tree.generate_tex(ef_file_path, output_tex=custom_filename)
+            tex_path = draw_tree.generate_tex(ef_file_path, save_to=custom_filename)
             
             # Verify the custom filename was used
             assert tex_path.endswith(custom_filename)
