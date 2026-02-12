@@ -483,8 +483,7 @@ class TestTexGeneration:
                 content = f.read()
                 
             # Check for LaTeX document structure
-            assert "\\documentclass[a4paper,12pt]{article}" in content
-            assert "\\usepackage{tikz}" in content
+            assert "\\documentclass[tikz,border=10pt]{standalone}" in content
             assert "\\begin{document}" in content
             assert "\\end{document}" in content
             assert "\\begin{tikzpicture}" in content
