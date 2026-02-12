@@ -1698,31 +1698,18 @@ def latex_wrapper(tikz_code: str) -> str:
     Returns:
         Complete LaTeX document as a string.
     """
-    latex_document = f"""\\documentclass[a4paper,12pt]{{article}}
-\\usepackage{{newpxtext,newpxmath}}
-\\linespread{{1.10}}        % Palatino needs more leading (space between lines) 
-\\usepackage{{graphicx}}
-\\usepackage{{tikz}}
-\\usetikzlibrary{{shapes}}
-\\usetikzlibrary{{arrows.meta}}
-\\oddsidemargin=.46cm 
-\\textwidth=15cm
-\\textheight=24cm
-\\topmargin=-1.3cm
-\\parindent 0pt
-\\parskip1ex
-\\pagestyle{{empty}}
+    latex_document = f"""\\documentclass[tikz,border=10pt]{{standalone}}
+                        \\usepackage{{newpxtext,newpxmath}}
+                        \\linespread{{1.10}}
+                        \\usetikzlibrary{{shapes}}
+                        \\usetikzlibrary{{arrows.meta}}
 
-\\begin{{document}}
+                        \\begin{{document}}
 
-\\hrule
+                        {tikz_code}
 
-{tikz_code}
-
-\\hrule
-
-\\end{{document}}
-"""
+                        \\end{{document}}
+                        """
     return latex_document
 
 
