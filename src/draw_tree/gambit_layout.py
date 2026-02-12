@@ -117,7 +117,7 @@ def gambit_layout_to_ef(
     # Normalise offsets based on the midpoint
     nodes_with_normalised_offsets = {}
     for node, node_coords in layout.items():
-        nodes_with_normalised_offsets[node] = -(node_coords.offset - midpoint) * xshift_multiplier
+        nodes_with_normalised_offsets[node] = (node_coords.offset - midpoint) * xshift_multiplier
     
     # Now, build the node lines in the .ef string
     for node, node_coords in layout.items():
