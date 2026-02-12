@@ -348,8 +348,8 @@ class TestDrawTreeFunction:
         try:
             # Test with scale
             result_scaled = draw_tree.generate_tikz(ef_file_path, scale_factor=2.0)
-            assert "scale=2" in result_scaled
-            
+            assert "scale=1.6" in result_scaled  # 2 * 0.8
+
             # Test with grid
             result_grid = draw_tree.generate_tikz(ef_file_path, show_grid=True)
             assert "\\draw [help lines, color=green]" in result_grid
@@ -533,7 +533,7 @@ class TestTexGeneration:
                 content = f.read()
                 
             # Check for scale and grid options
-            assert "scale=2" in content
+            assert "scale=1.6" in content  # 2 * 0.8
             assert "\\draw [help lines, color=green]" in content
             
             # Clean up
