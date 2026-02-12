@@ -287,19 +287,6 @@ class TestDrawTreeFunction:
         finally:
             os.unlink(ef_file_path)
 
-    def test_draw_tree_raises_when_no_ipython(self):
-        """When IPython is not available, draw_tree should raise EnvironmentError."""
-        with patch('draw_tree.core.get_ipython', return_value=None):
-            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
-                ef_file.write("player 1\n")
-                ef_file.write("level 0 node root player 1\n")
-                ef_file_path = ef_file.name
-            try:
-                with pytest.raises(EnvironmentError):
-                    draw_tree.draw_tree(ef_file_path)
-            finally:
-                os.unlink(ef_file_path)
-
     def test_draw_tree_calls_ipython_magic_when_available(self):
         """When IPython is available, draw_tree should load the jupyter_tikz
         extension if needed and call the tikz cell magic with the generated code.
@@ -361,8 +348,8 @@ class TestDrawTreeFunction:
         try:
             # Test with scale
             result_scaled = draw_tree.generate_tikz(ef_file_path, scale_factor=2.0)
-            assert "scale=2" in result_scaled
-            
+            assert "scale=1.6" in result_scaled  # 2 * 0.8
+
             # Test with grid
             result_grid = draw_tree.generate_tikz(ef_file_path, show_grid=True)
             assert "\\draw [help lines, color=green]" in result_grid
@@ -465,7 +452,7 @@ class TestPngGeneration:
                 mock_run.side_effect = FileNotFoundError("Command not found")
                 
                 with pytest.raises(RuntimeError):
-                    draw_tree.generate_png(ef_file_path, output_png="custom_name.png")
+                    draw_tree.generate_png(ef_file_path, save_to="custom_name.png")
         finally:
             os.unlink(ef_file_path)
 
@@ -496,8 +483,7 @@ class TestTexGeneration:
                 content = f.read()
                 
             # Check for LaTeX document structure
-            assert "\\documentclass[a4paper,12pt]{article}" in content
-            assert "\\usepackage{tikz}" in content
+            assert "\\documentclass[tikz,border=10pt]{standalone}" in content
             assert "\\begin{document}" in content
             assert "\\end{document}" in content
             assert "\\begin{tikzpicture}" in content
@@ -518,7 +504,7 @@ class TestTexGeneration:
 
         try:
             custom_filename = "custom_output.tex"
-            tex_path = draw_tree.generate_tex(ef_file_path, output_tex=custom_filename)
+            tex_path = draw_tree.generate_tex(ef_file_path, save_to=custom_filename)
             
             # Verify the custom filename was used
             assert tex_path.endswith(custom_filename)
@@ -547,7 +533,7 @@ class TestTexGeneration:
                 content = f.read()
                 
             # Check for scale and grid options
-            assert "scale=2" in content
+            assert "scale=1.6" in content  # 2 * 0.8
             assert "\\draw [help lines, color=green]" in content
             
             # Clean up

@@ -13,6 +13,8 @@ import tempfile
 import re
 from typing import TYPE_CHECKING
 
+from numpy import save
+
 if TYPE_CHECKING:
     import pygambit
 
@@ -1396,7 +1398,7 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
 
 def ef_to_tex(
     ef_file: str,
-    scale_factor: float = 0.8,
+    scale_factor: float = 1.0,
     show_grid: bool = False,
     color_scheme: str = "default",
     action_label_position: float = 0.5,
@@ -1417,6 +1419,9 @@ def ef_to_tex(
     Returns:
         Complete TikZ code as a string.
     """
+    # Scale adjustment
+    scale_factor = scale_factor*0.8
+
     global scale, grid, node_to_iset_player
 
     # Save original state
@@ -1513,10 +1518,10 @@ def ef_to_tex(
 def generate_tikz(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
-    scale_factor: float = 0.8,
-    level_spacing: int = 4,
-    sublevel_spacing: int = 2,
-    width_spacing: int = 2,
+    scale_factor: float = 1.0,
+    level_scaling: int = 1,
+    sublevel_scaling: int = 1,
+    width_scaling: int = 1,
     hide_action_labels: bool = False,
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
@@ -1531,9 +1536,9 @@ def generate_tikz(
         game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
         save_to: Optional path to save intermediate .ef file when generating from a pygambit.gambit.Game object.
         scale_factor: Scale factor for the diagram.
-        level_spacing: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
-        sublevel_spacing: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
-        width_spacing: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
+        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
+        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
         hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
         shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
         show_grid: Whether to show grid lines.
@@ -1557,12 +1562,13 @@ def generate_tikz(
                 pass
     else:
         from .gambit_layout import gambit_layout_to_ef
+        # Generate the ef, use normalised spacing options
         ef_file = gambit_layout_to_ef(
             game,
             save_to=save_to,
-            level_multiplier=level_spacing,
-            sublevel_multiplier=sublevel_spacing,
-            xshift_multiplier=width_spacing,
+            level_multiplier=level_scaling*4,
+            sublevel_multiplier=sublevel_scaling*2 ,
+            xshift_multiplier=width_scaling*2,
             hide_action_labels=hide_action_labels,
             shared_terminal_depth=shared_terminal_depth,
         )
@@ -1622,10 +1628,10 @@ def generate_tikz(
 def draw_tree(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
-    scale_factor: float = 0.8,
-    level_spacing: int = 4,
-    sublevel_spacing: int = 2,
-    width_spacing: int = 2,
+    scale_factor: float = 1.0,
+    level_scaling: int = 1,
+    sublevel_scaling: int = 1,
+    width_scaling: int = 1,
     hide_action_labels: bool = False,
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
@@ -1640,9 +1646,9 @@ def draw_tree(
         game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
         save_to: Optional path to save intermediate .ef file when generating from a pygambit.gambit.Game object.
         scale_factor: Scale factor for the diagram.
-        level_spacing: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
-        sublevel_spacing: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
-        width_spacing: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
+        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
+        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
         hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
         shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
         show_grid: Whether to show grid lines.
@@ -1654,10 +1660,26 @@ def draw_tree(
         The result of the Jupyter cell magic execution, or the TikZ code string
         if cell magic fails.
     """
-    # Ensure we are in a Jupyter notebook environment
+
+    # Generate TikZ code
+    tikz_code = generate_tikz(
+        game,
+        save_to=save_to,
+        scale_factor=scale_factor,
+        level_scaling=level_scaling,
+        sublevel_scaling=sublevel_scaling,
+        width_scaling=width_scaling,
+        show_grid=show_grid,
+        shared_terminal_depth=shared_terminal_depth,
+        hide_action_labels=hide_action_labels,
+        color_scheme=color_scheme,
+        edge_thickness=edge_thickness,
+        action_label_position=action_label_position,
+    )
+
+    # Execute cell magic or return TikZ
     ip = get_ipython()
     if ip:
-        # Only attempt to load the extension if it's not already loaded
         em = getattr(ip, 'extension_manager', None)
         loaded = getattr(em, 'loaded', None)
         try:
@@ -1666,25 +1688,9 @@ def draw_tree(
             jpt_loaded = False
         if not jpt_loaded:
             ip.run_line_magic("load_ext", "jupyter_tikz")
-
-        # Generate TikZ code and execute cell magic
-        tikz_code = generate_tikz(
-            game,
-            save_to=save_to,
-            scale_factor=scale_factor,
-            level_spacing=level_spacing,
-            sublevel_spacing=sublevel_spacing,
-            width_spacing=width_spacing,
-            show_grid=show_grid,
-            shared_terminal_depth=shared_terminal_depth,
-            hide_action_labels=hide_action_labels,
-            color_scheme=color_scheme,
-            edge_thickness=edge_thickness,
-            action_label_position=action_label_position,
-        )
         return ip.run_cell_magic("tikz", "", tikz_code)
     else:
-        raise EnvironmentError("draw_tree function requires a Jupyter notebook environment.")
+        return tikz_code
 
 
 def latex_wrapper(tikz_code: str) -> str:
@@ -1696,70 +1702,99 @@ def latex_wrapper(tikz_code: str) -> str:
     Returns:
         Complete LaTeX document as a string.
     """
-    latex_document = f"""\\documentclass[a4paper,12pt]{{article}}
-\\usepackage{{newpxtext,newpxmath}}
-\\linespread{{1.10}}        % Palatino needs more leading (space between lines) 
-\\usepackage{{graphicx}}
-\\usepackage{{tikz}}
-\\usetikzlibrary{{shapes}}
-\\usetikzlibrary{{arrows.meta}}
-\\oddsidemargin=.46cm 
-\\textwidth=15cm
-\\textheight=24cm
-\\topmargin=-1.3cm
-\\parindent 0pt
-\\parskip1ex
-\\pagestyle{{empty}}
+    latex_document = f"""\\documentclass[tikz,border=10pt]{{standalone}}
+                        \\usepackage{{newpxtext,newpxmath}}
+                        \\linespread{{1.10}}
+                        \\usetikzlibrary{{shapes}}
+                        \\usetikzlibrary{{arrows.meta}}
 
-\\begin{{document}}
+                        \\begin{{document}}
 
-\\hrule
+                        {tikz_code}
 
-{tikz_code}
-
-\\hrule
-
-\\end{{document}}
-"""
+                        \\end{{document}}
+                        """
     return latex_document
 
 
-def generate_tex(ef_file: str, output_tex: Optional[str] = None, scale_factor: float = 0.8, show_grid: bool = False) -> str:
+def generate_tex(
+    game: str | "pygambit.gambit.Game",
+    save_to: Optional[str] = None,
+    scale_factor: float = 1.0,
+    level_scaling: int = 1,
+    sublevel_scaling: int = 1,
+    width_scaling: int = 1,
+    hide_action_labels: bool = False,
+    shared_terminal_depth: bool = False,
+    show_grid: bool = False,
+    color_scheme: str = "default",
+    edge_thickness: float = 1.0,
+    action_label_position: float = 0.5,
+) -> str:
     """
     Generate a complete LaTeX document file directly from an extensive form (.ef) file.
-    
+
     This function creates a complete LaTeX document with embedded TikZ code
     and saves it to a .tex file.
-    
+
     Args:
-        ef_file: Path to the .ef file to process.
-        output_tex: Output LaTeX filename. If None, derives from ef_file name.
-        scale_factor: Scale factor for the diagram (default: 1.0).
-        show_grid: Whether to show grid lines (default: False).
-        
+        game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
+        save_to: path to save intermediate .ef file when generating from a pygambit.gambit.Game object and output tex file.
+        scale_factor: Scale factor for the diagram.
+        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
+        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
+        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
+        shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
+        show_grid: Whether to show grid lines.
+        color_scheme: Color scheme for player nodes.
+        edge_thickness: Thickness of edges.
+        action_label_position: Position of action labels along edges.
+
     Returns:
         Path to the generated LaTeX file.
-        
+
     Raises:
         FileNotFoundError: If the .ef file doesn't exist.
     """
     # Determine output filename
-    if output_tex is None:
-        ef_path = Path(ef_file)
-        output_tex = ef_path.with_suffix('.tex').name
+    if save_to is None:
+        if isinstance(game, str):
+            game_path = Path(game)
+        else:
+            game_path = Path(game.title + '.ef')
+        output_tex = game_path.with_suffix('.tex').name
+    else:
+        if not save_to.endswith('.tex'):
+            output_tex = save_to + '.tex'
+        else:
+            output_tex = save_to
     
-    # If input is an EFG file, convert it first
-    if isinstance(ef_file, str) and ef_file.lower().endswith('.efg'):
+    # If game is an EFG file, convert it first
+    if isinstance(game, str) and game.lower().endswith(".efg"):
         try:
-            ef_file = efg_dl_ef(ef_file)
+            game = efg_dl_ef(game)
         except Exception:
             pass
 
     # Generate TikZ content using generate_tikz
-    tikz_content = generate_tikz(ef_file, scale_factor=scale_factor, show_grid=show_grid)
+    tikz_code = generate_tikz(
+        game,
+        save_to=save_to,
+        scale_factor=scale_factor,
+        level_scaling=level_scaling,
+        sublevel_scaling=sublevel_scaling,
+        width_scaling=width_scaling,
+        show_grid=show_grid,
+        shared_terminal_depth=shared_terminal_depth,
+        hide_action_labels=hide_action_labels,
+        color_scheme=color_scheme,
+        edge_thickness=edge_thickness,
+        action_label_position=action_label_position,
+    )
     
     # Wrap in complete LaTeX document
-    latex_document = latex_wrapper(tikz_content)
+    latex_document = latex_wrapper(tikz_code)
     
     # Write to file
     with open(output_tex, 'w') as f:
@@ -1768,37 +1803,85 @@ def generate_tex(ef_file: str, output_tex: Optional[str] = None, scale_factor: f
     return str(Path(output_tex).absolute())
 
 
-def generate_pdf(ef_file: str, output_pdf: Optional[str] = None, scale_factor: float = 0.8, show_grid: bool = False, cleanup: bool = True) -> str:
+def generate_pdf(
+        game: str | "pygambit.gambit.Game",
+        save_to: Optional[str] = None,
+        scale_factor: float = 1.0,
+        level_scaling: int = 1,
+        sublevel_scaling: int = 1,
+        width_scaling: int = 1,
+        hide_action_labels: bool = False,
+        shared_terminal_depth: bool = False,
+        show_grid: bool = False,
+        color_scheme: str = "default",
+        edge_thickness: float = 1.0,
+        action_label_position: float = 0.5,
+        ) -> str:
     """
     Generate a PDF directly from an extensive form (.ef) file.
-    
+
     This function creates a complete LaTeX document, compiles it to PDF,
     and optionally cleans up temporary files.
-    
+
     Args:
-        ef_file: Path to the .ef file to process.
-        output_pdf: Output PDF filename. If None, derives from ef_file name.
-        scale_factor: Scale factor for the diagram (default: 1.0).
-        show_grid: Whether to show grid lines (default: False).
-        cleanup: Whether to remove temporary files (default: True).
-        
+        game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
+        save_to: path to save intermediate .ef file when generating from a pygambit.gambit.Game object and output pdf file.
+        scale_factor: Scale factor for the diagram.
+        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
+        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
+        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
+        shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
+        show_grid: Whether to show grid lines.
+        color_scheme: Color scheme for player nodes.
+        edge_thickness: Thickness of edges.
+        action_label_position: Position of action labels along edges.
+
     Returns:
         Path to the generated PDF file.
-        
+
     Raises:
         FileNotFoundError: If the .ef file doesn't exist.
         subprocess.CalledProcessError: If LaTeX compilation fails.
     """
     # Determine output filename
-    if output_pdf is None:
-        ef_path = Path(ef_file)
-        output_pdf = ef_path.with_suffix('.pdf').name
+    if save_to is None:
+        if isinstance(game, str):
+            game_path = Path(game)
+        else:
+            game_path = Path(game.title + ".ef")
+        output_pdf = game_path.with_suffix(".pdf").name
+    else:
+        if not save_to.endswith(".pdf"):
+            output_pdf = save_to + ".pdf"
+        else:
+            output_pdf = save_to
+
+    # If game is an EFG file, convert it first
+    if isinstance(game, str) and game.lower().endswith(".efg"):
+        try:
+            game = efg_dl_ef(game)
+        except Exception:
+            pass
     
     # Generate TikZ content using generate_tikz
-    tikz_content = generate_tikz(ef_file, scale_factor=scale_factor, show_grid=show_grid)
+    tikz_code = generate_tikz(
+        game,
+        save_to=save_to,
+        scale_factor=scale_factor,
+        level_scaling=level_scaling,
+        sublevel_scaling=sublevel_scaling,
+        width_scaling=width_scaling,
+        show_grid=show_grid,
+        shared_terminal_depth=shared_terminal_depth,
+        hide_action_labels=hide_action_labels,
+        color_scheme=color_scheme,
+        edge_thickness=edge_thickness,
+        action_label_position=action_label_position,
+    )
     
     # Create LaTeX wrapper document
-    latex_document = latex_wrapper(tikz_content)
+    latex_document = latex_wrapper(tikz_code)
     
     # Use temporary directory for LaTeX compilation
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -1839,33 +1922,67 @@ def generate_pdf(ef_file: str, output_pdf: Optional[str] = None, scale_factor: f
             raise RuntimeError("pdflatex not found. Please install a LaTeX distribution (e.g., TeX Live, MiKTeX).")
 
 
-def generate_png(ef_file: str, output_png: Optional[str] = None, scale_factor: float = 0.8, 
-                show_grid: bool = False, dpi: int = 300, cleanup: bool = True) -> str:
+def generate_png(
+    game: str | "pygambit.gambit.Game",
+    save_to: Optional[str] = None,
+    scale_factor: float = 1.0,
+    level_scaling: int = 1,
+    sublevel_scaling: int = 1,
+    width_scaling: int = 1,
+    hide_action_labels: bool = False,
+    shared_terminal_depth: bool = False,
+    show_grid: bool = False,
+    color_scheme: str = "default",
+    edge_thickness: float = 1.0,
+    action_label_position: float = 0.5,
+    dpi: int = 300,
+) -> str:
     """
     Generate a PNG image directly from an extensive form (.ef) file.
-    
+
     This function creates a PDF first, then converts it to PNG using external tools.
     Requires both pdflatex and either ImageMagick (convert) or Ghostscript (gs).
-    
+
     Args:
-        ef_file: Path to the .ef file to process.
-        output_png: Output PNG filename. If None, derives from ef_file name.
-        scale_factor: Scale factor for the diagram (default: 1.0).
-        show_grid: Whether to show grid lines (default: False).
-        dpi: Resolution in dots per inch (default: 300).
-        cleanup: Whether to remove temporary files (default: True).
-        
+        game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
+        save_to: path to save intermediate .ef file when generating from a pygambit.gambit.Game object and output png file.
+        scale_factor: Scale factor for the diagram.
+        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
+        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
+        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
+        shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
+        show_grid: Whether to show grid lines.
+        color_scheme: Color scheme for player nodes.
+        edge_thickness: Thickness of edges.
+        action_label_position: Position of action labels along edges.
+
     Returns:
         Path to the generated PNG file.
-        
+
     Raises:
         FileNotFoundError: If the .ef file doesn't exist.
         RuntimeError: If PDF generation or PNG conversion fails.
     """
     # Determine output filename
-    if output_png is None:
-        ef_path = Path(ef_file)
-        output_png = ef_path.with_suffix('.png').name
+    if save_to is None:
+        if isinstance(game, str):
+            game_path = Path(game)
+        else:
+            game_path = Path(game.title + ".ef")
+        output_png = game_path.with_suffix(".png").name
+    else:
+        if not save_to.endswith(".png"):
+            output_png = save_to + ".png"
+        else:
+            output_png = save_to
+
+    # If game is an EFG file, convert it first
+    if isinstance(game, str) and game.lower().endswith(".efg"):
+        try:
+            game = efg_dl_ef(game)
+        except Exception:
+            pass
     
     # Step 1: Generate PDF first
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -1874,11 +1991,18 @@ def generate_png(ef_file: str, output_png: Optional[str] = None, scale_factor: f
         try:
             # Generate PDF using existing function
             generate_pdf(
-                ef_file=ef_file,
-                output_pdf=str(temp_pdf),
+                game=game,
+                save_to=save_to,
                 scale_factor=scale_factor,
+                level_scaling=level_scaling,
+                sublevel_scaling=sublevel_scaling,
+                width_scaling=width_scaling,
+                hide_action_labels=hide_action_labels,
+                shared_terminal_depth=shared_terminal_depth,
                 show_grid=show_grid,
-                cleanup=cleanup
+                color_scheme=color_scheme,
+                edge_thickness=edge_thickness,
+                action_label_position=action_label_position,
             )
             
             # Step 2: Convert PDF to PNG

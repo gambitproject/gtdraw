@@ -82,11 +82,11 @@ You can also use `draw_tree` as a Python library:
 ```python
 from draw_tree import generate_tex, generate_pdf, generate_png
 generate_tex('games/example.ef')                                    # Creates example.tex
-generate_tex('games/example.ef', output_tex='custom.tex')           # Creates custom.tex
+generate_tex('games/example.ef', save_to='custom')                  # Creates custom.tex
 generate_pdf('games/example.ef')                                    # Creates example.pdf
 generate_png('games/example.ef')                                    # Creates example.png
 generate_png('games/example.ef', dpi=600)                           # Creates high-res example.png (72-2400, default: 300)
-generate_png('games/example.ef', output_png='mygame.png', scale_factor=0.8)    # Creates mygame.png with 0.8 scaling (0.01 to 100)
+generate_png('games/example.ef', save_to='mygame', scale_factor=0.8)    # Creates mygame.png with 0.8 scaling (0.01 to 100)
 ```
 
 ### Rendering in Jupyter Notebooks
@@ -107,6 +107,19 @@ Take a look in the `tutorial/` folder for example notebooks.
 Check out the `pygambit` documentation which contains tutorials that use `draw_tree` to render game trees from `pygambit` game objects:
 - [Tutorial 2: Extensive-form games](https://gambitproject.readthedocs.io/en/latest/tutorials/02_extensive_form.html)
 - [Tutorial 3: Stripped-down poker](https://gambitproject.readthedocs.io/en/latest/tutorials/03_stripped_down_poker.html)
+
+In short, you can do:
+```python
+import pygambit as gbt
+from draw_tree import draw_tree, generate_tex, generate_pdf, generate_png
+g = gbt.read_efg('somegame.efg')
+draw_tree(g)
+generate_tex(g)
+generate_pdf(g)
+generate_png(g)
+```
+
+> Note: Without setting the `save_to` parameter, the saved file will be based on the title field of the pygambit game object.
 
 ## Developer docs: Testing
 
