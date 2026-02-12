@@ -108,6 +108,19 @@ Check out the `pygambit` documentation which contains tutorials that use `draw_t
 - [Tutorial 2: Extensive-form games](https://gambitproject.readthedocs.io/en/latest/tutorials/02_extensive_form.html)
 - [Tutorial 3: Stripped-down poker](https://gambitproject.readthedocs.io/en/latest/tutorials/03_stripped_down_poker.html)
 
+In short, you can do:
+```python
+import pygambit as gbt
+from draw_tree import draw_tree, generate_tex, generate_pdf, generate_png
+g = gbt.read_efg('somegame.efg')
+draw_tree(g)
+generate_tex(g)
+generate_pdf(g)
+generate_png(g)
+```
+
+> Note: Without setting the `save_to` parameter, the saved file will be based on the title field of the pygambit game object.
+
 ## Developer docs: Testing
 
 The project includes a comprehensive test suite using pytest. To run the tests:
