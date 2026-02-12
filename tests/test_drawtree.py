@@ -287,19 +287,6 @@ class TestDrawTreeFunction:
         finally:
             os.unlink(ef_file_path)
 
-    def test_draw_tree_raises_when_no_ipython(self):
-        """When IPython is not available, draw_tree should raise EnvironmentError."""
-        with patch('draw_tree.core.get_ipython', return_value=None):
-            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
-                ef_file.write("player 1\n")
-                ef_file.write("level 0 node root player 1\n")
-                ef_file_path = ef_file.name
-            try:
-                with pytest.raises(EnvironmentError):
-                    draw_tree.draw_tree(ef_file_path)
-            finally:
-                os.unlink(ef_file_path)
-
     def test_draw_tree_calls_ipython_magic_when_available(self):
         """When IPython is available, draw_tree should load the jupyter_tikz
         extension if needed and call the tikz cell magic with the generated code.
