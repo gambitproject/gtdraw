@@ -13,6 +13,8 @@ import tempfile
 import re
 from typing import TYPE_CHECKING
 
+from numpy import save
+
 if TYPE_CHECKING:
     import pygambit
 
@@ -1923,33 +1925,64 @@ def generate_pdf(
             raise RuntimeError("pdflatex not found. Please install a LaTeX distribution (e.g., TeX Live, MiKTeX).")
 
 
-def generate_png(ef_file: str, output_png: Optional[str] = None, scale_factor: float = 0.8, 
-                show_grid: bool = False, dpi: int = 300, cleanup: bool = True) -> str:
+def generate_png(
+    game: str | "pygambit.gambit.Game",
+    save_to: Optional[str] = None,
+    scale_factor: float = 0.8,
+    level_spacing: int = 4,
+    sublevel_spacing: int = 2,
+    width_spacing: int = 2,
+    hide_action_labels: bool = False,
+    shared_terminal_depth: bool = False,
+    show_grid: bool = False,
+    color_scheme: str = "default",
+    edge_thickness: float = 1.0,
+    action_label_position: float = 0.5,
+    dpi: int = 300,
+) -> str:
     """
     Generate a PNG image directly from an extensive form (.ef) file.
-    
+
     This function creates a PDF first, then converts it to PNG using external tools.
     Requires both pdflatex and either ImageMagick (convert) or Ghostscript (gs).
-    
+
     Args:
-        ef_file: Path to the .ef file to process.
-        output_png: Output PNG filename. If None, derives from ef_file name.
-        scale_factor: Scale factor for the diagram (default: 1.0).
-        show_grid: Whether to show grid lines (default: False).
-        dpi: Resolution in dots per inch (default: 300).
-        cleanup: Whether to remove temporary files (default: True).
-        
+        game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
+        save_to: path to save intermediate .ef file when generating from a pygambit.gambit.Game object and output png file.
+        scale_factor: Scale factor for the diagram.
+        level_spacing: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
+        sublevel_spacing: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
+        width_spacing: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
+        shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
+        show_grid: Whether to show grid lines.
+        color_scheme: Color scheme for player nodes.
+        edge_thickness: Thickness of edges.
+        action_label_position: Position of action labels along edges.
+
     Returns:
         Path to the generated PNG file.
-        
+
     Raises:
         FileNotFoundError: If the .ef file doesn't exist.
         RuntimeError: If PDF generation or PNG conversion fails.
     """
     # Determine output filename
-    if output_png is None:
-        ef_path = Path(ef_file)
-        output_png = ef_path.with_suffix('.png').name
+    if save_to is None:
+        if isinstance(game, str):
+            game_path = Path(game)
+        else:
+            game_path = Path(game.title + ".ef")
+        output_png = game_path.with_suffix(".png").name
+    else:
+        output_png = save_to + ".png"
+
+    # If game is an EFG file, convert it first
+    if isinstance(game, str) and game.lower().endswith(".efg"):
+        try:
+            game = efg_dl_ef(game)
+        except Exception:
+            pass
     
     # Step 1: Generate PDF first
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -1958,11 +1991,18 @@ def generate_png(ef_file: str, output_png: Optional[str] = None, scale_factor: f
         try:
             # Generate PDF using existing function
             generate_pdf(
-                ef_file=ef_file,
-                output_pdf=str(temp_pdf),
+                game=game,
+                save_to=save_to,
                 scale_factor=scale_factor,
+                level_spacing=level_spacing,
+                sublevel_spacing=sublevel_spacing,
+                width_spacing=width_spacing,
+                hide_action_labels=hide_action_labels,
+                shared_terminal_depth=shared_terminal_depth,
                 show_grid=show_grid,
-                cleanup=cleanup
+                color_scheme=color_scheme,
+                edge_thickness=edge_thickness,
+                action_label_position=action_label_position,
             )
             
             # Step 2: Convert PDF to PNG
