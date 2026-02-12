@@ -84,15 +84,10 @@ def gambit_layout_to_ef(
     for node, node_coords in layout.items():
 
         # Calculate the node level, using gambit level and sublevel
-        # Ignore sublevel for nodes that don't share an infoset
-        gbt_sublevel = node_coords.sublevel
-        if node.infoset in infoset_groups:
-            if len(infoset_groups[node.infoset]) == 1:
-                gbt_sublevel = 0
         if node.is_terminal and shared_terminal_depth:
             level = determine_node_level(gbt_highest_level, gbt_highest_sublevel, level_multiplier, sublevel_multiplier)
         else:
-            level = determine_node_level(node_coords.level, gbt_sublevel, level_multiplier, sublevel_multiplier)
+            level = determine_node_level(node_coords.level, node_coords.sublevel, level_multiplier, sublevel_multiplier)
 
         # Ensure child nodes have levels greater than their parents
         if not node == game.root:
