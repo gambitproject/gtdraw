@@ -50,25 +50,30 @@ def main():
     current_grid = core.grid
     
     try:
+        # Use default PDF filename if none specified
+        if output_file is None:
+            output_file = Path(current_ef_file).stem
         if output_mode == "pdf":
-            print(f"Generating PDF: {output_file}")
+            if output_file.endswith(".pdf"):
+                print(f"Generating PDF: {output_file}")
+            else:
+                print(f"Generating PDF: {output_file}.pdf")
             pdf_path = generate_pdf(
-                ef_file=current_ef_file,
-                output_pdf=output_file,
+                game=current_ef_file,
+                save_to=output_file,
                 scale_factor=current_scale,
                 show_grid=current_grid
             )
             print(f"PDF generated successfully: {pdf_path}")
         
         elif output_mode == "png":
-            # Use default PNG filename if none specified
-            if output_file is None:
-                base_name = Path(current_ef_file).stem
-                output_file = f"{base_name}.png"
-            print(f"Generating PNG: {output_file}")
+            if output_file.endswith(".png"):
+                print(f"Generating PNG: {output_file}")
+            else:
+                print(f"Generating PNG: {output_file}.png")
             png_path = generate_png(
-                ef_file=current_ef_file,
-                output_png=output_file,
+                game=current_ef_file,
+                save_to=output_file,
                 scale_factor=current_scale,
                 show_grid=current_grid,
                 dpi=dpi if dpi is not None else 300
@@ -76,23 +81,22 @@ def main():
             print(f"PNG generated successfully: {png_path}")
         
         elif output_mode == "tex":
-            # Use default TEX filename if none specified
-            if output_file is None:
-                base_name = Path(current_ef_file).stem
-                output_file = f"{base_name}.tex"
-            print(f"Generating LaTeX: {output_file}")
+            if output_file.endswith(".tex"):
+                print(f"Generating LaTeX: {output_file}")
+            else:
+                print(f"Generating LaTeX: {output_file}.tex")
             tex_path = generate_tex(
-                ef_file=current_ef_file,
-                output_tex=output_file,
+                game=current_ef_file,
+                save_to=output_file,
                 scale_factor=current_scale,
-                show_grid=current_grid
+                show_grid=current_grid,
             )
             print(f"LaTeX generated successfully: {tex_path}")
         
         else:
             # Generate TikZ code (original behavior)
             tikz_code = draw_tree(
-                ef_file=current_ef_file, 
+                game=current_ef_file, 
                 scale_factor=current_scale, 
                 show_grid=current_grid
             )

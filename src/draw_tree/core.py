@@ -1774,7 +1774,10 @@ def generate_tex(
             game_path = Path(game.title + '.ef')
         output_tex = game_path.with_suffix('.tex').name
     else:
-        output_tex = save_to + '.tex'
+        if not save_to.endswith('.tex'):
+            output_tex = save_to + '.tex'
+        else:
+            output_tex = save_to
     
     # If game is an EFG file, convert it first
     if isinstance(game, str) and game.lower().endswith(".efg"):
@@ -1858,7 +1861,10 @@ def generate_pdf(
             game_path = Path(game.title + ".ef")
         output_pdf = game_path.with_suffix(".pdf").name
     else:
-        output_pdf = save_to + ".pdf"
+        if not save_to.endswith(".pdf"):
+            output_pdf = save_to + ".pdf"
+        else:
+            output_pdf = save_to
 
     # If game is an EFG file, convert it first
     if isinstance(game, str) and game.lower().endswith(".efg"):
@@ -1975,7 +1981,10 @@ def generate_png(
             game_path = Path(game.title + ".ef")
         output_png = game_path.with_suffix(".png").name
     else:
-        output_png = save_to + ".png"
+        if not save_to.endswith(".png"):
+            output_png = save_to + ".png"
+        else:
+            output_png = save_to
 
     # If game is an EFG file, convert it first
     if isinstance(game, str) and game.lower().endswith(".efg"):
