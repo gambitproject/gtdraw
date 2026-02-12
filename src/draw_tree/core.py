@@ -1516,9 +1516,9 @@ def generate_tikz(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
     scale_factor: float = 0.8,
-    level_spacing: int = 4,
-    sublevel_spacing: int = 2,
-    width_spacing: int = 2,
+    level_scaling: int = 1,
+    sublevel_scaling: int = 1,
+    width_scaling: int = 1,
     hide_action_labels: bool = False,
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
@@ -1533,9 +1533,9 @@ def generate_tikz(
         game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
         save_to: Optional path to save intermediate .ef file when generating from a pygambit.gambit.Game object.
         scale_factor: Scale factor for the diagram.
-        level_spacing: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
-        sublevel_spacing: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
-        width_spacing: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
+        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
+        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
         hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
         shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
         show_grid: Whether to show grid lines.
@@ -1559,12 +1559,13 @@ def generate_tikz(
                 pass
     else:
         from .gambit_layout import gambit_layout_to_ef
+        # Generate the ef, use normalised spacing options
         ef_file = gambit_layout_to_ef(
             game,
             save_to=save_to,
-            level_multiplier=level_spacing,
-            sublevel_multiplier=sublevel_spacing,
-            xshift_multiplier=width_spacing,
+            level_multiplier=level_scaling*4,
+            sublevel_multiplier=sublevel_scaling*2 ,
+            xshift_multiplier=width_scaling*2,
             hide_action_labels=hide_action_labels,
             shared_terminal_depth=shared_terminal_depth,
         )
@@ -1625,9 +1626,9 @@ def draw_tree(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
     scale_factor: float = 0.8,
-    level_spacing: int = 4,
-    sublevel_spacing: int = 2,
-    width_spacing: int = 2,
+    level_scaling: int = 1,
+    sublevel_scaling: int = 1,
+    width_scaling: int = 1,
     hide_action_labels: bool = False,
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
@@ -1642,9 +1643,9 @@ def draw_tree(
         game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
         save_to: Optional path to save intermediate .ef file when generating from a pygambit.gambit.Game object.
         scale_factor: Scale factor for the diagram.
-        level_spacing: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
-        sublevel_spacing: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
-        width_spacing: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
+        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
+        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
         hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
         shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
         show_grid: Whether to show grid lines.
@@ -1662,9 +1663,9 @@ def draw_tree(
         game,
         save_to=save_to,
         scale_factor=scale_factor,
-        level_spacing=level_spacing,
-        sublevel_spacing=sublevel_spacing,
-        width_spacing=width_spacing,
+        level_scaling=level_scaling,
+        sublevel_scaling=sublevel_scaling,
+        width_scaling=width_scaling,
         show_grid=show_grid,
         shared_terminal_depth=shared_terminal_depth,
         hide_action_labels=hide_action_labels,
@@ -1717,9 +1718,9 @@ def generate_tex(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
     scale_factor: float = 0.8,
-    level_spacing: int = 4,
-    sublevel_spacing: int = 2,
-    width_spacing: int = 2,
+    level_scaling: int = 1,
+    sublevel_scaling: int = 1,
+    width_scaling: int = 1,
     hide_action_labels: bool = False,
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
@@ -1737,9 +1738,9 @@ def generate_tex(
         game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
         save_to: path to save intermediate .ef file when generating from a pygambit.gambit.Game object and output tex file.
         scale_factor: Scale factor for the diagram.
-        level_spacing: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
-        sublevel_spacing: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
-        width_spacing: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
+        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
+        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
         hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
         shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
         show_grid: Whether to show grid lines.
@@ -1778,9 +1779,9 @@ def generate_tex(
         game,
         save_to=save_to,
         scale_factor=scale_factor,
-        level_spacing=level_spacing,
-        sublevel_spacing=sublevel_spacing,
-        width_spacing=width_spacing,
+        level_scaling=level_scaling,
+        sublevel_scaling=sublevel_scaling,
+        width_scaling=width_scaling,
         show_grid=show_grid,
         shared_terminal_depth=shared_terminal_depth,
         hide_action_labels=hide_action_labels,
@@ -1803,9 +1804,9 @@ def generate_pdf(
         game: str | "pygambit.gambit.Game",
         save_to: Optional[str] = None,
         scale_factor: float = 0.8,
-        level_spacing: int = 4,
-        sublevel_spacing: int = 2,
-        width_spacing: int = 2,
+        level_scaling: int = 1,
+        sublevel_scaling: int = 1,
+        width_scaling: int = 1,
         hide_action_labels: bool = False,
         shared_terminal_depth: bool = False,
         show_grid: bool = False,
@@ -1823,9 +1824,9 @@ def generate_pdf(
         game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
         save_to: path to save intermediate .ef file when generating from a pygambit.gambit.Game object and output pdf file.
         scale_factor: Scale factor for the diagram.
-        level_spacing: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
-        sublevel_spacing: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
-        width_spacing: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
+        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
+        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
         hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
         shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
         show_grid: Whether to show grid lines.
@@ -1865,9 +1866,9 @@ def generate_pdf(
         game,
         save_to=save_to,
         scale_factor=scale_factor,
-        level_spacing=level_spacing,
-        sublevel_spacing=sublevel_spacing,
-        width_spacing=width_spacing,
+        level_scaling=level_scaling,
+        sublevel_scaling=sublevel_scaling,
+        width_scaling=width_scaling,
         show_grid=show_grid,
         shared_terminal_depth=shared_terminal_depth,
         hide_action_labels=hide_action_labels,
@@ -1922,9 +1923,9 @@ def generate_png(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
     scale_factor: float = 0.8,
-    level_spacing: int = 4,
-    sublevel_spacing: int = 2,
-    width_spacing: int = 2,
+    level_scaling: int = 1,
+    sublevel_scaling: int = 1,
+    width_scaling: int = 1,
     hide_action_labels: bool = False,
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
@@ -1943,9 +1944,9 @@ def generate_png(
         game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
         save_to: path to save intermediate .ef file when generating from a pygambit.gambit.Game object and output png file.
         scale_factor: Scale factor for the diagram.
-        level_spacing: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
-        sublevel_spacing: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
-        width_spacing: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
+        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
+        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
         hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
         shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
         show_grid: Whether to show grid lines.
@@ -1990,9 +1991,9 @@ def generate_png(
                 game=game,
                 save_to=save_to,
                 scale_factor=scale_factor,
-                level_spacing=level_spacing,
-                sublevel_spacing=sublevel_spacing,
-                width_spacing=width_spacing,
+                level_scaling=level_scaling,
+                sublevel_scaling=sublevel_scaling,
+                width_scaling=width_scaling,
                 hide_action_labels=hide_action_labels,
                 shared_terminal_depth=shared_terminal_depth,
                 show_grid=show_grid,
