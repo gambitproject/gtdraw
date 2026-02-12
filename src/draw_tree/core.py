@@ -1656,10 +1656,26 @@ def draw_tree(
         The result of the Jupyter cell magic execution, or the TikZ code string
         if cell magic fails.
     """
-    # Ensure we are in a Jupyter notebook environment
+
+    # Generate TikZ code
+    tikz_code = generate_tikz(
+        game,
+        save_to=save_to,
+        scale_factor=scale_factor,
+        level_spacing=level_spacing,
+        sublevel_spacing=sublevel_spacing,
+        width_spacing=width_spacing,
+        show_grid=show_grid,
+        shared_terminal_depth=shared_terminal_depth,
+        hide_action_labels=hide_action_labels,
+        color_scheme=color_scheme,
+        edge_thickness=edge_thickness,
+        action_label_position=action_label_position,
+    )
+
+    # Execute cell magic or return TikZ
     ip = get_ipython()
     if ip:
-        # Only attempt to load the extension if it's not already loaded
         em = getattr(ip, 'extension_manager', None)
         loaded = getattr(em, 'loaded', None)
         try:
@@ -1668,25 +1684,9 @@ def draw_tree(
             jpt_loaded = False
         if not jpt_loaded:
             ip.run_line_magic("load_ext", "jupyter_tikz")
-
-        # Generate TikZ code and execute cell magic
-        tikz_code = generate_tikz(
-            game,
-            save_to=save_to,
-            scale_factor=scale_factor,
-            level_spacing=level_spacing,
-            sublevel_spacing=sublevel_spacing,
-            width_spacing=width_spacing,
-            show_grid=show_grid,
-            shared_terminal_depth=shared_terminal_depth,
-            hide_action_labels=hide_action_labels,
-            color_scheme=color_scheme,
-            edge_thickness=edge_thickness,
-            action_label_position=action_label_position,
-        )
         return ip.run_cell_magic("tikz", "", tikz_code)
     else:
-        raise EnvironmentError("draw_tree function requires a Jupyter notebook environment.")
+        return tikz_code
 
 
 def latex_wrapper(tikz_code: str) -> str:
