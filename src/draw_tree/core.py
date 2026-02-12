@@ -1398,7 +1398,7 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
 
 def ef_to_tex(
     ef_file: str,
-    scale_factor: float = 0.8,
+    scale_factor: float = 1.0,
     show_grid: bool = False,
     color_scheme: str = "default",
     action_label_position: float = 0.5,
@@ -1419,6 +1419,9 @@ def ef_to_tex(
     Returns:
         Complete TikZ code as a string.
     """
+    # Scale adjustment
+    scale_factor = scale_factor*0.8
+
     global scale, grid, node_to_iset_player
 
     # Save original state
@@ -1515,7 +1518,7 @@ def ef_to_tex(
 def generate_tikz(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
-    scale_factor: float = 0.8,
+    scale_factor: float = 1.0,
     level_scaling: int = 1,
     sublevel_scaling: int = 1,
     width_scaling: int = 1,
@@ -1625,7 +1628,7 @@ def generate_tikz(
 def draw_tree(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
-    scale_factor: float = 0.8,
+    scale_factor: float = 1.0,
     level_scaling: int = 1,
     sublevel_scaling: int = 1,
     width_scaling: int = 1,
@@ -1717,7 +1720,7 @@ def latex_wrapper(tikz_code: str) -> str:
 def generate_tex(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
-    scale_factor: float = 0.8,
+    scale_factor: float = 1.0,
     level_scaling: int = 1,
     sublevel_scaling: int = 1,
     width_scaling: int = 1,
@@ -1803,7 +1806,7 @@ def generate_tex(
 def generate_pdf(
         game: str | "pygambit.gambit.Game",
         save_to: Optional[str] = None,
-        scale_factor: float = 0.8,
+        scale_factor: float = 1.0,
         level_scaling: int = 1,
         sublevel_scaling: int = 1,
         width_scaling: int = 1,
@@ -1922,7 +1925,7 @@ def generate_pdf(
 def generate_png(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
-    scale_factor: float = 0.8,
+    scale_factor: float = 1.0,
     level_scaling: int = 1,
     sublevel_scaling: int = 1,
     width_scaling: int = 1,
