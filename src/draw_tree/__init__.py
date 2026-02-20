@@ -13,6 +13,7 @@ from .core import (
     generate_tex,
     generate_pdf,
     generate_png,
+    generate_svg,
     ef_to_tex,
     latex_wrapper,
     efg_dl_ef
@@ -26,6 +27,7 @@ __all__ = [
     "generate_tex", 
     "generate_pdf",
     "generate_png",
+    "generate_svg",
     "ef_to_tex",
     "latex_wrapper",
     "efg_dl_ef",
