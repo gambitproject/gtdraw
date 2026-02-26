@@ -14,7 +14,7 @@ It can generate TikZ code, LaTeX documents, PDFs, and PNGs from game specificati
 Games can be specified via `.ef` format files which include layout formatting.
 These can be created via [Game Theory Explorer](https://gametheoryexplorer-a68c7.web.app/), or by hand, see [specs.pdf](specs.pdf) for details.
 
-Games can alternatively be specified via `pygambit` game objects; see the [Interoperability with pygambit](#interoperability-with-pygambit) section below for details.
+Games can alternatively be specified via `pygambit` game objects; see the [Interoperability with pygambit](#interoperability-with-pygambit) section below for details, or read tutorial in the Gambit documentation: [Tutorial 4) Creating publication-ready game images](https://gambitproject.readthedocs.io/en/latest/tutorials/04_creating_images.html).
 
 > `draw_tree` was originally developed by [Bernhard von Stengel](https://www.lse.ac.uk/people/bernhard-von-stengel) at the London School of Economics. It is being developed further as part of the [Gambit project](https://www.gambit-project.org) out of The Alan Turing Institute.
 
@@ -104,9 +104,9 @@ Take a look in the `tutorial/` folder for example notebooks.
 
 ### Interoperability with pygambit
 
-Check out the `pygambit` documentation which contains tutorials that use `draw_tree` to render game trees from `pygambit` game objects:
-- [Tutorial 2: Extensive-form games](https://gambitproject.readthedocs.io/en/latest/tutorials/02_extensive_form.html)
-- [Tutorial 3: Stripped-down poker](https://gambitproject.readthedocs.io/en/latest/tutorials/03_stripped_down_poker.html)
+Check out the `pygambit` documentation which contains tutorials that use `draw_tree` to render game trees from `pygambit` game objects.
+
+In particular read [Tutorial 4) Creating publication-ready game images](https://gambitproject.readthedocs.io/en/latest/tutorials/04_creating_images.html).
 
 In short, you can do:
 ```python
