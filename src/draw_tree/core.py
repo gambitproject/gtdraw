@@ -1313,7 +1313,7 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
 
 ########### command-line arguments
 
-def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], Optional[int]]:
+def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, bool, Optional[str], Optional[int]]:
     """
     Process command-line arguments to set global configuration.
     
@@ -1324,10 +1324,11 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
         argv: List of command-line arguments (including script name).
         
     Returns:
-        Tuple of (output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi) where:
-        - output_mode: 'tikz', 'pdf', 'png', or 'tex'
+        Tuple of (output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi) where:
+        - output_mode: 'tikz', 'pdf', 'png', 'svg', or 'tex'
         - pdf_requested: True if --pdf flag was provided
         - png_requested: True if --png flag was provided
+        - svg_requested: True if --svg flag was provided
         - tex_requested: True if --tex flag was provided
         - output_file: Custom output filename if specified
         - dpi: DPI setting for PNG output (None if not specified)
@@ -1338,6 +1339,7 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
     
     pdf_requested = False
     png_requested = False
+    svg_requested = False
     tex_requested = False
     output_file = None
     dpi = None
@@ -1359,6 +1361,8 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
             pdf_requested = True
         elif arg == "--png":
             png_requested = True
+        elif arg == "--svg":
+            svg_requested = True
         elif arg == "--tex":
             tex_requested = True
         elif arg.startswith("--output="):
@@ -1367,6 +1371,8 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
                 pdf_requested = True
             elif output_file.endswith('.png'):
                 png_requested = True
+            elif output_file.endswith('.svg'):
+                svg_requested = True
             elif output_file.endswith('.tex'):
                 tex_requested = True
         elif arg.startswith("--dpi="):
@@ -1387,14 +1393,16 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
     # Determine output mode
     if png_requested:
         output_mode = "png"
+    elif svg_requested:
+        output_mode = "svg"
     elif pdf_requested:
         output_mode = "pdf"
     elif tex_requested:
         output_mode = "tex"
     else:
         output_mode = "tikz"
-    
-    return (output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi)
+
+    return (output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi)
 
 def ef_to_tex(
     ef_file: str,
@@ -2090,6 +2098,124 @@ def generate_png(
             raise
         except Exception as e:
             raise RuntimeError(f"PNG generation failed: {e}")
+
+
+def generate_svg(
+    game: str | "pygambit.gambit.Game",
+    save_to: Optional[str] = None,
+    scale_factor: float = 1.0,
+    level_scaling: int = 1,
+    sublevel_scaling: int = 1,
+    width_scaling: int = 1,
+    hide_action_labels: bool = False,
+    shared_terminal_depth: bool = False,
+    show_grid: bool = False,
+    color_scheme: str = "default",
+    edge_thickness: float = 1.0,
+    action_label_position: float = 0.5,
+) -> str:
+    """
+    Generate an SVG image directly from an extensive form (.ef) file.
+
+    This function creates a PDF first, then converts it to SVG using pdf2svg.
+    Requires both pdflatex and pdf2svg.
+
+    Args:
+        game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
+        save_to: path to save intermediate .ef file when generating from a pygambit.gambit.Game object and output svg file.
+        scale_factor: Scale factor for the diagram.
+        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
+        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
+        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
+        shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
+        show_grid: Whether to show grid lines.
+        color_scheme: Color scheme for player nodes.
+        edge_thickness: Thickness of edges.
+        action_label_position: Position of action labels along edges.
+
+    Returns:
+        Path to the generated SVG file.
+
+    Raises:
+        FileNotFoundError: If the .ef file doesn't exist.
+        RuntimeError: If PDF generation or SVG conversion fails.
+    """
+    # Determine output filename
+    if save_to is None:
+        if isinstance(game, str):
+            game_path = Path(game)
+        else:
+            game_path = Path(game.title + ".ef")
+        output_svg = game_path.with_suffix(".svg").name
+    else:
+        if not save_to.endswith(".svg"):
+            output_svg = save_to + ".svg"
+        else:
+            output_svg = save_to
+
+    # If game is an EFG file, convert it first
+    if isinstance(game, str) and game.lower().endswith(".efg"):
+        try:
+            game = efg_dl_ef(game)
+        except Exception:
+            pass
+
+    # Step 1: Generate PDF into a temporary location
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_pdf_path = str(Path(temp_dir) / "temp_output")
+
+        try:
+            pdf_path = generate_pdf(
+                game=game,
+                save_to=temp_pdf_path,
+                scale_factor=scale_factor,
+                level_scaling=level_scaling,
+                sublevel_scaling=sublevel_scaling,
+                width_scaling=width_scaling,
+                hide_action_labels=hide_action_labels,
+                shared_terminal_depth=shared_terminal_depth,
+                show_grid=show_grid,
+                color_scheme=color_scheme,
+                edge_thickness=edge_thickness,
+                action_label_position=action_label_position,
+            )
+
+            # Step 2: Convert PDF to SVG using pdf2svg
+            final_svg_path = Path(output_svg)
+
+            try:
+                subprocess.run(
+                    ['pdf2svg', pdf_path, str(final_svg_path)],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+            except FileNotFoundError:
+                raise RuntimeError(
+                    "pdf2svg not found. Please install pdf2svg:\n"
+                    "  macOS: brew install pdf2svg\n"
+                    "  Ubuntu: sudo apt-get install pdf2svg\n"
+                    "  Windows: see https://github.com/dawbarton/pdf2svg"
+                )
+            except subprocess.CalledProcessError as e:
+                stderr_msg = e.stderr.strip() if e.stderr else "No additional error information from pdf2svg."
+                raise RuntimeError(
+                    f"SVG conversion failed: pdf2svg exited with return code {e.returncode}.\n"
+                    f"pdf2svg output:\n{stderr_msg}"
+                )
+
+            if final_svg_path.exists():
+                return str(final_svg_path.absolute())
+            else:
+                raise RuntimeError("SVG was not generated successfully")
+
+        except FileNotFoundError:
+            raise
+        except RuntimeError:
+            raise
+        except Exception as e:
+            raise RuntimeError(f"SVG generation failed: {e}")
 
 
 def efg_dl_ef(efg_file: str) -> str:

@@ -5,7 +5,7 @@ Command-line interface for draw_tree package.
 import sys
 from pathlib import Path
 from .core import (
-    commandline, draw_tree, generate_pdf, generate_png, generate_tex
+    commandline, draw_tree, generate_pdf, generate_png, generate_svg, generate_tex
 )
 
 
@@ -19,29 +19,32 @@ def main():
         print("  draw_tree <file.ef> [options]           # Generate TikZ code")
         print("  draw_tree <file.ef> --pdf [options]     # Generate PDF (requires pdflatex)")
         print("  draw_tree <file.ef> --png [options]     # Generate PNG (requires pdflatex + imagemagick/ghostscript)")
+        print("  draw_tree <file.ef> --svg [options]     # Generate SVG (requires pdflatex + pdf2svg)")
         print("  draw_tree <file.ef> --tex [options]     # Generate LaTeX document")
-        print("  draw_tree <file.ef> --output=name.ext   # Generate with custom filename (.pdf, .png, or .tex)")
+        print("  draw_tree <file.ef> --output=name.ext   # Generate with custom filename (.pdf, .png, .svg, or .tex)")
         print()
         print("Options:")
         print("  scale=X.X    Set scale factor (0.01 to 100)")
         print("  grid         Show helper grid")
         print("  --pdf        Generate PDF output instead of TikZ")
         print("  --png        Generate PNG output instead of TikZ")
+        print("  --svg        Generate SVG output instead of TikZ")
         print("  --tex        Generate LaTeX document instead of TikZ")
-        print("  --output=X   Specify output filename (.pdf, .png, or .tex extension determines format)")
+        print("  --output=X   Specify output filename (.pdf, .png, .svg, or .tex extension determines format)")
         print("  --dpi=X      Set PNG resolution in DPI (72-2400, default: 300)")
         print()
         print("Examples:")
         print("  draw_tree games/example.ef --pdf")
         print("  draw_tree games/example.ef --png --dpi=600")
+        print("  draw_tree games/example.ef --svg")
         print("  draw_tree games/example.ef --tex")
         print("  draw_tree games/example.ef --output=mygame.tex scale=0.8")
         print()
-        print("Note: PDF/PNG generation requires pdflatex. PNG also needs ImageMagick or Ghostscript.")
+        print("Note: PDF/PNG generation requires pdflatex. PNG also needs ImageMagick or Ghostscript. SVG also needs pdf2svg.")
         sys.exit(0)
     
     # Process command-line arguments
-    output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = commandline(sys.argv)
+    output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = commandline(sys.argv)
     
     # Import the core module to access global variables after commandline() has set them
     from . import core
@@ -79,7 +82,20 @@ def main():
                 dpi=dpi if dpi is not None else 300
             )
             print(f"PNG generated successfully: {png_path}")
-        
+
+        elif output_mode == "svg":
+            if output_file.endswith(".svg"):
+                print(f"Generating SVG: {output_file}")
+            else:
+                print(f"Generating SVG: {output_file}.svg")
+            svg_path = generate_svg(
+                game=current_ef_file,
+                save_to=output_file,
+                scale_factor=current_scale,
+                show_grid=current_grid,
+            )
+            print(f"SVG generated successfully: {svg_path}")
+
         elif output_mode == "tex":
             if output_file.endswith(".tex"):
                 print(f"Generating LaTeX: {output_file}")
