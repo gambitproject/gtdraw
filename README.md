@@ -41,11 +41,11 @@ pip install -e .
 Note: PDF and PNG generation require `pdflatex` to be installed and available in PATH. Tested methods have a ✅ next to them. Methods include:
 
 - macOS:
-    - Install [MacTEX](https://www.tug.org/mactex/mactex-download.html) ✅
-    - `brew install --cask mactex`
+    - `brew install --cask basictex` ✅ (lightweight, ~100 MB)
+    - `brew install --cask mactex` (full install, ~5 GB)
 - Ubuntu:
-    - `sudo apt-get install texlive-full` ✅
-- Windows: Install [MiKTeX](https://miktex.org/download)
+    - `sudo apt-get install -y --no-install-recommends texlive-latex-base texlive-latex-extra texlive-pictures texlive-fonts-recommended` ✅
+- Windows: Install [MiKTeX](https://miktex.org/download) (auto-downloads required packages on first run)
 
 ### PNG generation
 
