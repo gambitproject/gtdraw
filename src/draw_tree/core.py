@@ -1703,7 +1703,6 @@ def latex_wrapper(tikz_code: str) -> str:
         Complete LaTeX document as a string.
     """
     latex_document = f"""\\documentclass[tikz,border=10pt]{{standalone}}
-                        \\usepackage{{lmodern}}
                         \\linespread{{1.10}}
                         \\usetikzlibrary{{shapes}}
                         \\usetikzlibrary{{arrows.meta}}
