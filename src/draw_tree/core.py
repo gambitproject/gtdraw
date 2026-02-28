@@ -1339,6 +1339,7 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
     pdf_requested = False
     png_requested = False
     tex_requested = False
+    svg_requested = False
     output_file = None
     dpi = None
     
@@ -1361,6 +1362,8 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
             png_requested = True
         elif arg == "--tex":
             tex_requested = True
+        elif arg == "--svg":
+            svg_requested = True
         elif arg.startswith("--output="):
             output_file = arg[9:]  # Remove "--output=" prefix
             if output_file.endswith('.pdf'):
@@ -1369,6 +1372,8 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
                 png_requested = True
             elif output_file.endswith('.tex'):
                 tex_requested = True
+            elif output_file.endswith('.svg'):
+                svg_requested = True
         elif arg.startswith("--dpi="):
             try:
                 dpi = int(arg[6:])  # Remove "--dpi=" prefix
@@ -1385,7 +1390,9 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
             ef_file = arg
     
     # Determine output mode
-    if png_requested:
+    if svg_requested:
+        output_mode = "svg"
+    elif png_requested:
         output_mode = "png"
     elif pdf_requested:
         output_mode = "pdf"
@@ -2090,6 +2097,159 @@ def generate_png(
             raise
         except Exception as e:
             raise RuntimeError(f"PNG generation failed: {e}")
+
+
+def generate_svg(
+    game: str | "pygambit.gambit.Game",
+    save_to: Optional[str] = None,
+    scale_factor: float = 1.0,
+    level_scaling: int = 1,
+    sublevel_scaling: int = 1,
+    width_scaling: int = 1,
+    hide_action_labels: bool = False,
+    shared_terminal_depth: bool = False,
+    show_grid: bool = False,
+    color_scheme: str = "default",
+    edge_thickness: float = 1.0,
+    action_label_position: float = 0.5,
+) -> str:
+    """
+    Generate an SVG image directly from an extensive form (.ef) file.
+
+    This function creates a PDF first, then converts it to SVG using external tools.
+    Requires pdflatex and one of pdf2svg, Inkscape, or pdftocairo (Poppler).
+
+    Args:
+        game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
+        save_to: path to save intermediate .ef file when generating from a pygambit.gambit.Game object and output svg file.
+        scale_factor: Scale factor for the diagram.
+        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
+        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
+        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
+        shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
+        show_grid: Whether to show grid lines.
+        color_scheme: Color scheme for player nodes.
+        edge_thickness: Thickness of edges.
+        action_label_position: Position of action labels along edges.
+
+    Returns:
+        Path to the generated SVG file.
+
+    Raises:
+        FileNotFoundError: If the .ef file doesn't exist.
+        RuntimeError: If PDF generation or SVG conversion fails.
+    """
+    # Determine output filename
+    if save_to is None:
+        if isinstance(game, str):
+            game_path = Path(game)
+        else:
+            game_path = Path(game.title + ".ef")
+        output_svg = game_path.with_suffix(".svg").name
+    else:
+        if not save_to.endswith(".svg"):
+            output_svg = save_to + ".svg"
+        else:
+            output_svg = save_to
+
+    # If game is an EFG file, convert it first
+    if isinstance(game, str) and game.lower().endswith(".efg"):
+        try:
+            game = efg_dl_ef(game)
+        except Exception:
+            pass
+
+    try:
+        # Step 1: Generate PDF using existing function
+        pdf_path = generate_pdf(
+            game=game,
+            save_to=save_to,
+            scale_factor=scale_factor,
+            level_scaling=level_scaling,
+            sublevel_scaling=sublevel_scaling,
+            width_scaling=width_scaling,
+            hide_action_labels=hide_action_labels,
+            shared_terminal_depth=shared_terminal_depth,
+            show_grid=show_grid,
+            color_scheme=color_scheme,
+            edge_thickness=edge_thickness,
+            action_label_position=action_label_position,
+        )
+
+        # Step 2: Convert PDF to SVG
+        final_svg_path = Path(output_svg)
+
+        # Try different conversion methods in order of preference
+        conversion_success = False
+
+        # Method 1: Try pdf2svg
+        try:
+            subprocess.run([
+                'pdf2svg',
+                str(pdf_path),
+                str(final_svg_path)
+            ], capture_output=True, text=True, check=True)
+            conversion_success = True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pass
+
+        # Method 2: Try Inkscape
+        if not conversion_success:
+            try:
+                subprocess.run([
+                    'inkscape',
+                    str(pdf_path),
+                    '--export-filename=' + str(final_svg_path)
+                ], capture_output=True, text=True, check=True)
+                conversion_success = True
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                pass
+
+        # Method 3: Try pdftocairo (part of Poppler)
+        if not conversion_success:
+            try:
+                subprocess.run([
+                    'pdftocairo',
+                    '-svg',
+                    str(pdf_path),
+                    str(final_svg_path)
+                ], capture_output=True, text=True, check=True)
+                conversion_success = True
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                pass
+
+        # Clean up intermediate PDF
+        try:
+            Path(pdf_path).unlink()
+        except OSError:
+            pass
+
+        if not conversion_success:
+            raise RuntimeError(
+                "SVG conversion failed. Please install one of the following:\n"
+                "  - pdf2svg (dedicated PDF to SVG converter)\n"
+                "  - Inkscape (vector graphics editor with CLI)\n"
+                "  - Poppler utils (provides 'pdftocairo' command)\n\n"
+                "Installation examples:\n"
+                "  macOS: brew install pdf2svg inkscape poppler\n"
+                "  Ubuntu: sudo apt-get install pdf2svg inkscape poppler-utils\n"
+                "  Windows: Install Inkscape from https://inkscape.org or pdf2svg via MSYS2"
+            )
+
+        if final_svg_path.exists():
+            return str(final_svg_path.absolute())
+        else:
+            raise RuntimeError("SVG was not generated successfully")
+
+    except FileNotFoundError:
+        # Re-raise file not found errors directly
+        raise
+    except RuntimeError:
+        # Re-raise PDF generation errors
+        raise
+    except Exception as e:
+        raise RuntimeError(f"SVG generation failed: {e}")
 
 
 def efg_dl_ef(efg_file: str) -> str:

@@ -9,7 +9,7 @@
 - [Developer docs: Testing](#developer-docs-testing)
 
 `draw_tree` is a game tree drawing tool for publication-ready extensive form games in Game Theory.
-It can generate TikZ code, LaTeX documents, PDFs, and PNGs from game specifications.
+It can generate TikZ code, LaTeX documents, PDFs, PNGs, and SVGs from game specifications.
 
 Games can be specified via `.ef` format files which include layout formatting.
 These can be created via [Game Theory Explorer](https://gametheoryexplorer-a68c7.web.app/), or by hand, see [specs.pdf](specs.pdf) for details.
@@ -35,6 +35,7 @@ pip install -e .
 - Python 3.10+ (tested on 3.13)
 - LaTeX with TikZ (for PDF/PNG generation)
 - (optional) ImageMagick or Ghostscript or Poppler (for PNG generation)
+- (optional) pdf2svg or Inkscape or Poppler (for SVG generation)
 
 ### Installing LaTeX
 
@@ -60,6 +61,19 @@ PNG generation will default to using any of ImageMagick or Ghostscript or Popple
     - `sudo apt-get install poppler-utils`
 - Windows: Install ImageMagick or Ghostscript from their websites
 
+### SVG generation
+
+SVG generation will default to using any of pdf2svg, Inkscape, or pdftocairo (Poppler) that are installed. If none are installed, try one of the following:
+- macOS:
+    - `brew install pdf2svg`
+    - `brew install inkscape`
+    - `brew install poppler`
+- Ubuntu:
+    - `sudo apt-get install pdf2svg`
+    - `sudo apt-get install inkscape`
+    - `sudo apt-get install poppler-utils`
+- Windows: Install Inkscape from https://inkscape.org or pdf2svg via MSYS2
+
 ## CLI
 
 By default, `draw_tree` generates TikZ code and prints it to standard output.
@@ -71,6 +85,7 @@ draw_tree games/example.ef --tex                           # Creates example.tex
 draw_tree games/example.ef --output=custom.tex             # Creates custom.tex
 draw_tree games/example.ef --pdf                           # Creates example.pdf
 draw_tree games/example.ef --png                           # Creates example.png
+draw_tree games/example.ef --svg                           # Creates example.svg
 draw_tree games/example.ef --png --dpi=600                 # Creates high-res example.png (72-2400, default: 300)
 draw_tree games/example.ef --output=mygame.png scale=0.8   # Creates mygame.png with 0.8 scaling (0.01 to 100)
 ```
@@ -80,13 +95,15 @@ draw_tree games/example.ef --output=mygame.png scale=0.8   # Creates mygame.png 
 You can also use `draw_tree` as a Python library:
 
 ```python
-from draw_tree import generate_tex, generate_pdf, generate_png
+from draw_tree import generate_tex, generate_pdf, generate_png, generate_svg
 generate_tex('games/example.ef')                                    # Creates example.tex
 generate_tex('games/example.ef', save_to='custom')                  # Creates custom.tex
 generate_pdf('games/example.ef')                                    # Creates example.pdf
 generate_png('games/example.ef')                                    # Creates example.png
 generate_png('games/example.ef', dpi=600)                           # Creates high-res example.png (72-2400, default: 300)
 generate_png('games/example.ef', save_to='mygame', scale_factor=0.8)    # Creates mygame.png with 0.8 scaling (0.01 to 100)
+generate_svg('games/example.ef')                                    # Creates example.svg
+generate_svg('games/example.ef', save_to='mygame', scale_factor=0.8)    # Creates mygame.svg with 0.8 scaling
 ```
 
 ### Rendering in Jupyter Notebooks
@@ -111,12 +128,13 @@ In particular read [Tutorial 4) Creating publication-ready game images](https://
 In short, you can do:
 ```python
 import pygambit as gbt
-from draw_tree import draw_tree, generate_tex, generate_pdf, generate_png
+from draw_tree import draw_tree, generate_tex, generate_pdf, generate_png, generate_svg
 g = gbt.read_efg('somegame.efg')
 draw_tree(g)
 generate_tex(g)
 generate_pdf(g)
 generate_png(g)
+generate_svg(g)
 ```
 
 > Note: Without setting the `save_to` parameter, the saved file will be based on the title field of the pygambit game object.

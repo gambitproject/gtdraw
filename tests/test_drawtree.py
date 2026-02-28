@@ -631,6 +631,91 @@ class TestCommandlineArguments:
         assert dpi == 300  # Should default to 300 for invalid values
 
 
+class TestSvgGeneration:
+    """Test SVG generation functionality."""
+
+    def test_generate_svg_missing_file(self):
+        """Test SVG generation with missing .ef file."""
+        with pytest.raises(FileNotFoundError):
+            draw_tree.generate_svg("nonexistent.ef")
+
+    @patch('draw_tree.core.subprocess.run')
+    def test_generate_svg_pdflatex_not_found(self, mock_run):
+        """Test SVG generation when pdflatex is not available."""
+        # Mock pdflatex not being found
+        mock_run.side_effect = FileNotFoundError("pdflatex not found")
+
+        # Create a temporary .ef file
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+            ef_file.write("player 1\nlevel 0 node root player 1\n")
+            ef_file_path = ef_file.name
+
+        try:
+            with pytest.raises(RuntimeError, match="pdflatex not found"):
+                draw_tree.generate_svg(ef_file_path)
+        finally:
+            os.unlink(ef_file_path)
+
+    def test_generate_svg_default_parameters(self):
+        """Test SVG generation with default parameters."""
+        # Create a temporary .ef file
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+            ef_file.write("player 1\nlevel 0 node root player 1\n")
+            ef_file_path = ef_file.name
+
+        try:
+            # Mock both pdflatex and conversion tools being unavailable
+            with patch('draw_tree.core.subprocess.run') as mock_run:
+                mock_run.side_effect = FileNotFoundError("Command not found")
+
+                with pytest.raises(RuntimeError):
+                    draw_tree.generate_svg(ef_file_path)
+        finally:
+            os.unlink(ef_file_path)
+
+    def test_generate_svg_output_filename(self):
+        """Test SVG generation with custom output filename."""
+        # Create a temporary .ef file
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+            ef_file.write("player 1\nlevel 0 node root player 1\n")
+            ef_file_path = ef_file.name
+
+        try:
+            with patch('draw_tree.core.subprocess.run') as mock_run:
+                mock_run.side_effect = FileNotFoundError("Command not found")
+
+                with pytest.raises(RuntimeError):
+                    draw_tree.generate_svg(ef_file_path, save_to="custom_name.svg")
+        finally:
+            os.unlink(ef_file_path)
+
+
+class TestSvgCommandlineArguments:
+    """Test command line argument parsing for SVG functionality."""
+
+    def test_commandline_svg_flag(self):
+        """Test --svg flag parsing."""
+        result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--svg'])
+        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        assert output_mode == "svg"
+        assert not pdf_requested
+        assert not png_requested
+        assert not tex_requested
+        assert output_file is None
+        assert dpi is None
+
+    def test_commandline_svg_output_file(self):
+        """Test SVG output with custom filename."""
+        result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--output=custom.svg'])
+        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        assert output_mode == "svg"
+        assert not pdf_requested
+        assert not png_requested
+        assert not tex_requested
+        assert output_file == "custom.svg"
+        assert dpi is None
+
+
 def test_efg_dl_ef_conversion_examples():
     """Integration test: convert the repository's example .efg files and
     require exact equality with their corresponding canonical .ef outputs.
