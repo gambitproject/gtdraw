@@ -2092,6 +2092,93 @@ def generate_png(
             raise RuntimeError(f"PNG generation failed: {e}")
 
 
+def generate_svg(
+        game: str | "pygambit.gambit.Game",
+        save_to: Optional[str] = None,
+        scale_factor: float = 1.0,
+        level_scaling: int = 1,
+        sublevel_scaling: int = 1,
+        width_scaling: int = 1,
+        hide_action_labels: bool = False,
+        shared_terminal_depth: bool = False,
+        show_grid: bool = False,
+        color_scheme: str = "default",
+        edge_thickness: float = 1.0,
+        action_label_position: float = 0.5,
+) -> str:
+    """
+    Generate an SVG image directly from an extensive form (.ef) file.
+
+    This function creates a PDF first, then converts it to SVG using pdf2svg.
+
+    Requires:
+        - pdflatex
+        - pdf2svg
+
+    Returns:
+        Path to generated SVG file.
+    """
+    # Determine output filename
+    if save_to is None:
+        if isinstance(game, str):
+            game_path = Path(game)
+        else:
+            game_path = Path(game.title + ".ef")
+        output_svg = game_path.with_suffix(".svg").name
+    else:
+        if not save_to.endswith(".svg"):
+            output_svg = save_to + ".svg"
+        else:
+            output_svg = save_to
+
+    final_svg_path = Path(output_svg)
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_pdf_path = Path(temp_dir) / "temp_output.pdf"
+
+        try:
+            # Step 1: Generate PDF explicitly into temp file
+            generate_pdf(
+                game=game,
+                save_to=str(temp_pdf_path.with_suffix("").absolute()),
+                scale_factor=scale_factor,
+                level_scaling=level_scaling,
+                sublevel_scaling=sublevel_scaling,
+                width_scaling=width_scaling,
+                hide_action_labels=hide_action_labels,
+                shared_terminal_depth=shared_terminal_depth,
+                show_grid=show_grid,
+                color_scheme=color_scheme,
+                edge_thickness=edge_thickness,
+                action_label_position=action_label_position,
+            )
+
+            # Step 2: Convert PDF to SVG
+            subprocess.run(
+                ["pdf2svg", str(temp_pdf_path), str(final_svg_path)],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            if final_svg_path.exists():
+                return str(final_svg_path.absolute())
+            else:
+                raise RuntimeError("SVG was not generated successfully.")
+
+        except FileNotFoundError:
+            raise RuntimeError(
+                "pdf2svg not found. Please install it.\n"
+                "macOS: brew install pdf2svg\n"
+                "Ubuntu: sudo apt install pdf2svg\n"
+                "Windows: Install from official binaries"
+            )
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"SVG conversion failed: {e.stderr}")
+        except Exception as e:
+            raise RuntimeError(f"SVG generation failed: {e}")
+
+
 def efg_dl_ef(efg_file: str) -> str:
     """Convert a Gambit .efg file to the `.ef` format used by generate_tikz.
 
