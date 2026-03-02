@@ -44,7 +44,7 @@ Note: PDF and PNG generation require `pdflatex` to be installed and available in
     - Install [MacTEX](https://www.tug.org/mactex/mactex-download.html) ✅
     - `brew install --cask mactex`
 - Ubuntu:
-    - `sudo apt-get install texlive-full` ✅
+    - `sudo apt-get install texlive-base texlive-latex-extra texlive-fonts-extra texlive-pictures` ✅
 - Windows: Install [MiKTeX](https://miktex.org/download)
 
 ### PNG generation
