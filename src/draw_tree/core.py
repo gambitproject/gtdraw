@@ -2072,7 +2072,7 @@ def generate_png(
             # Generate PDF using existing function
             generate_pdf(
                 game=game,
-                save_to=save_to,
+                save_to=str(temp_pdf),
                 scale_factor=scale_factor,
                 level_scaling=level_scaling,
                 sublevel_scaling=sublevel_scaling,
