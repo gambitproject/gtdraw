@@ -278,7 +278,6 @@ class TestDrawTreeFunction:
             assert "\\begin{tikzpicture}" in result
             assert "\\end{tikzpicture}" in result
             # Check for built-in macro definitions
-            assert "\\newcommand\\chancecolor" in result
             assert "\\newdimen\\ndiam" in result
             assert "\\ndiam1.5mm" in result
             assert "\\newdimen\\paydown" in result
@@ -374,9 +373,9 @@ class TestDrawTreeFunction:
 
         try:
             result = draw_tree.generate_tikz(ef_file_path)
-            # Should work with built-in macros
+            # Should work with built-in macros 
             assert "\\begin{tikzpicture}" in result
-            assert "\\newcommand\\chancecolor" in result
+            assert "\\newdimen\\ndiam" in result
         finally:
             os.unlink(ef_file_path)
 
@@ -549,86 +548,158 @@ class TestCommandlineArguments:
     def test_commandline_png_flag(self):
         """Test --png flag parsing."""
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--png'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi, color_scheme = result
         assert output_mode == "png"
         assert not pdf_requested
         assert png_requested
         assert not tex_requested
         assert output_file is None
         assert dpi is None
+        assert color_scheme == "default"
 
     def test_commandline_png_with_dpi(self):
         """Test --png flag with --dpi option."""
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--png', '--dpi=600'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi, color_scheme = result
         assert output_mode == "png"
         assert not pdf_requested
         assert png_requested
         assert not tex_requested
         assert output_file is None
         assert dpi == 600
+        assert color_scheme == "default"
 
     def test_commandline_png_output_file(self):
         """Test PNG output with custom filename."""
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--output=custom.png'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi, color_scheme = result
         assert output_mode == "png"
         assert not pdf_requested
         assert png_requested
         assert not tex_requested
         assert output_file == "custom.png"
         assert dpi is None
+        assert color_scheme == "default"
 
     def test_commandline_pdf_output_file(self):
         """Test PDF output with custom filename."""
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--output=custom.pdf'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi, color_scheme = result
         assert output_mode == "pdf"
         assert pdf_requested
         assert not png_requested
         assert not tex_requested
         assert output_file == "custom.pdf"
         assert dpi is None
+        assert color_scheme == "default"
 
     def test_commandline_tex_flag(self):
         """Test --tex flag parsing."""
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--tex'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi, color_scheme = result
         assert output_mode == "tex"
         assert not pdf_requested
         assert not png_requested
         assert tex_requested
         assert output_file is None
         assert dpi is None
+        assert color_scheme == "default"
 
     def test_commandline_tex_output_file(self):
         """Test LaTeX output with custom filename."""
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--output=custom.tex'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi, color_scheme = result
         assert output_mode == "tex"
         assert not pdf_requested
         assert not png_requested
         assert tex_requested
         assert output_file == "custom.tex"
         assert dpi is None
+        assert color_scheme == "default"
 
     def test_commandline_invalid_dpi(self):
         """Test invalid DPI values."""
         # Too low DPI should default to 300
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--png', '--dpi=50'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi, color_scheme = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
         # Too high DPI should default to 300
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--png', '--dpi=5000'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi, color_scheme = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
     def test_commandline_invalid_dpi_string(self):
         """Test non-numeric DPI values."""
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--png', '--dpi=high'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi, color_scheme = result
         assert dpi == 300  # Should default to 300 for invalid values
+
+    def test_commandline_color_scheme(self):
+        """Test --color-scheme parsing: default when absent, gambit/distinctipy when set, default for invalid."""
+        result = draw_tree.commandline(['draw_tree.py', 'test.ef'])
+        *_, color_scheme = result
+        assert color_scheme == "default"
+        result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--color-scheme=gambit'])
+        *_, color_scheme = result
+        assert color_scheme == "gambit"
+        result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--color-scheme=unknown'])
+        *_, color_scheme = result
+        assert color_scheme == "default"
+
+
+class TestColorSchemeAndMaxPlayer:
+    """Tests for color scheme and get_max_player_index_from_ef."""
+
+    def test_get_player_color(self):
+        """Default returns black; gambit returns macros (and black for player > 6); distinctipy returns distinctN or black."""
+        assert draw_tree.get_player_color(1) == "black"
+        assert draw_tree.get_player_color(0, "gambit") == "\\chancecolor"
+        assert draw_tree.get_player_color(6, "gambit") == "\\playersixcolor"
+        assert draw_tree.get_player_color(7, "gambit") == "black"
+        draw_tree.color_definitions("distinctipy", n=2)
+        try:
+            assert draw_tree.get_player_color(0, "distinctipy") == "distinct0"
+            assert draw_tree.get_player_color(2, "distinctipy") == "black"
+        finally:
+            draw_tree.color_definitions("distinctipy", n=7)
+
+    def test_color_definitions(self):
+        """Default/unknown return []; gambit has definecolor/newcommand; distinctipy has definecolor for distinct0,1,..."""
+        assert draw_tree.color_definitions() == []
+        result = draw_tree.color_definitions("gambit")
+        assert any("\\newcommand\\chancecolor" in line for line in result)
+        result = draw_tree.color_definitions("distinctipy", n=2)
+        assert len(result) == 2
+        assert any("\\definecolor{distinct0}" in line for line in result)
+
+    def test_get_max_player_index_from_ef(self):
+        """No player lines → 0; file with player 1 and 2 → 2."""
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as f:
+            f.write("# comment\nlevel 0 node x\n")
+            path = f.name
+        try:
+            assert draw_tree.get_max_player_index_from_ef(path) == 0
+        finally:
+            os.unlink(path)
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as f:
+            f.write("player 1 name I\nlevel 0 node 1 player 1\nlevel 2 node 2 player 2\n")
+            path = f.name
+        try:
+            assert draw_tree.get_max_player_index_from_ef(path) == 2
+        finally:
+            os.unlink(path)
+
+    def test_generate_tikz_color_schemes(self):
+        """generate_tikz with gambit includes chancecolor; with distinctipy includes definecolor distinct0."""
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef:
+            ef.write("player 1 name I\nlevel 0 node 1 player 1\n")
+            path = ef.name
+        try:
+            assert "\\newcommand\\chancecolor" in draw_tree.generate_tikz(path, color_scheme="gambit")
+            assert "\\definecolor{distinct0}" in draw_tree.generate_tikz(path, color_scheme="distinctipy")
+        finally:
+            os.unlink(path)
 
 
 def test_efg_dl_ef_conversion_examples():

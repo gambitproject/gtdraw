@@ -30,6 +30,7 @@ def main():
         print("  --tex        Generate LaTeX document instead of TikZ")
         print("  --output=X   Specify output filename (.pdf, .png, or .tex extension determines format)")
         print("  --dpi=X      Set PNG resolution in DPI (72-2400, default: 300)")
+        print("  --color-scheme=X  Three color schemes: default (no colors), gambit (≤6 players), distinctipy (n from game)")
         print()
         print("Examples:")
         print("  draw_tree games/example.ef --pdf")
@@ -41,7 +42,7 @@ def main():
         sys.exit(0)
     
     # Process command-line arguments
-    output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = commandline(sys.argv)
+    output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi, color_scheme = commandline(sys.argv)
     
     # Import the core module to access global variables after commandline() has set them
     from . import core
@@ -62,7 +63,8 @@ def main():
                 game=current_ef_file,
                 save_to=output_file,
                 scale_factor=current_scale,
-                show_grid=current_grid
+                show_grid=current_grid,
+                color_scheme=color_scheme,
             )
             print(f"PDF generated successfully: {pdf_path}")
         
@@ -76,7 +78,8 @@ def main():
                 save_to=output_file,
                 scale_factor=current_scale,
                 show_grid=current_grid,
-                dpi=dpi if dpi is not None else 300
+                dpi=dpi if dpi is not None else 300,
+                color_scheme=color_scheme,
             )
             print(f"PNG generated successfully: {png_path}")
         
@@ -90,6 +93,7 @@ def main():
                 save_to=output_file,
                 scale_factor=current_scale,
                 show_grid=current_grid,
+                color_scheme=color_scheme,
             )
             print(f"LaTeX generated successfully: {tex_path}")
         
@@ -98,7 +102,8 @@ def main():
             tikz_code = draw_tree(
                 game=current_ef_file, 
                 scale_factor=current_scale, 
-                show_grid=current_grid
+                show_grid=current_grid,
+                color_scheme=color_scheme,
             )
             
             # Output the complete TikZ code
@@ -108,7 +113,7 @@ def main():
         print(f"Error: Could not find file {current_ef_file}", file=sys.stderr)
         print("Make sure the .ef file exists in the current directory", file=sys.stderr)
         sys.exit(1)
-    except RuntimeError as e:
+    except (RuntimeError, ValueError) as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
     except Exception as e:

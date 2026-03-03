@@ -30,6 +30,7 @@ dependencies = ["jupyter-tikz", "ipykernel"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0.0", "pytest-cov", "nbformat", "nbclient", "ipykernel", "pygambit"]
+colors = ["distinctipy"]
 
 [project.scripts]
 draw_tree = "draw_tree.cli:main"

@@ -74,7 +74,32 @@ outstream: List[str] = []
 stream0: List[str] = []
 
 
-def get_player_color(player: int, color_scheme: str = "default") -> str:
+
+GAMBIT_MAX_PLAYER = 6
+MAX_COLOR_SCHEME_PLAYERS = 7  
+
+_distinctipy_n: int = MAX_COLOR_SCHEME_PLAYERS
+
+_DISTINCTIPY_FALLBACK_RGB = [
+    (117, 145, 56),   (234, 51, 35),   (0, 102, 204),  (255, 140, 0),
+    (128, 0, 128),    (0, 191, 255),   (255, 0, 255),
+]
+
+
+def _get_distinctipy_colors(n: int) -> list[tuple[int, int, int]]:
+    """Return n distinct RGB tuples (0-255). Use distinctipy if available, else fallback."""
+    try:
+        import distinctipy  
+        colors_01 = distinctipy.get_colors(n)
+        return [
+            (int(round(r * 255)), int(round(g * 255)), int(round(b * 255)))
+            for (r, g, b) in colors_01
+        ]
+    except ImportError:
+        return [_DISTINCTIPY_FALLBACK_RGB[i % len(_DISTINCTIPY_FALLBACK_RGB)] for i in range(n)]
+
+
+def get_player_color(player: int, color_scheme: Optional[str] = "default") -> str:
     """
     Get the TeX color macro name for a given player number.
 
@@ -98,21 +123,41 @@ def get_player_color(player: int, color_scheme: str = "default") -> str:
         }
 
         return color_map.get(player, "black")
+    if color_scheme == "distinctipy":
+        if 0 <= player < _distinctipy_n:
+            return f"distinct{player}"
+        return "black"
+
     return "black"
 
 
-def color_definitions() -> list[str]:
-    return [
-        "\\definecolor{chancecolorrgb}{RGB}{117,145,56}",
-        "\\definecolor{gambitredrgb}{RGB}{234,51,35}",
-        "\\newcommand\\chancecolor{chancecolorrgb}",
-        "\\newcommand\\playeronecolor{gambitredrgb}",
-        "\\newcommand\\playertwocolor{blue}",
-        "\\newcommand\\playerthreecolor{orange}",
-        "\\newcommand\\playerfourcolor{purple}",
-        "\\newcommand\\playerfivecolor{cyan}",
-        "\\newcommand\\playersixcolor{magenta}",
-    ]
+def color_definitions(color_scheme: Optional[str] = "default", n: Optional[int] = None) -> list[str]:
+   
+    global _distinctipy_n
+ 
+    if color_scheme == "gambit":
+    
+        return [
+            "\\definecolor{chancecolorrgb}{RGB}{117,145,56}",
+            "\\definecolor{gambitredrgb}{RGB}{234,51,35}",
+            "\\newcommand\\chancecolor{chancecolorrgb}",
+            "\\newcommand\\playeronecolor{gambitredrgb}",
+            "\\newcommand\\playertwocolor{blue}",
+            "\\newcommand\\playerthreecolor{orange}",
+            "\\newcommand\\playerfourcolor{purple}",
+            "\\newcommand\\playerfivecolor{cyan}",
+            "\\newcommand\\playersixcolor{magenta}",
+        ]
+    if color_scheme == "distinctipy":
+       
+        num_colors = min(n if n is not None and n > 0 else MAX_COLOR_SCHEME_PLAYERS, MAX_COLOR_SCHEME_PLAYERS)
+        _distinctipy_n = num_colors
+        colors_rgb = _get_distinctipy_colors(num_colors)
+        return [
+            f"\\definecolor{{distinct{i}}}{{RGB}}{{{r},{g},{b}}}"
+            for i, (r, g, b) in enumerate(colors_rgb)
+        ]
+    return []
 
 def outall(stream: Optional[List[str]] = None) -> None:
     """
@@ -224,6 +269,24 @@ def readfile(filename: str) -> List[str]:
         if line:
             out.append(line)
     return out
+
+
+def get_max_player_index_from_ef(ef_file: str) -> int:
+    """
+    Scan an .ef file and return the maximum player index (0 = chance, 1+ = players).
+    Used to determine how many distinct colors to generate for the distinctipy scheme.
+    """
+    lines = readfile(ef_file)
+    max_player = 0
+    for line in lines:
+        if line.startswith('%') or line.startswith('#'):
+            continue
+        parts = line.split()
+        for i, word in enumerate(parts):
+            if word == "player" and i + 1 < len(parts) and parts[i + 1].isdigit():
+                max_player = max(max_player, int(parts[i + 1]))
+                break
+    return max_player
 
 
 def fformat(x: float, places: int = 3) -> str:
@@ -1313,7 +1376,7 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
 
 ########### command-line arguments
 
-def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], Optional[int]]:
+def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], Optional[int], str]:
     """
     Process command-line arguments to set global configuration.
     
@@ -1324,16 +1387,17 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
         argv: List of command-line arguments (including script name).
         
     Returns:
-        Tuple of (output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi) where:
+        Tuple of (output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi,color_scheme) where:
         - output_mode: 'tikz', 'pdf', 'png', or 'tex'
         - pdf_requested: True if --pdf flag was provided
         - png_requested: True if --png flag was provided
         - tex_requested: True if --tex flag was provided
         - output_file: Custom output filename if specified
         - dpi: DPI setting for PNG output (None if not specified)
+        - color_scheme: Color scheme for player nodes (default, gambit, distinctipy)
     """
     global grid
-    global scale 
+    global scale
     global ef_file
     
     pdf_requested = False
@@ -1341,6 +1405,7 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
     tex_requested = False
     output_file = None
     dpi = None
+    color_scheme = "default"
     
     for arg in argv[1:]:
         if arg[:5] == "scale":
@@ -1378,6 +1443,14 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
             except ValueError:
                 print("Warning: Invalid DPI value, using default 300", file=sys.stderr)
                 dpi = 300
+        elif arg.startswith("--color-scheme="):
+            color_scheme = arg[15:].strip().lower()
+            if color_scheme not in ("default", "gambit", "distinctipy"):
+                print(
+                    "Warning: color-scheme must be default, gambit, or distinctipy; using default",
+                    file=sys.stderr
+                )
+                color_scheme = "default"
         elif arg.endswith('.ef'):
             ef_file = arg
         else:
@@ -1394,7 +1467,7 @@ def commandline(argv: List[str]) -> tuple[str, bool, bool, bool, Optional[str], 
     else:
         output_mode = "tikz"
     
-    return (output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi)
+    return (output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi, color_scheme)
 
 def ef_to_tex(
     ef_file: str,
@@ -1596,7 +1669,14 @@ def generate_tikz(
         f"\\treethickn{edge_thickness}pt",
     ]
     # Step 2a: Define player color macros
-    macro_definitions.extend(color_definitions())
+    distinctipy_n = None
+    if color_scheme == "distinctipy" and isinstance(ef_file, str) and ef_file.lower().endswith(".ef"):
+        try:
+            max_player = get_max_player_index_from_ef(ef_file)
+            distinctipy_n = min(max_player + 1, MAX_COLOR_SCHEME_PLAYERS)
+        except Exception:
+            pass
+    macro_definitions.extend(color_definitions(color_scheme, n=distinctipy_n))
 
     # Step 3: Combine everything into complete TikZ code
     tikz_code = """% TikZ code with built-in styling for game trees
