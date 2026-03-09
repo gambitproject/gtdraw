@@ -102,6 +102,8 @@ def get_player_color(player: int, color_scheme: str = "default") -> str:
             5: "\\playerfivecolor",
             6: "\\playersixcolor",
         }
+        if player < 0:
+            return "black"  # no player assigned yet
         if player not in color_map:
             raise ValueError(
                 f"The 'gambit' color scheme only supports up to 6 players "
