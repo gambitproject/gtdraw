@@ -1,5 +1,12 @@
 # draw_tree
 
+🚨 NOTE FOR POTENTIAL CONTRIBUTORS 🚨
+
+This package is at an early stage of development; please read the Gambit project's [contributor guidance](https://gambitproject.readthedocs.io/en/latest/developer.contributing.html).
+
+## Table of contents
+
+- [What does this package do?](#what-does-this-package-do)
 - [Installation](#installation)
 - [Requirements](#requirements)
 - [CLI](#cli)
@@ -7,6 +14,8 @@
     - [Rendering in Jupyter Notebooks](#rendering-in-jupyter-notebooks)
     - [Interoperability with pygambit](#interoperability-with-pygambit)
 - [Developer docs: Testing](#developer-docs-testing)
+
+## What does this package do?
 
 `draw_tree` is a game tree drawing tool for publication-ready extensive form games in Game Theory.
 It can generate TikZ code, LaTeX documents, PDFs, and PNGs from game specifications.
