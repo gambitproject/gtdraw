@@ -1,6 +1,31 @@
 import pygambit
 from typing import Optional
 
+def latex_special_char(text: str) -> str:
+    text = str(text)
+    
+    # 1. Handle backslash first and separately to prevent double-escaping 
+    # of the backslashes added in the subsequent replacements.
+    text = text.replace("\\", r"\textbackslash{}") #to solve the problem involving double backslash
+    
+    # 2. Now handle the other characters in a loop
+    others = {
+        "_": r"\_",  # Fixes the underscore crash
+        "#": r"\#",  # Fixes the hash/comment crash
+        "$": r"\$",  # Fixes the math mode crash
+        "%": r"\%",  # Fixes the comment crash
+        "&": r"\&",  # Fixes the alignment crash
+        "{": r"\{",  # Fixes the open curly bracket crash
+        "}": r"\}",  # Fixes the close curly bracket crash
+        "^": r"\textasciicircum{}",
+        "~": r"\textasciitilde{}"
+    }
+    
+    for char, replacement in others.items():
+        text = text.replace(char, replacement)
+    
+    
+    return text
 
 def determine_node_level(
     gbt_level: int,
@@ -51,7 +76,9 @@ def gambit_layout_to_ef(
     player_ids = {}
     p = 1
     for player in game.players:
-        player_name = player.label.replace(" ", "~")
+        # Sanitize special chars FIRST, then handle spaces
+        clean_name = latex_special_char(player.label)
+        player_name = clean_name.replace(" ", "~")
         ef += f"player {p} name {player_name}\n"
         player_ids[player] = p
         p += 1
@@ -147,7 +174,9 @@ def gambit_layout_to_ef(
             parent_level, parent_nodecount = node_levels[node.parent]
             ef += f"from {parent_level},{parent_nodecount} "
             if not hide_action_labels:
-                prior_action_label = node.prior_action.label.replace(" ", "~")
+                # Sanitize special chars FIRST, then handle spaces
+                clean_action = latex_special_char(node.prior_action.label)
+                prior_action_label = clean_action.replace(" ", "~")
                 ef += f"move {prior_action_label}"
 
             # Add probability if the parent is a chance player
@@ -186,7 +215,8 @@ def gambit_layout_to_ef(
         if ".ef" not in save_to:
             ef_file = save_to + ".ef"
     else:
-        ef_file = game.title + ".ef"
+        clean_title = latex_special_char(game.title)
+        ef_file = clean_title + ".ef"
     with open(ef_file, "w", encoding="utf-8") as f:
         f.write(ef)
     return ef_file
