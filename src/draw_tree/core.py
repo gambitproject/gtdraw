@@ -80,14 +80,19 @@ def get_player_color(player: int, color_scheme: str = "default") -> str:
     Get the TeX color macro name for a given player number.
 
     Args:
-        player: Player number (1-6 for regular players).
-        color_scheme: Optional color scheme name.
+        player: Player number (0 for chance, 1-6 for regular players with
+            "gambit" scheme, or any positive integer for "distinctipy" and
+            "colorblind" schemes).
+        color_scheme: Color scheme name. One of "default", "gambit",
+            "distinctipy", or "colorblind".
 
     Returns:
         TeX color macro name for the player, or "black" as fallback.
+
+    Raises:
+        ValueError: If the "gambit" scheme is used with more than 6 players.
     """
     if color_scheme == "gambit":
-        # Color mapping for up to 6 players
         color_map = {
             0: "\\chancecolor",
             1: "\\playeronecolor",
@@ -97,29 +102,46 @@ def get_player_color(player: int, color_scheme: str = "default") -> str:
             5: "\\playerfivecolor",
             6: "\\playersixcolor",
         }
-
         if player not in color_map:
             raise ValueError(
                 f"The 'gambit' color scheme only supports up to 6 players "
                 f"(got player {player}). Consider using the 'distinctipy' "
-                f"color scheme for games with more players."
+                f"or 'colorblind' color scheme for games with more players."
             )
         return color_map[player]
-        
-    elif color_scheme == "distinctipy":
+
+    elif color_scheme in ("distinctipy", "colorblind"):
         if player == 0:
             return "\\chancecolor"
         elif player > 0:
             return f"\\player{player}color"
-            
-    return "black"  # fallback
+
+    return "black"
 
 
 def color_definitions(color_scheme: str = "default", num_players: int = 6) -> list[str]:
+    """
+    Generate LaTeX color macro definitions for game tree players.
+
+    Produces ``\\definecolor`` and ``\\newcommand`` lines that are injected
+    into the TikZ preamble so that player-color macros (e.g.
+    ``\\playeronecolor``, ``\\player7color``) resolve correctly.
+
+    Args:
+        color_scheme: One of "default", "gambit", "distinctipy", or
+            "colorblind".
+        num_players: Number of players that need colours.  Ignored for
+            "default" and "gambit" (which have fixed palettes).
+
+    Returns:
+        List of LaTeX definition strings.
+    """
+    # Chance color is shared across all schemes
     defs = [
         "\\definecolor{chancecolorrgb}{RGB}{117,145,56}",
-        "\\newcommand\\chancecolor{chancecolorrgb}"
+        "\\newcommand\\chancecolor{chancecolorrgb}",
     ]
+
     if color_scheme == "gambit":
         defs.extend([
             "\\definecolor{gambitredrgb}{RGB}{234,51,35}",
@@ -130,26 +152,31 @@ def color_definitions(color_scheme: str = "default", num_players: int = 6) -> li
             "\\newcommand\\playerfivecolor{cyan}",
             "\\newcommand\\playersixcolor{magenta}",
         ])
-    elif color_scheme == "distinctipy":
-        chance_rgb = (117/255, 145/255, 56/255)
+
+    elif color_scheme in ("distinctipy", "colorblind"):
+        # Chance color in 0-1 float format for exclusion
+        chance_rgb = (117 / 255, 145 / 255, 56 / 255)
         try:
+            colorblind_type = (
+                "Deuteranomaly" if color_scheme == "colorblind" else None
+            )
             colors = distinctipy.get_colors(
                 num_players,
                 exclude_colors=[(0, 0, 0), (1, 1, 1), chance_rgb],
-                rng=42
+                rng=42,
+                colorblind_type=colorblind_type,
             )
             for i, color in enumerate(colors):
                 r, g, b = [int(c * 255) for c in color]
                 p_num = i + 1
                 defs.extend([
                     f"\\definecolor{{p{p_num}rgb}}{{RGB}}{{{r},{g},{b}}}",
-                    f"\\newcommand\\player{p_num}color{{p{p_num}rgb}}"
+                    f"\\newcommand\\player{p_num}color{{p{p_num}rgb}}",
                 ])
         except Exception as e:
-            print(f"Warning: Failed to generate distinctipy colors: {e}")
-            
+            print(f"Warning: Failed to generate {color_scheme} colors: {e}")
+
     return defs
-        
 
 def outall(stream: Optional[List[str]] = None) -> None:
     """
@@ -1609,13 +1636,14 @@ def generate_tikz(
             hide_action_labels=hide_action_labels,
             shared_terminal_depth=shared_terminal_depth,
         )
-       
-    num_players = 0  # start from zero, count actual players
+
+    # Determine the number of players for dynamic color schemes
+    num_players = 0
     if not isinstance(game, str):
         try:
             num_players = len(game.players)
         except AttributeError:
-            num_players = 6  # fallback only if attribute missing
+            num_players = 6
     else:
         try:
             player_nums = set()
@@ -1623,14 +1651,13 @@ def generate_tikz(
                 if line.startswith("player"):
                     try:
                         p = int(line.split()[1])
-                        if p > 0:  # exclude chance (player 0)
+                        if p > 0:
                             player_nums.add(p)
                     except (IndexError, ValueError):
                         pass
             num_players = len(player_nums) if player_nums else 6
         except Exception:
             num_players = 6
-
 
     # Step 1: Generate the tikzpicture content using ef_to_tex logic
     tikz_picture_content = ef_to_tex(ef_file, scale_factor, show_grid, color_scheme, action_label_position)
