@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     import pygambit
 
 from pathlib import Path
+from dataclasses import dataclass, field
 from typing import List, Optional 
 from IPython.core.getipython import get_ipython
 
@@ -1515,6 +1516,26 @@ def ef_to_tex(
         scale = original_scale
         grid = original_grid
 
+@dataclass
+class DrawTreeOptions:
+    """
+    Options shared by all generate_* and draw_tree public functions.
+
+    Grouping these parameters into a single object avoids repeating an
+    identical 11-parameter signature across generate_tikz, generate_pdf,
+    generate_tex, generate_png, and draw_tree.
+    """
+    scale_factor: float = 1.0
+    level_scaling: int = 1
+    sublevel_scaling: int = 1
+    width_scaling: int = 1
+    hide_action_labels: bool = False
+    shared_terminal_depth: bool = False
+    show_grid: bool = False
+    color_scheme: str = "default"
+    edge_thickness: float = 1.0
+    action_label_position: float = 0.5
+
 def generate_tikz(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
@@ -1922,6 +1943,54 @@ def generate_pdf(
             raise RuntimeError("pdflatex not found. Please install a LaTeX distribution (e.g., TeX Live, MiKTeX).")
 
 
+def _try_pdf_to_png(pdf_path: Path, png_path: Path, dpi: int, temp_dir: str) -> bool:
+    """
+    Attempt PDF to PNG conversion using available system tools.
+
+    Tries ImageMagick, Ghostscript, and pdftoppm in order.
+    Returns True on first success, False if all three fail.
+    """
+    # Method 1: ImageMagick convert
+    try:
+        subprocess.run(
+            ['convert', '-density', str(dpi), '-quality', '100',
+             str(pdf_path), str(png_path)],
+            capture_output=True, text=True, check=True,
+        )
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+
+    # Method 2: Ghostscript
+    try:
+        subprocess.run(
+            ['gs', '-dNOPAUSE', '-dBATCH', '-sDEVICE=png16m',
+             f'-r{dpi}', f'-sOutputFile={png_path}', str(pdf_path)],
+            capture_output=True, text=True, check=True,
+        )
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+
+    # Method 3: pdftoppm + convert
+    try:
+        temp_ppm = Path(temp_dir) / "temp_output"
+        subprocess.run(
+            ['pdftoppm', '-r', str(dpi), str(pdf_path), str(temp_ppm)],
+            capture_output=True, text=True, check=True,
+        )
+        ppm_file = Path(temp_dir) / f"{temp_ppm.name}-1.ppm"
+        if ppm_file.exists():
+            subprocess.run(
+                ['convert', str(ppm_file), str(png_path)],
+                capture_output=True, text=True, check=True,
+            )
+            return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+
+    return False
+
 def generate_png(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
@@ -2004,66 +2073,11 @@ def generate_png(
                 edge_thickness=edge_thickness,
                 action_label_position=action_label_position,
             )
-            
-            # Step 2: Convert PDF to PNG
+
+            # Step 2: Convert PDF to PNG using available system tools
             final_png_path = Path(output_png)
+            conversion_success = _try_pdf_to_png(temp_pdf, final_png_path, dpi, temp_dir)
             
-            # Try different conversion methods in order of preference
-            conversion_success = False
-            
-            # Method 1: Try ImageMagick convert
-            try:
-                subprocess.run([
-                    'convert',
-                    '-density', str(dpi),
-                    '-quality', '100',
-                    str(temp_pdf),
-                    str(final_png_path)
-                ], capture_output=True, text=True, check=True)
-                conversion_success = True
-            except (subprocess.CalledProcessError, FileNotFoundError):
-                pass
-            
-            # Method 2: Try Ghostscript if ImageMagick failed
-            if not conversion_success:
-                try:
-                    subprocess.run([
-                        'gs',
-                        '-dNOPAUSE',
-                        '-dBATCH',
-                        '-sDEVICE=png16m',
-                        f'-r{dpi}',
-                        f'-sOutputFile={final_png_path}',
-                        str(temp_pdf)
-                    ], capture_output=True, text=True, check=True)
-                    conversion_success = True
-                except (subprocess.CalledProcessError, FileNotFoundError):
-                    pass
-            
-            # Method 3: Try pdftoppm + convert if available
-            if not conversion_success:
-                try:
-                    temp_ppm = Path(temp_dir) / "temp_output"
-                    # Convert PDF to PPM first
-                    subprocess.run([
-                        'pdftoppm',
-                        '-r', str(dpi),
-                        str(temp_pdf),
-                        str(temp_ppm)
-                    ], capture_output=True, text=True, check=True)
-                    
-                    # Find the generated PPM file (pdftoppm adds -1.ppm suffix)
-                    ppm_file = Path(temp_dir) / f"{temp_ppm.name}-1.ppm"
-                    if ppm_file.exists():
-                        # Convert PPM to PNG
-                        subprocess.run([
-                            'convert',
-                            str(ppm_file),
-                            str(final_png_path)
-                        ], capture_output=True, text=True, check=True)
-                        conversion_success = True
-                except (subprocess.CalledProcessError, FileNotFoundError):
-                    pass
             
             if not conversion_success:
                 raise RuntimeError(
