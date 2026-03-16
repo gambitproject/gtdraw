@@ -2164,6 +2164,132 @@ def generate_png(
             raise RuntimeError(f"PNG generation failed: {e}")
 
 
+def generate_svg(
+    game: str | "pygambit.gambit.Game",
+    save_to: Optional[str] = None,
+    scale_factor: float = 1.0,
+    level_scaling: int = 1,
+    sublevel_scaling: int = 1,
+    width_scaling: int = 1,
+    hide_action_labels: bool = False,
+    shared_terminal_depth: bool = False,
+    show_grid: bool = False,
+    color_scheme: str = "default",
+    edge_thickness: float = 1.0,
+    action_label_position: float = 0.5,
+    dpi: int = 300,
+) -> str:
+    """
+    Generate an SVG image directly from an extensive form (.ef) file.
+
+    This function works similarly to generate_png(): it first creates a PDF
+    via generate_pdf(), then converts that PDF to SVG using pdf2svg.
+    The `dpi` argument is accepted to keep the same public signature as
+    generate_png(), but is not used for SVG output.
+
+    Args:
+        game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
+        save_to: path to save intermediate .ef file when generating from a pygambit.gambit.Game object and output svg file.
+        scale_factor: Scale factor for the diagram.
+        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
+        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
+        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
+        hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
+        shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
+        show_grid: Whether to show grid lines.
+        color_scheme: Color scheme for player nodes.
+        edge_thickness: Thickness of edges.
+        action_label_position: Position of action labels along edges.
+        dpi: Unused for SVG output; accepted for API consistency.
+
+    Returns:
+        Path to the generated SVG file.
+
+    Raises:
+        FileNotFoundError: If the .ef file doesn't exist.
+        RuntimeError: If PDF generation or SVG conversion fails.
+    """
+    # Keep the same public signature as generate_png for API consistency.
+    _ = dpi
+
+    # Determine output filename
+    if save_to is None:
+        if isinstance(game, str):
+            game_path = Path(game)
+        else:
+            game_path = Path(game.title + ".ef")
+        output_svg = game_path.with_suffix(".svg").name
+    else:
+        if not save_to.endswith(".svg"):
+            output_svg = save_to + ".svg"
+        else:
+            output_svg = save_to
+
+    # If game is an EFG file, convert it first
+    if isinstance(game, str) and game.lower().endswith(".efg"):
+        try:
+            game = efg_dl_ef(game)
+        except Exception:
+            pass
+
+    # Step 1: Generate PDF first
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_pdf = str(Path(temp_dir) / "temp_output.pdf")
+
+        try:
+            generate_pdf(
+                game=game,
+                save_to=temp_pdf,
+                scale_factor=scale_factor,
+                level_scaling=level_scaling,
+                sublevel_scaling=sublevel_scaling,
+                width_scaling=width_scaling,
+                hide_action_labels=hide_action_labels,
+                shared_terminal_depth=shared_terminal_depth,
+                show_grid=show_grid,
+                color_scheme=color_scheme,
+                edge_thickness=edge_thickness,
+                action_label_position=action_label_position,
+            )
+
+            final_svg_path = Path(output_svg)
+            pdf_path = str(temp_pdf)
+            svg_path = str(final_svg_path)
+
+            try:
+                subprocess.run(
+                    ["pdf2svg", pdf_path, svg_path],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+            except FileNotFoundError:
+                raise RuntimeError(
+                    "pdf2svg not found. Please install pdf2svg and make sure it is available in your PATH.\n\n"
+                    "Installation examples:\n"
+                    "  macOS: brew install pdf2svg\n"
+                    "  Ubuntu: sudo apt-get install pdf2svg\n"
+                    "  Windows: Install pdf2svg or use another PDF-to-SVG conversion tool."
+                )
+            except subprocess.CalledProcessError as e:
+                error_msg = e.stderr.strip() if e.stderr else str(e)
+                raise RuntimeError(f"SVG conversion failed:\n{error_msg}")
+
+            if final_svg_path.exists():
+                return str(final_svg_path.absolute())
+            else:
+                raise RuntimeError("SVG was not generated successfully")
+
+        except FileNotFoundError:
+            # Re-raise file not found errors directly
+            raise
+        except RuntimeError:
+            # Re-raise PDF generation and SVG conversion errors
+            raise
+        except Exception as e:
+            raise RuntimeError(f"SVG generation failed: {e}")
+
+
 def efg_dl_ef(efg_file: str) -> str:
     """Convert a Gambit .efg file to the `.ef` format used by generate_tikz.
 

@@ -457,6 +457,63 @@ class TestPngGeneration:
             os.unlink(ef_file_path)
 
 
+class TestSvgGeneration:
+    """Test SVG generation functionality."""
+
+    def test_generate_svg_missing_file(self):
+        """Test SVG generation with missing .ef file."""
+        with pytest.raises(FileNotFoundError):
+            draw_tree.generate_svg("nonexistent.ef")
+
+    @patch('draw_tree.core.generate_pdf')
+    @patch('draw_tree.core.subprocess.run')
+    def test_generate_svg_pdf2svg_not_found(self, mock_run, mock_generate_pdf):
+        """Test SVG generation when pdf2svg is not available."""
+        mock_generate_pdf.return_value = "/tmp/temp_output.pdf"
+        mock_run.side_effect = FileNotFoundError("pdf2svg not found")
+
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+            ef_file.write("player 1\nlevel 0 node root player 1\n")
+            ef_file_path = ef_file.name
+
+        try:
+            with pytest.raises(RuntimeError, match="pdf2svg not found"):
+                draw_tree.generate_svg(ef_file_path)
+        finally:
+            os.unlink(ef_file_path)
+
+    @patch('draw_tree.core.generate_pdf')
+    @patch('draw_tree.core.subprocess.run')
+    def test_generate_svg_output_filename(self, mock_run, mock_generate_pdf):
+        """Test SVG generation with custom output filename."""
+        mock_generate_pdf.return_value = "/tmp/temp_output.pdf"
+
+        def fake_pdf2svg(command, capture_output, text, check):
+            output_path = command[2]
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write("<svg></svg>")
+            return None
+
+        mock_run.side_effect = fake_pdf2svg
+
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+            ef_file.write("player 1\nlevel 0 node root player 1\n")
+            ef_file_path = ef_file.name
+
+        try:
+            custom_filename = "custom_output.svg"
+            svg_path = draw_tree.generate_svg(ef_file_path, save_to=custom_filename)
+
+            assert svg_path.endswith(custom_filename)
+            assert os.path.exists(custom_filename)
+            mock_generate_pdf.assert_called_once()
+            mock_run.assert_called_once()
+
+            os.unlink(custom_filename)
+        finally:
+            os.unlink(ef_file_path)
+
+
 class TestTexGeneration:
     """Test LaTeX document generation functionality."""
 

@@ -42,8 +42,9 @@ pip install -e .
 ## Requirements
 
 - Python 3.10+ (tested on 3.13)
-- LaTeX with TikZ (for PDF/PNG generation)
+- LaTeX with TikZ (for PDF/PNG/SVG generation)
 - (optional) ImageMagick or Ghostscript or Poppler (for PNG generation)
+- (optional) pdf2svg (for SVG generation)
 
 ### Installing LaTeX
 
@@ -69,6 +70,17 @@ PNG generation will default to using any of ImageMagick or Ghostscript or Popple
     - `sudo apt-get install poppler-utils`
 - Windows: Install ImageMagick or Ghostscript from their websites
 
+### SVG generation
+
+SVG generation requires `pdf2svg` to be installed and available in PATH.
+- macOS:
+    - `brew install pdf2svg`
+- Ubuntu:
+    - `sudo apt-get install pdf2svg`
+- Windows:
+    - Install a `pdf2svg` binary and add it to `PATH`
+    - For example, see the Windows builds at `https://github.com/jalios/pdf2svg-windows`
+
 ## CLI
 
 By default, `draw_tree` generates TikZ code and prints it to standard output.
@@ -89,13 +101,15 @@ draw_tree games/example.ef --output=mygame.png scale=0.8   # Creates mygame.png 
 You can also use `draw_tree` as a Python library:
 
 ```python
-from draw_tree import generate_tex, generate_pdf, generate_png
+from draw_tree import generate_tex, generate_pdf, generate_png, generate_svg
 generate_tex('games/example.ef')                                    # Creates example.tex
 generate_tex('games/example.ef', save_to='custom')                  # Creates custom.tex
 generate_pdf('games/example.ef')                                    # Creates example.pdf
 generate_png('games/example.ef')                                    # Creates example.png
 generate_png('games/example.ef', dpi=600)                           # Creates high-res example.png (72-2400, default: 300)
 generate_png('games/example.ef', save_to='mygame', scale_factor=0.8)    # Creates mygame.png with 0.8 scaling (0.01 to 100)
+generate_svg('games/example.ef')                                    # Creates example.svg
+generate_svg('games/example.ef', save_to='mygame', scale_factor=0.8)    # Creates mygame.svg with 0.8 scaling
 ```
 
 ### Rendering in Jupyter Notebooks
@@ -120,12 +134,13 @@ In particular read [Tutorial 4) Creating publication-ready game images](https://
 In short, you can do:
 ```python
 import pygambit as gbt
-from draw_tree import draw_tree, generate_tex, generate_pdf, generate_png
+from draw_tree import draw_tree, generate_tex, generate_pdf, generate_png, generate_svg
 g = gbt.read_efg('somegame.efg')
 draw_tree(g)
 generate_tex(g)
 generate_pdf(g)
 generate_png(g)
+generate_svg(g)
 ```
 
 > Note: Without setting the `save_to` parameter, the saved file will be based on the title field of the pygambit game object.
