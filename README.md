@@ -48,7 +48,7 @@ pip install -e .
 
 ### Installing LaTeX
 
-Note: PDF and PNG generation require `pdflatex` to be installed and available in PATH. Tested methods have a ✅ next to them. Methods include:
+Note: PDF, PNG and SVG generation require `pdflatex` to be installed and available in PATH. Tested methods have a ✅ next to them. Methods include:
 
 - macOS:
     - Install [MacTEX](https://www.tug.org/mactex/mactex-download.html) ✅
@@ -74,10 +74,10 @@ PNG generation will default to using any of ImageMagick or Ghostscript or Popple
 
 SVG generation requires `pdf2svg` to be installed and available in PATH.
 - macOS:
-    - `brew install pdf2svg`
+    - `brew install pdf2svg` ✅
 - Ubuntu:
     - `sudo apt-get install pdf2svg`
-- Windows: Download binaries from GitHub or use WSL
+- Windows: Download binaries from [GitHub](https://github.com/dawbarton/pdf2svg)
 
 ## CLI
 
