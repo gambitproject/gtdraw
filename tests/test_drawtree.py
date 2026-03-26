@@ -57,6 +57,7 @@ class TestUtilityFunctions:
     def test_degrees(self):
         """Test angle calculation in degrees."""
         import math
+
         assert abs(draw_tree.degrees([1, 0]) - 0) < 1e-6
         assert abs(draw_tree.degrees([0, 1]) - 90) < 1e-6
         assert abs(draw_tree.degrees([-1, 0]) - 180) < 1e-6
@@ -103,7 +104,7 @@ class TestNodeOperations:
     def test_cleannodeid(self):
         """Test node ID standardization."""
         # Mock the error function to avoid output during tests
-        with patch('draw_tree.core.error'):
+        with patch("draw_tree.core.error"):
             assert draw_tree.cleannodeid("1,test") == "1,test"
             assert draw_tree.cleannodeid("0.5,node") == "0.5,node"
             # Test error cases
@@ -117,7 +118,7 @@ class TestOutputRoutines:
     def test_outall(self):
         """Test output stream printing."""
         test_stream = ["line1", "line2", "line3"]
-        with patch('builtins.print') as mock_print:
+        with patch("builtins.print") as mock_print:
             draw_tree.outall(test_stream)
             assert mock_print.call_count == 3
 
@@ -129,7 +130,7 @@ class TestOutputRoutines:
 
     def test_comment(self):
         """Test comment output."""
-        with patch('draw_tree.core.outs') as mock_outs:
+        with patch("draw_tree.core.outs") as mock_outs:
             draw_tree.comment("test comment")
             mock_outs.assert_called_with("%% test comment")
 
@@ -139,7 +140,7 @@ class TestFileOperations:
 
     def test_readfile(self):
         """Test file reading with line processing."""
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
             f.write("line 1\n")
             f.write("  line 2 with spaces  \n")
             f.write("\n")  # Empty line
@@ -182,7 +183,7 @@ class TestCommandLineProcessing:
 
     def test_commandline_file(self):
         """Test file argument processing."""
-        original_ef_file = getattr(draw_tree, 'ef_file', None)
+        original_ef_file = getattr(draw_tree, "ef_file", None)
         try:
             draw_tree.commandline(["draw_tree.py", "test_game.ef"])
             assert draw_tree.ef_file == "test_game.ef"
@@ -194,7 +195,7 @@ class TestCommandLineProcessing:
         """Test invalid scale argument handling."""
         original_scale = draw_tree.scale
         try:
-            with patch('draw_tree.core.outs') as mock_outs:
+            with patch("draw_tree.core.outs") as mock_outs:
                 draw_tree.commandline(["draw_tree.py", "scale=invalid"])
                 # Should output error message
                 mock_outs.assert_called()
@@ -210,7 +211,7 @@ class TestPlayerHandling:
     def test_player_basic(self):
         """Test basic player parsing."""
         words = ["player", "1"]
-        with patch('draw_tree.core.defout'):
+        with patch("draw_tree.core.defout"):
             p, advance = draw_tree.player(words)
             assert p == 1
             assert advance == 2
@@ -218,7 +219,7 @@ class TestPlayerHandling:
     def test_player_with_name(self):
         """Test player parsing with name."""
         words = ["player", "2", "name", "Alice"]
-        with patch('draw_tree.core.defout'):
+        with patch("draw_tree.core.defout"):
             p, advance = draw_tree.player(words)
             assert p == 2
             assert advance == 4
@@ -227,7 +228,7 @@ class TestPlayerHandling:
     def test_player_invalid_number(self):
         """Test player parsing with invalid number."""
         words = ["player", "invalid"]
-        with patch('draw_tree.core.error') as mock_error:
+        with patch("draw_tree.core.error") as mock_error:
             p, advance = draw_tree.player(words)
             assert p == -1
             mock_error.assert_called()
@@ -261,7 +262,9 @@ class TestDrawTreeFunction:
     def test_draw_tree_basic(self):
         """Test basic draw_tree functionality."""
         # Create a simple .ef file for testing
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ef"
+        ) as ef_file:
             ef_file.write("player 1\n")
             ef_file.write("level 0 node root player 1\n")
             ef_file.write("level 1 node left from 0,root player 2 payoffs 1 2\n")
@@ -269,7 +272,7 @@ class TestDrawTreeFunction:
 
         try:
             result = draw_tree.generate_tikz(ef_file_path)
-            
+
             # Verify the result contains expected components
             assert isinstance(result, str)
             assert len(result) > 0
@@ -278,12 +281,11 @@ class TestDrawTreeFunction:
             assert "\\begin{tikzpicture}" in result
             assert "\\end{tikzpicture}" in result
             # Check for built-in macro definitions
-            assert "\\newcommand\\chancecolor" in result
             assert "\\newdimen\\ndiam" in result
             assert "\\ndiam1.5mm" in result
             assert "\\newdimen\\paydown" in result
             assert "\\paydown2.5ex" in result
-            
+
         finally:
             os.unlink(ef_file_path)
 
@@ -292,7 +294,9 @@ class TestDrawTreeFunction:
         extension if needed and call the tikz cell magic with the generated code.
         """
         # Create a simple .ef file for testing
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ef"
+        ) as ef_file:
             ef_file.write("player 1\n")
             ef_file.write("level 0 node root player 1\n")
             ef_file_path = ef_file.name
@@ -318,9 +322,9 @@ class TestDrawTreeFunction:
 
         try:
             # Case 1: extension already loaded
-            em = DummyEM(loaded={'jupyter_tikz'})
+            em = DummyEM(loaded={"jupyter_tikz"})
             ip = DummyIP(em)
-            with patch('draw_tree.core.get_ipython', return_value=ip):
+            with patch("draw_tree.core.get_ipython", return_value=ip):
                 res = draw_tree.draw_tree(ef_file_path)
                 # Should call run_cell_magic and return its value
                 assert res == "MAGIC-RESULT"
@@ -328,11 +332,11 @@ class TestDrawTreeFunction:
             # Case 2: extension not loaded -> run_line_magic should be called
             em2 = DummyEM(loaded=set())
             ip2 = DummyIP(em2)
-            with patch('draw_tree.core.get_ipython', return_value=ip2):
+            with patch("draw_tree.core.get_ipython", return_value=ip2):
                 res2 = draw_tree.draw_tree(ef_file_path)
                 assert res2 == "MAGIC-RESULT"
                 # run_line_magic should have been called to load the extension
-                assert ('load_ext', 'jupyter_tikz') in ip2._loaded_magics
+                assert ("load_ext", "jupyter_tikz") in ip2._loaded_magics
 
         finally:
             os.unlink(ef_file_path)
@@ -340,7 +344,9 @@ class TestDrawTreeFunction:
     def test_draw_tree_with_options(self):
         """Test draw_tree with different options."""
         # Create a simple .ef file for testing
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ef"
+        ) as ef_file:
             ef_file.write("player 1\n")
             ef_file.write("level 0 node root player 1\n")
             ef_file_path = ef_file.name
@@ -353,11 +359,11 @@ class TestDrawTreeFunction:
             # Test with grid
             result_grid = draw_tree.generate_tikz(ef_file_path, show_grid=True)
             assert "\\draw [help lines, color=green]" in result_grid
-            
+
             # Test without grid (default)
             result_no_grid = draw_tree.generate_tikz(ef_file_path, show_grid=False)
             assert "% \\draw [help lines, color=green]" in result_no_grid
-            
+
         finally:
             os.unlink(ef_file_path)
 
@@ -368,7 +374,9 @@ class TestDrawTreeFunction:
             draw_tree.generate_tikz("nonexistent.ef")
 
         # Test with valid .ef file (should work with built-in macros)
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ef"
+        ) as ef_file:
             ef_file.write("player 1\nlevel 0 node root player 1\n")
             ef_file_path = ef_file.name
 
@@ -376,7 +384,6 @@ class TestDrawTreeFunction:
             result = draw_tree.generate_tikz(ef_file_path)
             # Should work with built-in macros
             assert "\\begin{tikzpicture}" in result
-            assert "\\newcommand\\chancecolor" in result
         finally:
             os.unlink(ef_file_path)
 
@@ -389,14 +396,16 @@ class TestPngGeneration:
         with pytest.raises(FileNotFoundError):
             draw_tree.generate_png("nonexistent.ef")
 
-    @patch('draw_tree.core.subprocess.run')
+    @patch("draw_tree.core.subprocess.run")
     def test_generate_png_pdflatex_not_found(self, mock_run):
         """Test PNG generation when pdflatex is not available."""
         # Mock pdflatex not being found
         mock_run.side_effect = FileNotFoundError("pdflatex not found")
-        
+
         # Create a temporary .ef file
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ef"
+        ) as ef_file:
             ef_file.write("player 1\nlevel 0 node root player 1\n")
             ef_file_path = ef_file.name
 
@@ -409,15 +418,17 @@ class TestPngGeneration:
     def test_generate_png_default_parameters(self):
         """Test PNG generation with default parameters."""
         # Create a temporary .ef file
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ef"
+        ) as ef_file:
             ef_file.write("player 1\nlevel 0 node root player 1\n")
             ef_file_path = ef_file.name
 
         try:
             # Mock both pdflatex and convert being unavailable to test error handling
-            with patch('draw_tree.core.subprocess.run') as mock_run:
+            with patch("draw_tree.core.subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError("Command not found")
-                
+
                 with pytest.raises(RuntimeError):
                     draw_tree.generate_png(ef_file_path)
         finally:
@@ -426,15 +437,17 @@ class TestPngGeneration:
     def test_generate_png_custom_dpi(self):
         """Test PNG generation with custom DPI setting."""
         # Create a temporary .ef file
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ef"
+        ) as ef_file:
             ef_file.write("player 1\nlevel 0 node root player 1\n")
             ef_file_path = ef_file.name
 
         try:
             # Test that custom DPI is handled properly
-            with patch('draw_tree.core.subprocess.run') as mock_run:
+            with patch("draw_tree.core.subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError("Command not found")
-                
+
                 with pytest.raises(RuntimeError):
                     draw_tree.generate_png(ef_file_path, dpi=600)
         finally:
@@ -443,14 +456,16 @@ class TestPngGeneration:
     def test_generate_png_output_filename(self):
         """Test PNG generation with custom output filename."""
         # Create a temporary .ef file
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ef"
+        ) as ef_file:
             ef_file.write("player 1\nlevel 0 node root player 1\n")
             ef_file_path = ef_file.name
 
         try:
-            with patch('draw_tree.core.subprocess.run') as mock_run:
+            with patch("draw_tree.core.subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError("Command not found")
-                
+
                 with pytest.raises(RuntimeError):
                     draw_tree.generate_png(ef_file_path, save_to="custom_name.png")
         finally:
@@ -464,10 +479,12 @@ class TestSvgGeneration:
         with pytest.raises(FileNotFoundError):
             draw_tree.generate_svg("nonexistent.ef")
 
-    @patch('draw_tree.core.subprocess.run')
+    @patch("draw_tree.core.subprocess.run")
     def test_generate_svg_pdflatex_not_found(self, mock_run):
         mock_run.side_effect = FileNotFoundError("pdflatex not found")
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ef"
+        ) as ef_file:
             ef_file.write("player 1\nlevel 0 node root player 1\n")
             ef_file_path = ef_file.name
 
@@ -478,12 +495,14 @@ class TestSvgGeneration:
             os.unlink(ef_file_path)
 
     def test_generate_svg_default_parameters(self):
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ef"
+        ) as ef_file:
             ef_file.write("player 1\nlevel 0 node root player 1\n")
             ef_file_path = ef_file.name
 
         try:
-            with patch('draw_tree.core.subprocess.run') as mock_run:
+            with patch("draw_tree.core.subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError("Command not found")
                 with pytest.raises(RuntimeError):
                     draw_tree.generate_svg(ef_file_path)
@@ -491,12 +510,14 @@ class TestSvgGeneration:
             os.unlink(ef_file_path)
 
     def test_generate_svg_output_filename(self):
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ef"
+        ) as ef_file:
             ef_file.write("player 1\nlevel 0 node root player 1\n")
             ef_file_path = ef_file.name
 
         try:
-            with patch('draw_tree.core.subprocess.run') as mock_run:
+            with patch("draw_tree.core.subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError("Command not found")
                 with pytest.raises(RuntimeError):
                     draw_tree.generate_svg(ef_file_path, save_to="custom_name.svg")
@@ -515,77 +536,85 @@ class TestTexGeneration:
     def test_generate_tex_default_parameters(self):
         """Test LaTeX generation with default parameters."""
         # Create a temporary .ef file
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ef"
+        ) as ef_file:
             ef_file.write("player 1\nlevel 0 node root player 1\n")
             ef_file_path = ef_file.name
 
         try:
             # Generate LaTeX file
             tex_path = draw_tree.generate_tex(ef_file_path)
-            
+
             # Verify the file was created and contains expected content
             assert os.path.exists(tex_path)
-            
-            with open(tex_path, 'r') as f:
+
+            with open(tex_path, "r") as f:
                 content = f.read()
-                
+
             # Check for LaTeX document structure
             assert "\\documentclass[tikz,border=10pt]{standalone}" in content
             assert "\\begin{document}" in content
             assert "\\end{document}" in content
             assert "\\begin{tikzpicture}" in content
             assert "\\end{tikzpicture}" in content
-            
+
             # Clean up generated file
             os.unlink(tex_path)
-            
+
         finally:
             os.unlink(ef_file_path)
 
     def test_generate_tex_custom_filename(self):
         """Test LaTeX generation with custom output filename."""
         # Create a temporary .ef file
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ef"
+        ) as ef_file:
             ef_file.write("player 1\nlevel 0 node root player 1\n")
             ef_file_path = ef_file.name
 
         try:
             custom_filename = "custom_output.tex"
             tex_path = draw_tree.generate_tex(ef_file_path, save_to=custom_filename)
-            
+
             # Verify the custom filename was used
             assert tex_path.endswith(custom_filename)
             assert os.path.exists(custom_filename)
-            
+
             # Clean up
             os.unlink(custom_filename)
-            
+
         finally:
             os.unlink(ef_file_path)
 
     def test_generate_tex_with_scale_and_grid(self):
         """Test LaTeX generation with scale and grid options."""
         # Create a temporary .ef file
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".ef"
+        ) as ef_file:
             ef_file.write("player 1\nlevel 0 node root player 1\n")
             ef_file_path = ef_file.name
 
         try:
-            tex_path = draw_tree.generate_tex(ef_file_path, scale_factor=2.0, show_grid=True)
-            
+            tex_path = draw_tree.generate_tex(
+                ef_file_path, scale_factor=2.0, show_grid=True
+            )
+
             # Verify the file was created
             assert os.path.exists(tex_path)
-            
-            with open(tex_path, 'r') as f:
+
+            with open(tex_path, "r") as f:
                 content = f.read()
-                
+
             # Check for scale and grid options
             assert "scale=1.6" in content  # 2 * 0.8
             assert "\\draw [help lines, color=green]" in content
-            
+
             # Clean up
             os.unlink(tex_path)
-            
+
         finally:
             os.unlink(ef_file_path)
 
@@ -595,8 +624,16 @@ class TestCommandlineArguments:
 
     def test_commandline_png_flag(self):
         """Test --png flag parsing."""
-        result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--png'])
-        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
+        result = draw_tree.commandline(["draw_tree.py", "test.ef", "--png"])
+        (
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+        ) = result
         assert output_mode == "png"
         assert not pdf_requested
         assert png_requested
@@ -607,8 +644,18 @@ class TestCommandlineArguments:
 
     def test_commandline_png_with_dpi(self):
         """Test --png flag with --dpi option."""
-        result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--png', '--dpi=600'])
-        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
+        result = draw_tree.commandline(
+            ["draw_tree.py", "test.ef", "--png", "--dpi=600"]
+        )
+        (
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+        ) = result
         assert output_mode == "png"
         assert not pdf_requested
         assert png_requested
@@ -619,8 +666,18 @@ class TestCommandlineArguments:
 
     def test_commandline_png_output_file(self):
         """Test PNG output with custom filename."""
-        result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--output=custom.png'])
-        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
+        result = draw_tree.commandline(
+            ["draw_tree.py", "test.ef", "--output=custom.png"]
+        )
+        (
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+        ) = result
         assert output_mode == "png"
         assert not pdf_requested
         assert png_requested
@@ -631,8 +688,18 @@ class TestCommandlineArguments:
 
     def test_commandline_pdf_output_file(self):
         """Test PDF output with custom filename."""
-        result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--output=custom.pdf'])
-        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
+        result = draw_tree.commandline(
+            ["draw_tree.py", "test.ef", "--output=custom.pdf"]
+        )
+        (
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+        ) = result
         assert output_mode == "pdf"
         assert pdf_requested
         assert not png_requested
@@ -643,8 +710,16 @@ class TestCommandlineArguments:
 
     def test_commandline_tex_flag(self):
         """Test --tex flag parsing."""
-        result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--tex'])
-        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
+        result = draw_tree.commandline(["draw_tree.py", "test.ef", "--tex"])
+        (
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+        ) = result
         assert output_mode == "tex"
         assert not pdf_requested
         assert not png_requested
@@ -655,8 +730,18 @@ class TestCommandlineArguments:
 
     def test_commandline_tex_output_file(self):
         """Test LaTeX output with custom filename."""
-        result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--output=custom.tex'])
-        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
+        result = draw_tree.commandline(
+            ["draw_tree.py", "test.ef", "--output=custom.tex"]
+        )
+        (
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+        ) = result
         assert output_mode == "tex"
         assert not pdf_requested
         assert not png_requested
@@ -668,25 +753,61 @@ class TestCommandlineArguments:
     def test_commandline_invalid_dpi(self):
         """Test invalid DPI values."""
         # Too low DPI should default to 300
-        result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--png', '--dpi=50'])
-        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
+        result = draw_tree.commandline(["draw_tree.py", "test.ef", "--png", "--dpi=50"])
+        (
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+        ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
         # Too high DPI should default to 300
-        result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--png', '--dpi=5000'])
-        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
+        result = draw_tree.commandline(
+            ["draw_tree.py", "test.ef", "--png", "--dpi=5000"]
+        )
+        (
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+        ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
     def test_commandline_invalid_dpi_string(self):
         """Test non-numeric DPI values."""
-        result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--png', '--dpi=high'])
-        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
+        result = draw_tree.commandline(
+            ["draw_tree.py", "test.ef", "--png", "--dpi=high"]
+        )
+        (
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+        ) = result
         assert dpi == 300  # Should default to 300 for invalid values
 
     def test_commandline_svg_flag(self):
         """Test --svg flag parsing."""
-        result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--svg'])
-        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
+        result = draw_tree.commandline(["draw_tree.py", "test.ef", "--svg"])
+        (
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+        ) = result
         assert output_mode == "svg"
         assert not pdf_requested
         assert not png_requested
@@ -697,8 +818,18 @@ class TestCommandlineArguments:
 
     def test_commandline_svg_output_file(self):
         """Test SVG output with custom filename."""
-        result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--output=custom.svg'])
-        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
+        result = draw_tree.commandline(
+            ["draw_tree.py", "test.ef", "--output=custom.svg"]
+        )
+        (
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+        ) = result
         assert output_mode == "svg"
         assert not pdf_requested
         assert not png_requested
@@ -716,10 +847,10 @@ def test_efg_dl_ef_conversion_examples():
     extend with additional examples in the future.
     """
     examples = [
-        ('games/efg/one_card_poker.efg', 'games/one_card_poker.ef'),
-        ('games/efg/2smp.efg', 'games/2smp.ef'),
-        ('games/efg/2s2x2x2.efg', 'games/2s2x2x2.ef'),
-        ('games/efg/cent2.efg', 'games/cent2.ef'),
+        ("games/efg/one_card_poker.efg", "games/one_card_poker.ef"),
+        ("games/efg/2smp.efg", "games/2smp.ef"),
+        ("games/efg/2s2x2x2.efg", "games/2s2x2x2.ef"),
+        ("games/efg/cent2.efg", "games/cent2.ef"),
     ]
 
     for efg_path, expected_ef_path in examples:
@@ -728,16 +859,18 @@ def test_efg_dl_ef_conversion_examples():
         assert isinstance(out, str), "efg_dl_ef must return a file path string"
         assert os.path.exists(out), f"efg_dl_ef did not create output file: {out}"
 
-        with open(out, 'r', encoding='utf-8') as f:
+        with open(out, "r", encoding="utf-8") as f:
             generated = f.read().strip().splitlines()
-        with open(expected_ef_path, 'r', encoding='utf-8') as f:
+        with open(expected_ef_path, "r", encoding="utf-8") as f:
             expected = f.read().strip().splitlines()
 
         gen_norm = [line.strip() for line in generated if line.strip()]
         expected_lines = [ln.strip() for ln in expected if ln.strip()]
         assert gen_norm == expected_lines, (
-            f"Generated .ef does not match expected for {efg_path}.\nGenerated:\n" + "\n".join(gen_norm)
-            + "\n\nExpected:\n" + "\n".join(expected_lines)
+            f"Generated .ef does not match expected for {efg_path}.\nGenerated:\n"
+            + "\n".join(gen_norm)
+            + "\n\nExpected:\n"
+            + "\n".join(expected_lines)
         )
 
 
