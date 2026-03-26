@@ -2067,7 +2067,7 @@ def generate_png(
             # Generate PDF using existing function
             generate_pdf(
                 game=game,
-                save_to=str(temp_pdf.with_suffix("")),
+                save_to=temp_pdf,
                 scale_factor=scale_factor,
                 level_scaling=level_scaling,
                 sublevel_scaling=sublevel_scaling,
@@ -2241,7 +2241,7 @@ def generate_svg(
         try:
             generate_pdf(
                 game=game,
-                save_to=str(temp_pdf.with_suffix("")),
+                save_to=temp_pdf,
                 scale_factor=scale_factor,
                 level_scaling=level_scaling,
                 sublevel_scaling=sublevel_scaling,
