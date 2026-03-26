@@ -137,6 +137,7 @@ cython_debug/
 # Project specific
 *.tex
 *.pdf
+*.svg
 # Ignore PNGs by default, but allow PNGs in the repository `img/` directory
 *.png
 !/img/*.png
