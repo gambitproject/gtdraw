@@ -2236,7 +2236,7 @@ def generate_svg(
             pass
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        temp_pdf = Path(temp_dir) / "temp_output.pdf"
+        temp_pdf = str(Path(temp_dir) / "temp_output.pdf")
 
         try:
             generate_pdf(
