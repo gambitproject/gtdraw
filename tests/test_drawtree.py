@@ -457,6 +457,53 @@ class TestPngGeneration:
             os.unlink(ef_file_path)
 
 
+class TestSvgGeneration:
+    """Test SVG generation functionality."""
+
+    def test_generate_svg_missing_file(self):
+        with pytest.raises(FileNotFoundError):
+            draw_tree.generate_svg("nonexistent.ef")
+
+    @patch('draw_tree.core.subprocess.run')
+    def test_generate_svg_pdflatex_not_found(self, mock_run):
+        mock_run.side_effect = FileNotFoundError("pdflatex not found")
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+            ef_file.write("player 1\nlevel 0 node root player 1\n")
+            ef_file_path = ef_file.name
+
+        try:
+            with pytest.raises(RuntimeError, match="pdflatex not found"):
+                draw_tree.generate_svg(ef_file_path)
+        finally:
+            os.unlink(ef_file_path)
+
+    def test_generate_svg_default_parameters(self):
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+            ef_file.write("player 1\nlevel 0 node root player 1\n")
+            ef_file_path = ef_file.name
+
+        try:
+            with patch('draw_tree.core.subprocess.run') as mock_run:
+                mock_run.side_effect = FileNotFoundError("Command not found")
+                with pytest.raises(RuntimeError):
+                    draw_tree.generate_svg(ef_file_path)
+        finally:
+            os.unlink(ef_file_path)
+
+    def test_generate_svg_output_filename(self):
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.ef') as ef_file:
+            ef_file.write("player 1\nlevel 0 node root player 1\n")
+            ef_file_path = ef_file.name
+
+        try:
+            with patch('draw_tree.core.subprocess.run') as mock_run:
+                mock_run.side_effect = FileNotFoundError("Command not found")
+                with pytest.raises(RuntimeError):
+                    draw_tree.generate_svg(ef_file_path, save_to="custom_name.svg")
+        finally:
+            os.unlink(ef_file_path)
+
+
 class TestTexGeneration:
     """Test LaTeX document generation functionality."""
 
@@ -549,10 +596,11 @@ class TestCommandlineArguments:
     def test_commandline_png_flag(self):
         """Test --png flag parsing."""
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--png'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
         assert output_mode == "png"
         assert not pdf_requested
         assert png_requested
+        assert not svg_requested
         assert not tex_requested
         assert output_file is None
         assert dpi is None
@@ -560,10 +608,11 @@ class TestCommandlineArguments:
     def test_commandline_png_with_dpi(self):
         """Test --png flag with --dpi option."""
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--png', '--dpi=600'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
         assert output_mode == "png"
         assert not pdf_requested
         assert png_requested
+        assert not svg_requested
         assert not tex_requested
         assert output_file is None
         assert dpi == 600
@@ -571,10 +620,11 @@ class TestCommandlineArguments:
     def test_commandline_png_output_file(self):
         """Test PNG output with custom filename."""
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--output=custom.png'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
         assert output_mode == "png"
         assert not pdf_requested
         assert png_requested
+        assert not svg_requested
         assert not tex_requested
         assert output_file == "custom.png"
         assert dpi is None
@@ -582,10 +632,11 @@ class TestCommandlineArguments:
     def test_commandline_pdf_output_file(self):
         """Test PDF output with custom filename."""
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--output=custom.pdf'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
         assert output_mode == "pdf"
         assert pdf_requested
         assert not png_requested
+        assert not svg_requested
         assert not tex_requested
         assert output_file == "custom.pdf"
         assert dpi is None
@@ -593,10 +644,11 @@ class TestCommandlineArguments:
     def test_commandline_tex_flag(self):
         """Test --tex flag parsing."""
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--tex'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
         assert output_mode == "tex"
         assert not pdf_requested
         assert not png_requested
+        assert not svg_requested
         assert tex_requested
         assert output_file is None
         assert dpi is None
@@ -604,10 +656,11 @@ class TestCommandlineArguments:
     def test_commandline_tex_output_file(self):
         """Test LaTeX output with custom filename."""
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--output=custom.tex'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
         assert output_mode == "tex"
         assert not pdf_requested
         assert not png_requested
+        assert not svg_requested
         assert tex_requested
         assert output_file == "custom.tex"
         assert dpi is None
@@ -616,19 +669,43 @@ class TestCommandlineArguments:
         """Test invalid DPI values."""
         # Too low DPI should default to 300
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--png', '--dpi=50'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
         # Too high DPI should default to 300
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--png', '--dpi=5000'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
     def test_commandline_invalid_dpi_string(self):
         """Test non-numeric DPI values."""
         result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--png', '--dpi=high'])
-        output_mode, pdf_requested, png_requested, tex_requested, output_file, dpi = result
+        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
         assert dpi == 300  # Should default to 300 for invalid values
+
+    def test_commandline_svg_flag(self):
+        """Test --svg flag parsing."""
+        result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--svg'])
+        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
+        assert output_mode == "svg"
+        assert not pdf_requested
+        assert not png_requested
+        assert svg_requested
+        assert not tex_requested
+        assert output_file is None
+        assert dpi is None
+
+    def test_commandline_svg_output_file(self):
+        """Test SVG output with custom filename."""
+        result = draw_tree.commandline(['draw_tree.py', 'test.ef', '--output=custom.svg'])
+        output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = result
+        assert output_mode == "svg"
+        assert not pdf_requested
+        assert not png_requested
+        assert svg_requested
+        assert not tex_requested
+        assert output_file == "custom.svg"
+        assert dpi is None
 
 
 def test_efg_dl_ef_conversion_examples():
