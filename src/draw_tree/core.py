@@ -84,7 +84,7 @@ stream0: List[str] = []
 
 def get_player_color(player: int, color_scheme: str = "default") -> str:
     """
-    Get the TeX color macro name for a given player number.
+    Get the TeX color name for a given player number.
 
     Args:
         player: Player number (0 for chance, 1-6 for regular players with
@@ -94,20 +94,20 @@ def get_player_color(player: int, color_scheme: str = "default") -> str:
             "distinctipy", or "colorblind".
 
     Returns:
-        TeX color macro name for the player, or "black" as fallback.
+        TeX color name for the player, or "black" as fallback.
 
     Raises:
         ValueError: If the "gambit" scheme is used with more than 6 players.
     """
     if color_scheme == "gambit":
         color_map = {
-            0: "\\chancecolor",
-            1: "\\playeronecolor",
-            2: "\\playertwocolor",
-            3: "\\playerthreecolor",
-            4: "\\playerfourcolor",
-            5: "\\playerfivecolor",
-            6: "\\playersixcolor",
+            0: "chancecolor",
+            1: "playeronecolor",
+            2: "playertwocolor",
+            3: "playerthreecolor",
+            4: "playerfourcolor",
+            5: "playerfivecolor",
+            6: "playersixcolor",
         }
         if player < 0:
             return "black"  # no player assigned yet
@@ -121,20 +121,20 @@ def get_player_color(player: int, color_scheme: str = "default") -> str:
 
     elif color_scheme in ("distinctipy", "colorblind"):
         if player == 0:
-            return "\\chancecolor"
+            return "chancecolor"
         elif player > 0:
-            return f"\\player{player}color"
+            return f"p{player}rgb"
 
     return "black"
 
 
 def color_definitions(color_scheme: str = "default", num_players: int = 6) -> list[str]:
     """
-    Generate LaTeX color macro definitions for game tree players.
+    Generate LaTeX color definitions for game tree players.
 
-    Produces ``\\definecolor`` and ``\\newcommand`` lines that are injected
-    into the TikZ preamble so that player-color macros (e.g.
-    ``\\playeronecolor``, ``\\player7color``) resolve correctly.
+    Produces ``\\definecolor`` lines that are injected into the TikZ preamble
+    so that player-color names (e.g. ``playeronecolor``, ``p7rgb``)
+    resolve correctly.
 
     Args:
         color_scheme: One of "default", "gambit", "distinctipy", or
@@ -147,20 +147,18 @@ def color_definitions(color_scheme: str = "default", num_players: int = 6) -> li
     """
     # Chance color is shared across all schemes
     defs = [
-        "\\definecolor{chancecolorrgb}{RGB}{117,145,56}",
-        "\\newcommand\\chancecolor{chancecolorrgb}",
+        "\\definecolor{chancecolor}{RGB}{117,145,56}",
     ]
 
     if color_scheme == "gambit":
         defs.extend(
             [
-                "\\definecolor{gambitredrgb}{RGB}{234,51,35}",
-                "\\newcommand\\playeronecolor{gambitredrgb}",
-                "\\newcommand\\playertwocolor{blue}",
-                "\\newcommand\\playerthreecolor{orange}",
-                "\\newcommand\\playerfourcolor{purple}",
-                "\\newcommand\\playerfivecolor{cyan}",
-                "\\newcommand\\playersixcolor{magenta}",
+                "\\definecolor{playeronecolor}{RGB}{234,51,35}",
+                "\\colorlet{playertwocolor}{blue}",
+                "\\colorlet{playerthreecolor}{orange}",
+                "\\colorlet{playerfourcolor}{purple}",
+                "\\colorlet{playerfivecolor}{cyan}",
+                "\\colorlet{playersixcolor}{magenta}",
             ]
         )
 
@@ -178,12 +176,7 @@ def color_definitions(color_scheme: str = "default", num_players: int = 6) -> li
             for i, color in enumerate(colors):
                 r, g, b = [int(c * 255) for c in color]
                 p_num = i + 1
-                defs.extend(
-                    [
-                        f"\\definecolor{{p{p_num}rgb}}{{RGB}}{{{r},{g},{b}}}",
-                        f"\\newcommand\\player{p_num}color{{p{p_num}rgb}}",
-                    ]
-                )
+                defs.append(f"\\definecolor{{p{p_num}rgb}}{{RGB}}{{{r},{g},{b}}}")
         except Exception as e:
             print(f"Warning: Failed to generate {color_scheme} colors: {e}")
 
