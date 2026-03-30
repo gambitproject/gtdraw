@@ -1696,7 +1696,10 @@ def generate_tikz(
             shared_terminal_depth=shared_terminal_depth,
         )
 
-    # Determine the number of players for dynamic color schemes
+    # Determine the number of players for dynamic color schemes.
+    # Use max(player_ids) rather than len(player_ids) so that
+    # non-consecutive IDs (e.g. players 1, 2, 5) still get all
+    # required color definitions (p1rgb … p5rgb).
     num_players = 0
     if not isinstance(game, str):
         try:
@@ -1714,7 +1717,7 @@ def generate_tikz(
                             player_nums.add(p)
                     except (IndexError, ValueError):
                         pass
-            num_players = len(player_nums) if player_nums else 6
+            num_players = max(player_nums) if player_nums else 6
         except Exception:
             num_players = 6
 
