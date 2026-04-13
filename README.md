@@ -143,7 +143,9 @@ generate_svg(g)
 
 > Note: Without setting the `save_to` parameter, the saved file will be based on the title field of the pygambit game object.
 
-## Developer docs: Testing
+## Developer docs
+
+### Testing
 
 The project includes a comprehensive test suite using pytest. To run the tests:
 
@@ -156,3 +158,16 @@ Run tests with coverage:
 ```bash
 pytest tests/ --cov=draw_tree --cov-report=html
 ```
+
+### Releases
+
+To release a new version of `draw_tree`, update the version number in `pyproject.toml` and in `src/draw_tree/__init__.py`.
+
+After the change is pushed to the main branch, push a tag:
+
+```
+git tag vX.X.X
+git push origin tag vX.X.X
+```
+
+Then make the release on GitHub based on that tag.
