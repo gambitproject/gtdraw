@@ -13,7 +13,9 @@ This package is at an early stage of development; please read the Gambit project
 - [Python API](#python-api)
     - [Rendering in Jupyter Notebooks](#rendering-in-jupyter-notebooks)
     - [Interoperability with pygambit](#interoperability-with-pygambit)
-- [Developer docs: Testing](#developer-docs-testing)
+- [Developer docs](#developer-docs)
+    - [Testing](#testing)
+    - [Releases](#releases)
 
 ## What does this package do?
 
