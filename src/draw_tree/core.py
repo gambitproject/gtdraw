@@ -883,12 +883,13 @@ def arrow(words: List[str]) -> tuple[float, str, int]:
     return arrowpos, arrowcolor, advance
 
 
-def payoffs(words: List[str]) -> List[str]:
+def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
     """
     Parse 'payoffs' command to generate TikZ payoff display code.
 
     Args:
         words: List of command words starting with 'payoffs'.
+        color_scheme: Color scheme to use for coloring payoffs.
 
     Returns:
         List of TikZ node commands for displaying payoffs.
@@ -903,6 +904,9 @@ def payoffs(words: List[str]) -> List[str]:
         # tikz code
         t = "   node[below,yshift="
         t += fformat(payup - (i - 1)) + paydown
+        if color_scheme != "default":
+            player_color = get_player_color(i, color_scheme)
+            t += f",color={player_color}"
         t += "] {$" + words[i]
         if words[i][0] == "-":  # negative payoff
             t += "{\\phantom-}"
@@ -1193,7 +1197,7 @@ def level(
             arrowcolorlist.append(arrowcolor)
             count += advance
         elif words[count] == "payoffs":  # automatically last
-            pay = payoffs(words[count:])
+            pay = payoffs(words[count:], color_scheme=color_scheme)
             break
         else:  # unknown keyword
             error("unknown keyword " + words[count])
