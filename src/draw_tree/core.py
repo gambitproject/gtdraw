@@ -15,8 +15,6 @@ import re
 import distinctipy
 from typing import TYPE_CHECKING
 
-from numpy import save
-
 if TYPE_CHECKING:
     import pygambit
 
@@ -1299,7 +1297,16 @@ def level(
         # Add edge color to action label
         if edge_color_style:
             s += "," + edge_color_style
-        s += "] {$" + mov + "$\\strut};"
+
+        mov_display = mov
+        if "$" not in mov_display:
+            mov_display = re.sub(
+                r"(\\frac\s*\{[^}]*\}\s*\{[^}]*\})", r"$\1$", mov_display
+            )
+            mov_display = re.sub(r"(_[a-zA-Z0-9]+|_{[^}]+})", r"$\1$", mov_display)
+            mov_display = re.sub(r"(\^[a-zA-Z0-9]+|\^{[^}]+})", r"$\1$", mov_display)
+
+        s += "] {\\textsf{\\textit{" + mov_display + "}}\\strut};"
         outs(s)
         # output arrows
         while arrowposlist:
