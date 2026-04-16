@@ -15,8 +15,6 @@ import re
 import distinctipy
 from typing import TYPE_CHECKING
 
-from numpy import save
-
 if TYPE_CHECKING:
     import pygambit
 
