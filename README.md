@@ -12,6 +12,7 @@ This package is at an early stage of development; please read the Gambit project
 - [CLI](#cli)
 - [Python API](#python-api)
     - [Rendering in Jupyter Notebooks](#rendering-in-jupyter-notebooks)
+    - [Interactive GUI](#interactive-gui)
     - [Interoperability with pygambit](#interoperability-with-pygambit)
 - [Developer docs](#developer-docs)
     - [Testing](#testing)
@@ -126,6 +127,20 @@ draw_tree('games/example.ef')
 Take a look in the `tutorial/` folder for example notebooks.
 
 > ⚠️ Warning: Images do not render correctly in notebooks opened in VSCode; open notebooks in Jupyter Lab.
+
+### Interactive GUI
+
+`draw_tree` includes a lightweight, interactive GUI built with Streamlit. It allows you to upload `.ef` or `.efg` files and adjust drawing parameters in real-time.
+
+To use the GUI, first install Streamlit:
+```bash
+pip install streamlit
+```
+
+Then launch it from the CLI:
+```bash
+draw_tree --gui
+```
 
 ### Interoperability with pygambit
 

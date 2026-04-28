@@ -22,6 +22,7 @@ def main():
         print("  draw_tree <file.ef> --svg [options]     # Generate SVG (requires pdflatex + pdf2svg)")
         print("  draw_tree <file.ef> --tex [options]     # Generate LaTeX document")
         print("  draw_tree <file.ef> --output=name.ext   # Generate with custom filename (.pdf, .png, .svg, or .tex)")
+        print("  draw_tree --gui                         # Launch interactive GUI (requires streamlit)")
         print()
         print("Options:")
         print("  scale=X.X    Set scale factor (0.01 to 100)")
@@ -42,6 +43,17 @@ def main():
         print("Note: PDF/PNG/SVG generation requires pdflatex. PNG also needs ImageMagick or Ghostscript. SVG needs pdf2svg.")
         sys.exit(0)
     
+    if "--gui" in sys.argv:
+        try:
+            import streamlit.web.cli as stcli
+            import os
+            app_path = os.path.join(os.path.dirname(__file__), "app.py")
+            sys.argv = ["streamlit", "run", app_path]
+            sys.exit(stcli.main())
+        except ImportError:
+            print("Error: Streamlit is required for the GUI. Install it with: pip install streamlit")
+            sys.exit(1)
+
     # Process command-line arguments
     output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = commandline(sys.argv)
     
