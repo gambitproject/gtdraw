@@ -3,11 +3,18 @@ import tempfile
 from pathlib import Path
 import os
 import sys
+import warnings
+
+# Suppress warnings in the GUI
+warnings.filterwarnings("ignore")
+
 
 # Add src to path if running from local dev
 sys.path.append(str(Path(__file__).parent.parent))
 
 from draw_tree import generate_svg, generate_tikz, generate_tex, generate_pdf, generate_png
+
+
 
 def run_app():
     st.set_page_config(page_title="DrawTree GUI", layout="wide", page_icon="🎨")
@@ -99,7 +106,8 @@ def run_app():
                 show_grid=False,
                 color_scheme=color_scheme,
                 edge_thickness=edge_thickness,
-                action_label_position=action_label_position
+                action_label_position=action_label_position,
+                responsive_sizing=True
             )
             
             if not os.path.exists(svg_path):
@@ -109,8 +117,8 @@ def run_app():
             with open(svg_path, "r") as f:
                 svg_content = f.read()
             
-            # Main window: Only the image
-            st.image(svg_path, use_column_width=True)
+            # Display the responsive SVG directly
+            st.markdown(svg_content, unsafe_allow_html=True)
             
             # Sidebar: Download Buttons
             st.sidebar.header("📥 Downloads")

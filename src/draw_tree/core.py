@@ -2264,6 +2264,7 @@ def generate_svg(
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
     action_label_position: float = 0.5,
+    responsive_sizing: bool = False,
 ) -> str:
     """
     Generate an SVG image directly from an extensive form (.ef) file.
@@ -2284,6 +2285,7 @@ def generate_svg(
         color_scheme: Color scheme for player nodes.
         edge_thickness: Thickness of edges.
         action_label_position: Position of action labels along edges.
+        responsive_sizing: Whether to make the SVG responsive (width="100%", height="auto").
 
     Returns:
         Absolute path to the generated SVG file.
@@ -2339,6 +2341,17 @@ def generate_svg(
                 )
 
             if final_svg_path.exists():
+                if responsive_sizing:
+                    import re
+                    with open(final_svg_path, "r") as f:
+                        svg_content = f.read()
+                    # Remove fixed width and height
+                    svg_content = re.sub(r'(<svg[^>]*?)\bwidth="[^"]*"', r'\1', svg_content)
+                    svg_content = re.sub(r'(<svg[^>]*?)\bheight="[^"]*"', r'\1', svg_content)
+                    # Add responsive attributes
+                    svg_content = re.sub(r'<svg', '<svg width="100%" height="auto" style="max-height: 80vh;"', svg_content)
+                    with open(final_svg_path, "w") as f:
+                        f.write(svg_content)
                 return str(final_svg_path.absolute())
             else:
                 raise RuntimeError("SVG was not generated successfully")

@@ -1013,6 +1013,23 @@ class TestSvgGenerationIntegration:
             content = f.read()
         assert "<svg" in content
 
+    @requires_pdf2svg
+    def test_generate_svg_responsive(self, tmp_path):
+        """Verify that responsive_sizing=True modifies the SVG content."""
+        ef_file = tmp_path / "game.ef"
+        ef_file.write_text(_simple_ef_content())
+        svg_path = draw_tree.generate_svg(
+            str(ef_file), save_to=str(tmp_path / "responsive.svg"), responsive_sizing=True
+        )
+        assert os.path.isfile(svg_path)
+        with open(svg_path) as f:
+            content = f.read()
+        assert "<svg" in content
+        # Verify responsive attributes are added
+        assert 'width="100%"' in content
+        assert 'height="auto"' in content
+        assert 'style="max-height: 80vh;"' in content
+
 
 # ---------------------------------------------------------------------------
 # TikZ / generate_tikz option tests
