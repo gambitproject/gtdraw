@@ -9,6 +9,14 @@ def determine_node_level(
     sublevel_multiplier: int = 2,
 ) -> int:
     """Determine the node level in the .ef format based on Gambit layout levels."""
+    if level_multiplier <= 0:
+        raise ValueError(
+            f"level_multiplier must be positive, got {level_multiplier}"
+        )
+    if sublevel_multiplier <= 0:
+        raise ValueError(
+            f"sublevel_multiplier must be positive, got {sublevel_multiplier}"
+        )
     depth = gbt_level * level_multiplier - (level_multiplier / 2)
     extra_depth = 0
     if gbt_sublevel != 0:
@@ -39,7 +47,21 @@ def gambit_layout_to_ef(
 
     Returns:
         The filename of the generated `.ef` file.
+    Raises:
+        ValueError: If any multiplier argument is not positive.
     """
+    if level_multiplier <= 0:
+        raise ValueError(
+            f"level_multiplier must be positive, got {level_multiplier}"
+        )
+    if sublevel_multiplier <= 0:
+        raise ValueError(
+            f"sublevel_multiplier must be positive, got {sublevel_multiplier}"
+        )
+    if xshift_multiplier <= 0:
+        raise ValueError(
+            f"xshift_multiplier must be positive, got {xshift_multiplier}"
+        )
 
     # Get the layout from pygambit
     layout = pygambit.layout_tree(game)

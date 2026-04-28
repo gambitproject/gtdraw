@@ -18,6 +18,7 @@ import os
 import tempfile
 
 import pygambit
+import pytest
 
 from draw_tree.gambit_layout import determine_node_level, gambit_layout_to_ef
 
@@ -91,6 +92,22 @@ class TestDetermineNodeLevel:
 
     def test_large_level(self):
         assert determine_node_level(10, 1) == 10 * 4 - 2
+
+    def test_zero_level_multiplier_raises(self):
+        with pytest.raises(ValueError, match="level_multiplier must be positive"):
+            determine_node_level(1, 1, level_multiplier=0)
+
+    def test_negative_level_multiplier_raises(self):
+        with pytest.raises(ValueError, match="level_multiplier must be positive"):
+            determine_node_level(1, 1, level_multiplier=-2)
+
+    def test_zero_sublevel_multiplier_raises(self):
+        with pytest.raises(ValueError, match="sublevel_multiplier must be positive"):
+            determine_node_level(1, 1, sublevel_multiplier=0)
+
+    def test_negative_sublevel_multiplier_raises(self):
+        with pytest.raises(ValueError, match="sublevel_multiplier must be positive"):
+            determine_node_level(1, 1, sublevel_multiplier=-1)
 
 
 # ---------------------------------------------------------------------------
@@ -426,3 +443,82 @@ class TestChildLevelInvariant:
             assert child_level > parent_level, (
                 f"Child level {child_level} <= parent level {parent_level}"
             )
+
+
+# ---------------------------------------------------------------------------
+# Invalid multiplier arguments
+# ---------------------------------------------------------------------------
+
+
+class TestInvalidMultiplierArgs:
+    """Verify that non-positive multipliers are rejected early."""
+
+    def test_zero_level_multiplier_raises(self):
+        g = _simple_game()
+        with pytest.raises(ValueError, match="level_multiplier must be positive"):
+            gambit_layout_to_ef(
+                g,
+                save_to=os.path.join(tempfile.gettempdir(), "bad.ef"),
+                level_multiplier=0,
+            )
+
+    def test_negative_level_multiplier_raises(self):
+        g = _simple_game()
+        with pytest.raises(ValueError, match="level_multiplier must be positive"):
+            gambit_layout_to_ef(
+                g,
+                save_to=os.path.join(tempfile.gettempdir(), "bad.ef"),
+                level_multiplier=-3,
+            )
+
+    def test_zero_sublevel_multiplier_raises(self):
+        g = _simple_game()
+        with pytest.raises(
+            ValueError, match="sublevel_multiplier must be positive"
+        ):
+            gambit_layout_to_ef(
+                g,
+                save_to=os.path.join(tempfile.gettempdir(), "bad.ef"),
+                sublevel_multiplier=0,
+            )
+
+    def test_negative_sublevel_multiplier_raises(self):
+        g = _simple_game()
+        with pytest.raises(
+            ValueError, match="sublevel_multiplier must be positive"
+        ):
+            gambit_layout_to_ef(
+                g,
+                save_to=os.path.join(tempfile.gettempdir(), "bad.ef"),
+                sublevel_multiplier=-1,
+            )
+
+    def test_zero_xshift_multiplier_raises(self):
+        g = _simple_game()
+        with pytest.raises(
+            ValueError, match="xshift_multiplier must be positive"
+        ):
+            gambit_layout_to_ef(
+                g,
+                save_to=os.path.join(tempfile.gettempdir(), "bad.ef"),
+                xshift_multiplier=0,
+            )
+
+    def test_negative_xshift_multiplier_raises(self):
+        g = _simple_game()
+        with pytest.raises(
+            ValueError, match="xshift_multiplier must be positive"
+        ):
+            gambit_layout_to_ef(
+                g,
+                save_to=os.path.join(tempfile.gettempdir(), "bad.ef"),
+                xshift_multiplier=-5,
+            )
+
+    def test_no_file_created_on_validation_error(self):
+        """Ensure no .ef file is written when validation fails."""
+        g = _simple_game()
+        path = os.path.join(tempfile.gettempdir(), "should_not_exist.ef")
+        with pytest.raises(ValueError):
+            gambit_layout_to_ef(g, save_to=path, level_multiplier=0)
+        assert not os.path.exists(path)
