@@ -9,13 +9,13 @@ def determine_node_level(
     sublevel_multiplier: int = 2,
 ) -> int:
     """Determine the node level in the .ef format based on Gambit layout levels."""
-    if level_multiplier <= 0:
+    if level_multiplier < 0:
         raise ValueError(
-            f"level_multiplier must be positive, got {level_multiplier}"
+            f"level_multiplier must be non-negative, got {level_multiplier}"
         )
-    if sublevel_multiplier <= 0:
+    if sublevel_multiplier < 0:
         raise ValueError(
-            f"sublevel_multiplier must be positive, got {sublevel_multiplier}"
+            f"sublevel_multiplier must be non-negative, got {sublevel_multiplier}"
         )
     depth = gbt_level * level_multiplier - (level_multiplier / 2)
     extra_depth = 0
@@ -50,17 +50,17 @@ def gambit_layout_to_ef(
     Raises:
         ValueError: If any multiplier argument is not positive.
     """
-    if level_multiplier <= 0:
+    if level_multiplier < 0:
         raise ValueError(
-            f"level_multiplier must be positive, got {level_multiplier}"
+            f"level_multiplier must be non-negative, got {level_multiplier}"
         )
-    if sublevel_multiplier <= 0:
+    if sublevel_multiplier < 0:
         raise ValueError(
-            f"sublevel_multiplier must be positive, got {sublevel_multiplier}"
+            f"sublevel_multiplier must be non-negative, got {sublevel_multiplier}"
         )
-    if xshift_multiplier <= 0:
+    if xshift_multiplier < 0:
         raise ValueError(
-            f"xshift_multiplier must be positive, got {xshift_multiplier}"
+            f"xshift_multiplier must be non-negative, got {xshift_multiplier}"
         )
 
     # Get the layout from pygambit
@@ -115,8 +115,9 @@ def gambit_layout_to_ef(
         if not node == game.root:
             gbt_parent_level, gbt_parent_sublevel = gbt_parent_levels[node]
             parent_level = determine_node_level(gbt_parent_level, gbt_parent_sublevel, level_multiplier, sublevel_multiplier)
-            while level <= parent_level:
-                level += level_multiplier
+            if level_multiplier > 0:
+                while level <= parent_level:
+                    level += level_multiplier
         
         # Track node counts per level
         if level not in levels_nodecount:
