@@ -18,7 +18,6 @@ import os
 import tempfile
 
 import pygambit
-import pytest
 
 from draw_tree.gambit_layout import determine_node_level, gambit_layout_to_ef
 
@@ -26,6 +25,7 @@ from draw_tree.gambit_layout import determine_node_level, gambit_layout_to_ef
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _simple_game(title="test_game"):
     """Create a minimal 2-player game: Alice chooses Left/Right, terminal payoffs."""
@@ -56,6 +56,7 @@ def _read_ef(path):
 # determine_node_level
 # ---------------------------------------------------------------------------
 
+
 class TestDetermineNodeLevel:
     """Unit tests for the determine_node_level helper."""
 
@@ -83,7 +84,10 @@ class TestDetermineNodeLevel:
     def test_custom_multipliers(self):
         # level=2, sublevel=2, lm=6, sm=3
         # depth = 2*6 - 3 = 9, extra = (2-1)*3 = 3 → 12
-        assert determine_node_level(2, 2, level_multiplier=6, sublevel_multiplier=3) == 12.0
+        assert (
+            determine_node_level(2, 2, level_multiplier=6, sublevel_multiplier=3)
+            == 12.0
+        )
 
     def test_large_level(self):
         assert determine_node_level(10, 1) == 10 * 4 - 2
@@ -92,6 +96,7 @@ class TestDetermineNodeLevel:
 # ---------------------------------------------------------------------------
 # gambit_layout_to_ef – output content
 # ---------------------------------------------------------------------------
+
 
 class TestGambitLayoutToEfContent:
     """Tests that verify the textual content of the generated .ef string."""
@@ -109,7 +114,9 @@ class TestGambitLayoutToEfContent:
         g.append_move(g.root, g.players[0], ["A", "B"])
         g.set_outcome(g.root.children[0], g.add_outcome([1, 0]))
         g.set_outcome(g.root.children[1], g.add_outcome([0, 1]))
-        ef = gambit_layout_to_ef(g, save_to=os.path.join(tempfile.gettempdir(), "sp.ef"))
+        ef = gambit_layout_to_ef(
+            g, save_to=os.path.join(tempfile.gettempdir(), "sp.ef")
+        )
         content = _read_ef(ef)
         os.unlink(ef)
         assert "Player~One" in content
@@ -117,7 +124,9 @@ class TestGambitLayoutToEfContent:
 
     def test_action_labels_present_by_default(self):
         g = _simple_game()
-        ef = gambit_layout_to_ef(g, save_to=os.path.join(tempfile.gettempdir(), "al.ef"))
+        ef = gambit_layout_to_ef(
+            g, save_to=os.path.join(tempfile.gettempdir(), "al.ef")
+        )
         content = _read_ef(ef)
         os.unlink(ef)
         assert "move Left" in content
@@ -126,7 +135,8 @@ class TestGambitLayoutToEfContent:
     def test_hide_action_labels(self):
         g = _simple_game()
         ef = gambit_layout_to_ef(
-            g, save_to=os.path.join(tempfile.gettempdir(), "hid.ef"),
+            g,
+            save_to=os.path.join(tempfile.gettempdir(), "hid.ef"),
             hide_action_labels=True,
         )
         content = _read_ef(ef)
@@ -135,7 +145,9 @@ class TestGambitLayoutToEfContent:
 
     def test_payoffs_present(self):
         g = _simple_game()
-        ef = gambit_layout_to_ef(g, save_to=os.path.join(tempfile.gettempdir(), "pay.ef"))
+        ef = gambit_layout_to_ef(
+            g, save_to=os.path.join(tempfile.gettempdir(), "pay.ef")
+        )
         content = _read_ef(ef)
         os.unlink(ef)
         assert "payoffs 1 0" in content
@@ -144,7 +156,9 @@ class TestGambitLayoutToEfContent:
     def test_terminal_without_outcome(self):
         g = pygambit.Game.new_tree(players=["Alice", "Bob"], title="noout")
         g.append_move(g.root, g.players[0], ["L", "R"])
-        ef = gambit_layout_to_ef(g, save_to=os.path.join(tempfile.gettempdir(), "no.ef"))
+        ef = gambit_layout_to_ef(
+            g, save_to=os.path.join(tempfile.gettempdir(), "no.ef")
+        )
         content = _read_ef(ef)
         os.unlink(ef)
         # payoffs keyword still emitted but with no values
@@ -155,15 +169,21 @@ class TestGambitLayoutToEfContent:
 
     def test_root_has_no_xshift(self):
         g = _simple_game()
-        ef = gambit_layout_to_ef(g, save_to=os.path.join(tempfile.gettempdir(), "rx.ef"))
+        ef = gambit_layout_to_ef(
+            g, save_to=os.path.join(tempfile.gettempdir(), "rx.ef")
+        )
         content = _read_ef(ef)
         os.unlink(ef)
-        root_line = [l for l in content.splitlines() if "node 1" in l and "from" not in l][0]
+        root_line = [
+            l for l in content.splitlines() if "node 1" in l and "from" not in l
+        ][0]
         assert "xshift" not in root_line
 
     def test_non_root_has_xshift(self):
         g = _simple_game()
-        ef = gambit_layout_to_ef(g, save_to=os.path.join(tempfile.gettempdir(), "nx.ef"))
+        ef = gambit_layout_to_ef(
+            g, save_to=os.path.join(tempfile.gettempdir(), "nx.ef")
+        )
         content = _read_ef(ef)
         os.unlink(ef)
         child_lines = [l for l in content.splitlines() if "from" in l]
@@ -175,8 +195,8 @@ class TestGambitLayoutToEfContent:
 # Chance nodes
 # ---------------------------------------------------------------------------
 
-class TestChanceNodes:
 
+class TestChanceNodes:
     def test_fractional_probability(self):
         g = pygambit.Game.new_tree(players=["Alice", "Bob"], title="frac")
         g.append_move(g.root, g.players.chance, ["H", "T"])
@@ -186,7 +206,9 @@ class TestChanceNodes:
         g.set_outcome(g.root.children[0].children[1], g.add_outcome([0, 1]))
         g.set_outcome(g.root.children[1], g.add_outcome([2, 2]))
 
-        ef = gambit_layout_to_ef(g, save_to=os.path.join(tempfile.gettempdir(), "fc.ef"))
+        ef = gambit_layout_to_ef(
+            g, save_to=os.path.join(tempfile.gettempdir(), "fc.ef")
+        )
         content = _read_ef(ef)
         os.unlink(ef)
         assert "player 0" in content
@@ -199,7 +221,9 @@ class TestChanceNodes:
         g.set_outcome(g.root.children[0], g.add_outcome([5]))
         g.set_outcome(g.root.children[1], g.add_outcome([0]))
 
-        ef = gambit_layout_to_ef(g, save_to=os.path.join(tempfile.gettempdir(), "wh.ef"))
+        ef = gambit_layout_to_ef(
+            g, save_to=os.path.join(tempfile.gettempdir(), "wh.ef")
+        )
         content = _read_ef(ef)
         os.unlink(ef)
         assert "~1 " in content
@@ -210,8 +234,8 @@ class TestChanceNodes:
 # Information sets
 # ---------------------------------------------------------------------------
 
-class TestInformationSets:
 
+class TestInformationSets:
     def test_iset_line_generated(self):
         g = pygambit.Game.new_tree(players=["Alice", "Bob"], title="iset")
         g.append_move(g.root, g.players[0], ["Left", "Right"])
@@ -221,7 +245,9 @@ class TestInformationSets:
             g.set_outcome(c.children[0], g.add_outcome([1, 0]))
             g.set_outcome(c.children[1], g.add_outcome([0, 1]))
 
-        ef = gambit_layout_to_ef(g, save_to=os.path.join(tempfile.gettempdir(), "is.ef"))
+        ef = gambit_layout_to_ef(
+            g, save_to=os.path.join(tempfile.gettempdir(), "is.ef")
+        )
         content = _read_ef(ef)
         os.unlink(ef)
         iset_lines = [l for l in content.splitlines() if l.startswith("iset")]
@@ -238,12 +264,17 @@ class TestInformationSets:
             g.set_outcome(c.children[0], g.add_outcome([1, 0]))
             g.set_outcome(c.children[1], g.add_outcome([0, 1]))
 
-        ef = gambit_layout_to_ef(g, save_to=os.path.join(tempfile.gettempdir(), "inp.ef"))
+        ef = gambit_layout_to_ef(
+            g, save_to=os.path.join(tempfile.gettempdir(), "inp.ef")
+        )
         content = _read_ef(ef)
         os.unlink(ef)
         # The Bob decision node lines should not contain "player 2" inline
-        bob_node_lines = [l for l in content.splitlines()
-                          if l.startswith("level") and "from" in l and "payoffs" not in l]
+        bob_node_lines = [
+            l
+            for l in content.splitlines()
+            if l.startswith("level") and "from" in l and "payoffs" not in l
+        ]
         for line in bob_node_lines:
             assert "player" not in line
 
@@ -252,12 +283,13 @@ class TestInformationSets:
 # shared_terminal_depth
 # ---------------------------------------------------------------------------
 
-class TestSharedTerminalDepth:
 
+class TestSharedTerminalDepth:
     def test_terminals_at_same_level_when_enabled(self):
         g = _asymmetric_game()
         ef = gambit_layout_to_ef(
-            g, save_to=os.path.join(tempfile.gettempdir(), "std.ef"),
+            g,
+            save_to=os.path.join(tempfile.gettempdir(), "std.ef"),
             shared_terminal_depth=True,
         )
         content = _read_ef(ef)
@@ -272,7 +304,8 @@ class TestSharedTerminalDepth:
     def test_terminals_at_different_levels_when_disabled(self):
         g = _asymmetric_game()
         ef = gambit_layout_to_ef(
-            g, save_to=os.path.join(tempfile.gettempdir(), "nstd.ef"),
+            g,
+            save_to=os.path.join(tempfile.gettempdir(), "nstd.ef"),
             shared_terminal_depth=False,
         )
         content = _read_ef(ef)
@@ -289,15 +322,17 @@ class TestSharedTerminalDepth:
 # Custom multipliers
 # ---------------------------------------------------------------------------
 
-class TestCustomMultipliers:
 
+class TestCustomMultipliers:
     def test_level_multiplier_changes_levels(self):
         g = _simple_game()
         ef_default = gambit_layout_to_ef(
-            g, save_to=os.path.join(tempfile.gettempdir(), "lmd.ef"),
+            g,
+            save_to=os.path.join(tempfile.gettempdir(), "lmd.ef"),
         )
         ef_custom = gambit_layout_to_ef(
-            g, save_to=os.path.join(tempfile.gettempdir(), "lmc.ef"),
+            g,
+            save_to=os.path.join(tempfile.gettempdir(), "lmc.ef"),
             level_multiplier=6,
         )
         content_d = _read_ef(ef_default)
@@ -310,11 +345,13 @@ class TestCustomMultipliers:
     def test_xshift_multiplier_changes_offsets(self):
         g = _simple_game()
         ef1 = gambit_layout_to_ef(
-            g, save_to=os.path.join(tempfile.gettempdir(), "xs1.ef"),
+            g,
+            save_to=os.path.join(tempfile.gettempdir(), "xs1.ef"),
             xshift_multiplier=2,
         )
         ef2 = gambit_layout_to_ef(
-            g, save_to=os.path.join(tempfile.gettempdir(), "xs2.ef"),
+            g,
+            save_to=os.path.join(tempfile.gettempdir(), "xs2.ef"),
             xshift_multiplier=4,
         )
         content1 = _read_ef(ef1)
@@ -328,8 +365,8 @@ class TestCustomMultipliers:
 # File saving behaviour
 # ---------------------------------------------------------------------------
 
-class TestFileSaving:
 
+class TestFileSaving:
     def test_save_to_with_ef_extension(self):
         g = _simple_game()
         path = os.path.join(tempfile.gettempdir(), "with_ext.ef")
@@ -366,13 +403,14 @@ class TestFileSaving:
 # Child level > parent level invariant
 # ---------------------------------------------------------------------------
 
-class TestChildLevelInvariant:
 
+class TestChildLevelInvariant:
     def test_child_levels_exceed_parent_levels(self):
         """Every non-root node must have a level strictly greater than its parent."""
         g = _asymmetric_game()
         ef = gambit_layout_to_ef(
-            g, save_to=os.path.join(tempfile.gettempdir(), "inv.ef"),
+            g,
+            save_to=os.path.join(tempfile.gettempdir(), "inv.ef"),
         )
         content = _read_ef(ef)
         os.unlink(ef)
