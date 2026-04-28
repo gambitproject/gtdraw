@@ -1682,18 +1682,19 @@ def generate_tikz(
     Returns:
         Complete TikZ code ready for use in Jupyter notebooks or LaTeX documents.
     """
-    # If user supplied an EFG file, convert it to .ef first so the existing
-    # ef-based pipeline can be reused. efg_dl_ef returns a path string when
-    # it successfully writes the .ef file.
-    ef_file = game
-    if isinstance(game, str):
-        if game.lower().endswith(".efg"):
+    # If user supplied an EFG file, read it with pygambit to use the gambit layout.
+    if isinstance(game, str) and game.lower().endswith(".efg"):
+        import pygambit
+        try:
+            game = pygambit.read_efg(game)
+        except Exception:
+            # Fallback to legacy efg_dl_ef if reading with pygambit fails
             try:
-                ef_file = efg_dl_ef(game)
+                game = efg_dl_ef(game)
             except Exception:
-                # fall through and let ef_to_tex raise a clearer error later
                 pass
-    else:
+
+    if not isinstance(game, str):
         from .gambit_layout import gambit_layout_to_ef
 
         # Generate the ef, use normalised spacing options
@@ -1706,6 +1707,8 @@ def generate_tikz(
             hide_action_labels=hide_action_labels,
             shared_terminal_depth=shared_terminal_depth,
         )
+    else:
+        ef_file = game
 
     # Determine the number of players for dynamic color schemes
     num_players = 0
@@ -1928,13 +1931,6 @@ def generate_tex(
         else:
             output_tex = save_to
 
-    # If game is an EFG file, convert it first
-    if isinstance(game, str) and game.lower().endswith(".efg"):
-        try:
-            game = efg_dl_ef(game)
-        except Exception:
-            pass
-
     # Generate TikZ content using generate_tikz
     tikz_code = generate_tikz(
         game,
@@ -2014,13 +2010,6 @@ def generate_pdf(
             output_pdf = save_to + ".pdf"
         else:
             output_pdf = save_to
-
-    # If game is an EFG file, convert it first
-    if isinstance(game, str) and game.lower().endswith(".efg"):
-        try:
-            game = efg_dl_ef(game)
-        except Exception:
-            pass
 
     # Generate TikZ content using generate_tikz
     tikz_code = generate_tikz(
@@ -2146,12 +2135,7 @@ def generate_png(
         else:
             output_png = save_to
 
-    # If game is an EFG file, convert it first
-    if isinstance(game, str) and game.lower().endswith(".efg"):
-        try:
-            game = efg_dl_ef(game)
-        except Exception:
-            pass
+
 
     # Step 1: Generate PDF first
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -2323,11 +2307,7 @@ def generate_svg(
         else:
             output_svg = save_to
 
-    if isinstance(game, str) and game.lower().endswith(".efg"):
-        try:
-            game = efg_dl_ef(game)
-        except Exception:
-            pass
+
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_pdf = str(Path(temp_dir) / "temp_output.pdf")
