@@ -22,8 +22,6 @@ from pathlib import Path
 from typing import List, Optional
 from IPython.core.getipython import get_ipython
 
-from draw_tree.layout import DefaultLayout
-
 # Constants
 DEFAULTFILE: str = "example.ef"
 scale: float = 1
@@ -1682,18 +1680,15 @@ def generate_tikz(
     Returns:
         Complete TikZ code ready for use in Jupyter notebooks or LaTeX documents.
     """
-    # If user supplied an EFG file, convert it to .ef first so the existing
-    # ef-based pipeline can be reused. efg_dl_ef returns a path string when
-    # it successfully writes the .ef file.
-    ef_file = game
-    if isinstance(game, str):
-        if game.lower().endswith(".efg"):
-            try:
-                ef_file = efg_dl_ef(game)
-            except Exception:
-                # fall through and let ef_to_tex raise a clearer error later
-                pass
-    else:
+    # If user supplied an EFG file, read it with pygambit to get the pygambit.gambit.Game object.
+    if isinstance(game, str) and game.lower().endswith(".efg"):
+        import pygambit
+
+        game = pygambit.read_efg(game)
+
+    # If user supplied a pygambit.gambit.Game object,
+    # or an EFG file (now converted to a game object), convert the tree to an .ef file.
+    if not isinstance(game, str):
         from .gambit_layout import gambit_layout_to_ef
 
         # Generate the ef, use normalised spacing options
@@ -1706,6 +1701,9 @@ def generate_tikz(
             hide_action_labels=hide_action_labels,
             shared_terminal_depth=shared_terminal_depth,
         )
+    else:
+        # If user supplied an EF file path directly, use it.
+        ef_file = game
 
     # Determine the number of players for dynamic color schemes
     num_players = 0
@@ -1928,13 +1926,6 @@ def generate_tex(
         else:
             output_tex = save_to
 
-    # If game is an EFG file, convert it first
-    if isinstance(game, str) and game.lower().endswith(".efg"):
-        try:
-            game = efg_dl_ef(game)
-        except Exception:
-            pass
-
     # Generate TikZ content using generate_tikz
     tikz_code = generate_tikz(
         game,
@@ -2014,13 +2005,6 @@ def generate_pdf(
             output_pdf = save_to + ".pdf"
         else:
             output_pdf = save_to
-
-    # If game is an EFG file, convert it first
-    if isinstance(game, str) and game.lower().endswith(".efg"):
-        try:
-            game = efg_dl_ef(game)
-        except Exception:
-            pass
 
     # Generate TikZ content using generate_tikz
     tikz_code = generate_tikz(
@@ -2145,13 +2129,6 @@ def generate_png(
             output_png = save_to + ".png"
         else:
             output_png = save_to
-
-    # If game is an EFG file, convert it first
-    if isinstance(game, str) and game.lower().endswith(".efg"):
-        try:
-            game = efg_dl_ef(game)
-        except Exception:
-            pass
 
     # Step 1: Generate PDF first
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -2323,12 +2300,6 @@ def generate_svg(
         else:
             output_svg = save_to
 
-    if isinstance(game, str) and game.lower().endswith(".efg"):
-        try:
-            game = efg_dl_ef(game)
-        except Exception:
-            pass
-
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_pdf = str(Path(temp_dir) / "temp_output.pdf")
 
@@ -2378,112 +2349,3 @@ def generate_svg(
             raise
         except Exception as e:
             raise RuntimeError(f"SVG generation failed: {e}")
-
-
-def efg_dl_ef(efg_file: str) -> str:
-    """Convert a Gambit .efg file to the `.ef` format used by generate_tikz.
-
-    The function implements a focused parser and deterministic layout
-    heuristics via the DefaultLayout class for producing `.ef` directives
-    from a conservative subset of EFG records (chance nodes `c`, player nodes
-    `p`, and terminals `t`). It emits node level/position lines and
-    information-set (`iset`) groupings.
-
-    Args:
-        efg_file: Path to the input .efg file.
-
-    Returns:
-        Path to the written `.ef` file as a string.
-    """
-
-    lines = readfile(efg_file)
-
-    # Extract players from header if present.
-    header = "\n".join(lines[:5])
-    m_players = re.search(r"\{\s*([\s\S]*?)\s*\}", header)
-    player_names = []
-    if m_players:
-        player_names = re.findall(r'"([^\"]+)"', m_players.group(1))
-
-    # Parse EFG records into descriptor objects.
-    descriptors = []
-    for raw in lines:
-        line = raw.strip()
-        if not line or line.startswith("%") or line.startswith("#"):
-            continue
-        tokens = line.split()
-        if not tokens:
-            continue
-        kind = tokens[0]
-        # extract moves in braces
-        brace = re.search(r"\{([^}]*)\}", line)
-        moves = []
-        probs = []
-        payoffs = []
-        player = None
-        if kind == "c" or kind == "p":
-            if brace:
-                moves = re.findall(r'"([^"\\]*)"', brace.group(1))
-                # also extract probabilities (numbers) in brace
-                probs = re.findall(r"([0-9]+\/[0-9]+|[0-9]*\.?[0-9]+)", brace.group(1))
-            # attempt to find player id for 'p' lines
-            if kind == "p":
-                # find first integer token after type
-                nums = [t for t in tokens[1:] if t.isdigit()]
-                if len(nums) >= 1:
-                    player = int(nums[0])
-                # if there is a second numeric token treat as info-set id
-                iset_id = None
-                if len(nums) >= 2:
-                    iset_id = int(nums[1])
-            else:
-                iset_id = None
-        elif kind == "t":
-            # terminal: extract payoffs (allow integers and decimals)
-            if brace:
-                # Match floats like 12.80, .80, -1.5 or integers like 3
-                pay_tokens = re.findall(r"(-?\d*\.\d+|-?\d+)", brace.group(1))
-                payoffs = []
-                for tok in pay_tokens:
-                    # If token contains a decimal point treat as float and
-                    # format with two decimal places (keeps trailing zeros),
-                    # otherwise treat as integer.
-                    if "." in tok:
-                        try:
-                            v = float(tok)
-                            payoffs.append("{:.2f}".format(v))
-                        except Exception:
-                            # fallback: keep original token
-                            payoffs.append(tok)
-                    else:
-                        try:
-                            payoffs.append(str(int(tok)))
-                        except Exception:
-                            payoffs.append(tok)
-        descriptors.append(
-            {
-                "kind": kind,
-                "player": player,
-                "moves": moves,
-                "probs": probs,
-                "payoffs": payoffs,
-                "iset_id": locals().get("iset_id", None),
-                "raw": line,
-            }
-        )
-
-    # Filter descriptors to only the game records (c, p, t)
-    descriptors = [d for d in descriptors if d["kind"] in ("c", "p", "t")]
-
-    # Layout/emission: delegate to DefaultLayout class for clarity/testability
-    layout = DefaultLayout(descriptors, player_names)
-    out_lines = layout.to_lines()
-
-    try:
-        efg_path = Path(efg_file)
-        out_path = efg_path.with_suffix(".ef")
-        with open(out_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(out_lines) + "\n")
-        return str(out_path)
-    except Exception:
-        return "\n".join(out_lines)

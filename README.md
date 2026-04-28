@@ -22,10 +22,10 @@ This package is at an early stage of development; please read the Gambit project
 `draw_tree` is a game tree drawing tool for publication-ready extensive form games in Game Theory.
 It can generate TikZ code, LaTeX documents, PDFs, PNGs, and SVGs from game specifications.
 
-Games can be specified via `.ef` format files which include layout formatting.
-These can be created via [Game Theory Explorer](https://gametheoryexplorer-a68c7.web.app/), or by hand, see [specs.pdf](specs.pdf) for details.
+Games can be specified via `.ef` format files which include layout formatting, or via Gambit `.efg` files (requires `pygambit`).
+`.ef` files can be created via [Game Theory Explorer](https://gametheoryexplorer-a68c7.web.app/), or by hand, see [specs.pdf](specs.pdf) for details.
 
-Games can alternatively be specified via `pygambit` game objects; see the [Interoperability with pygambit](#interoperability-with-pygambit) section below for details, or read tutorial in the Gambit documentation: [Tutorial 4) Creating publication-ready game images](https://gambitproject.readthedocs.io/en/latest/tutorials/04_creating_images.html).
+Games can alternatively be specified via `pygambit` game objects; see the [Interoperability with pygambit](#interoperability-with-pygambit) section below for details, or read the tutorial in the Gambit documentation: [Tutorial 4) Creating publication-ready game images](https://gambitproject.readthedocs.io/en/latest/tutorials/04_creating_images.html).
 
 > `draw_tree` was originally developed by [Bernhard von Stengel](https://www.lse.ac.uk/people/bernhard-von-stengel) at the London School of Economics. It is being developed further as part of the [Gambit project](https://www.gambit-project.org) out of The Alan Turing Institute.
 
@@ -45,6 +45,7 @@ pip install -e .
 
 - Python 3.10+ (tested on 3.13)
 - LaTeX with TikZ (for PDF/PNG/SVG generation)
+- (optional) `pygambit` (required for `.efg` support and Game objects)
 - (optional) ImageMagick or Ghostscript or Poppler (for PNG generation)
 - (optional) pdf2svg (for SVG generation)
 
@@ -88,6 +89,7 @@ There are also options to generate a complete LaTeX document, a PDF or a PNG dir
 
 ```bash
 draw_tree games/example.ef                                 # Prints TikZ code to stdout
+draw_tree games/example.efg                                # Also works with .efg files!
 draw_tree games/example.ef --tex                           # Creates example.tex
 draw_tree games/example.ef --output=custom.tex             # Creates custom.tex
 draw_tree games/example.ef --pdf                           # Creates example.pdf
@@ -131,7 +133,7 @@ Check out the `pygambit` documentation which contains tutorials that use `draw_t
 
 In particular read [Tutorial 4) Creating publication-ready game images](https://gambitproject.readthedocs.io/en/latest/tutorials/04_creating_images.html).
 
-In short, you can do:
+In short, you can pass a `pygambit` game object directly:
 ```python
 import pygambit as gbt
 from draw_tree import draw_tree, generate_tex, generate_pdf, generate_png, generate_svg
@@ -141,6 +143,12 @@ generate_tex(g)
 generate_pdf(g)
 generate_png(g)
 generate_svg(g)
+```
+
+Or pass the path to an `.efg` file directly:
+```python
+from draw_tree import generate_pdf
+generate_pdf('somegame.efg')
 ```
 
 > Note: Without setting the `save_to` parameter, the saved file will be based on the title field of the pygambit game object.

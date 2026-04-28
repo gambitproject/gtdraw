@@ -7,9 +7,13 @@ and validation of TikZ output generation.
 """
 
 import pytest
+import shutil
 import tempfile
 import os
+from pathlib import Path
 from unittest.mock import patch
+
+import pygambit
 
 # Import the module under test
 import draw_tree.core as draw_tree
@@ -839,39 +843,300 @@ class TestCommandlineArguments:
         assert dpi is None
 
 
-def test_efg_dl_ef_conversion_examples():
-    """Integration test: convert the repository's example .efg files and
-    require exact equality with their corresponding canonical .ef outputs.
+# ---------------------------------------------------------------------------
+# Skip markers for integration tests requiring external tools
+# ---------------------------------------------------------------------------
 
-    This combined test iterates over known example pairs so it's easy to
-    extend with additional examples in the future.
-    """
-    examples = [
-        ("games/efg/one_card_poker.efg", "games/one_card_poker.ef"),
-        ("games/efg/2smp.efg", "games/2smp.ef"),
-        ("games/efg/2s2x2x2.efg", "games/2s2x2x2.ef"),
-        ("games/efg/cent2.efg", "games/cent2.ef"),
-    ]
+requires_pdflatex = pytest.mark.skipif(
+    shutil.which("pdflatex") is None,
+    reason="pdflatex not available",
+)
 
-    for efg_path, expected_ef_path in examples:
-        out = draw_tree.efg_dl_ef(efg_path)
-        # Converter must return a path and write the file
-        assert isinstance(out, str), "efg_dl_ef must return a file path string"
-        assert os.path.exists(out), f"efg_dl_ef did not create output file: {out}"
+requires_pdf_to_png = pytest.mark.skipif(
+    shutil.which("pdflatex") is None
+    or (shutil.which("convert") is None
+        and shutil.which("gs") is None
+        and shutil.which("pdftoppm") is None),
+    reason="pdflatex and a PDF-to-PNG converter (convert/gs/pdftoppm) required",
+)
 
-        with open(out, "r", encoding="utf-8") as f:
-            generated = f.read().strip().splitlines()
-        with open(expected_ef_path, "r", encoding="utf-8") as f:
-            expected = f.read().strip().splitlines()
+requires_pdf2svg = pytest.mark.skipif(
+    shutil.which("pdflatex") is None or shutil.which("pdf2svg") is None,
+    reason="pdflatex and pdf2svg required",
+)
 
-        gen_norm = [line.strip() for line in generated if line.strip()]
-        expected_lines = [ln.strip() for ln in expected if ln.strip()]
-        assert gen_norm == expected_lines, (
-            f"Generated .ef does not match expected for {efg_path}.\nGenerated:\n"
-            + "\n".join(gen_norm)
-            + "\n\nExpected:\n"
-            + "\n".join(expected_lines)
+
+# ---------------------------------------------------------------------------
+# Helpers for integration tests
+# ---------------------------------------------------------------------------
+
+GAMES_DIR = Path(__file__).resolve().parents[1] / "games"
+
+
+def _simple_ef_content():
+    """Minimal valid .ef content for integration tests."""
+    return "player 1\nlevel 0 node root player 1\n"
+
+
+def _make_pygambit_game():
+    """Create a small pygambit game for end-to-end tests."""
+    g = pygambit.Game.new_tree(players=["Alice", "Bob"], title="integration_test")
+    g.append_move(g.root, g.players[0], ["Left", "Right"])
+    g.append_move(g.root.children[0], g.players[1], ["Up", "Down"])
+    g.set_outcome(
+        g.root.children[0].children[0], g.add_outcome([1, 0])
+    )
+    g.set_outcome(
+        g.root.children[0].children[1], g.add_outcome([0, 1])
+    )
+    g.set_outcome(g.root.children[1], g.add_outcome([2, 2]))
+    return g
+
+
+# ---------------------------------------------------------------------------
+# PDF generation integration tests
+# ---------------------------------------------------------------------------
+
+
+class TestPdfGenerationIntegration:
+    """Integration tests that actually compile LaTeX to PDF."""
+
+    @requires_pdflatex
+    def test_generate_pdf_from_ef_file(self, tmp_path):
+        ef_file = tmp_path / "game.ef"
+        ef_file.write_text(_simple_ef_content())
+        pdf_path = draw_tree.generate_pdf(
+            str(ef_file), save_to=str(tmp_path / "out.pdf")
         )
+        assert os.path.isfile(pdf_path)
+        assert os.path.getsize(pdf_path) > 0
+        with open(pdf_path, "rb") as f:
+            assert f.read(4) == b"%PDF"
+
+    @requires_pdflatex
+    def test_generate_pdf_save_to_custom_path(self, tmp_path):
+        ef_file = tmp_path / "game.ef"
+        ef_file.write_text(_simple_ef_content())
+        custom = str(tmp_path / "subdir" / "custom.pdf")
+        os.makedirs(os.path.dirname(custom), exist_ok=True)
+        pdf_path = draw_tree.generate_pdf(str(ef_file), save_to=custom)
+        assert pdf_path == str(Path(custom).absolute())
+        assert os.path.isfile(pdf_path)
+
+    @requires_pdflatex
+    def test_generate_pdf_from_pygambit_game(self, tmp_path):
+        """End-to-end: pygambit Game → .ef → .tex → .pdf"""
+        g = _make_pygambit_game()
+        pdf_path = draw_tree.generate_pdf(
+            g, save_to=str(tmp_path / "pygambit.pdf")
+        )
+        assert os.path.isfile(pdf_path)
+        with open(pdf_path, "rb") as f:
+            assert f.read(4) == b"%PDF"
+
+    @requires_pdflatex
+    def test_generate_pdf_from_repo_ef_file(self, tmp_path):
+        """Test with a real game file from the repository."""
+        ef_file = GAMES_DIR / "x1.ef"
+        if not ef_file.exists():
+            pytest.skip("Repository game file not found")
+        pdf_path = draw_tree.generate_pdf(
+            str(ef_file), save_to=str(tmp_path / "x1.pdf")
+        )
+        assert os.path.isfile(pdf_path)
+        with open(pdf_path, "rb") as f:
+            assert f.read(4) == b"%PDF"
+
+
+# ---------------------------------------------------------------------------
+# PNG generation integration tests
+# ---------------------------------------------------------------------------
+
+
+class TestPngGenerationIntegration:
+    """Integration tests that actually generate PNG images."""
+
+    @requires_pdf_to_png
+    def test_generate_png_from_ef_file(self, tmp_path):
+        ef_file = tmp_path / "game.ef"
+        ef_file.write_text(_simple_ef_content())
+        png_path = draw_tree.generate_png(
+            str(ef_file), save_to=str(tmp_path / "out.png")
+        )
+        assert os.path.isfile(png_path)
+        assert os.path.getsize(png_path) > 0
+        with open(png_path, "rb") as f:
+            assert f.read(4) == b"\x89PNG"
+
+    @requires_pdf_to_png
+    def test_generate_png_from_pygambit_game(self, tmp_path):
+        """End-to-end: pygambit Game → .ef → .tex → .pdf → .png"""
+        g = _make_pygambit_game()
+        png_path = draw_tree.generate_png(
+            g, save_to=str(tmp_path / "pygambit.png")
+        )
+        assert os.path.isfile(png_path)
+        with open(png_path, "rb") as f:
+            assert f.read(4) == b"\x89PNG"
+
+
+# ---------------------------------------------------------------------------
+# SVG generation integration tests
+# ---------------------------------------------------------------------------
+
+
+class TestSvgGenerationIntegration:
+    """Integration tests that actually generate SVG files."""
+
+    @requires_pdf2svg
+    def test_generate_svg_from_ef_file(self, tmp_path):
+        ef_file = tmp_path / "game.ef"
+        ef_file.write_text(_simple_ef_content())
+        svg_path = draw_tree.generate_svg(
+            str(ef_file), save_to=str(tmp_path / "out.svg")
+        )
+        assert os.path.isfile(svg_path)
+        assert os.path.getsize(svg_path) > 0
+        with open(svg_path) as f:
+            content = f.read()
+        assert "<svg" in content
+
+    @requires_pdf2svg
+    def test_generate_svg_from_pygambit_game(self, tmp_path):
+        """End-to-end: pygambit Game → .ef → .tex → .pdf → .svg"""
+        g = _make_pygambit_game()
+        svg_path = draw_tree.generate_svg(
+            g, save_to=str(tmp_path / "pygambit.svg")
+        )
+        assert os.path.isfile(svg_path)
+        with open(svg_path) as f:
+            content = f.read()
+        assert "<svg" in content
+
+
+# ---------------------------------------------------------------------------
+# TikZ / generate_tikz option tests
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateTikzOptions:
+    """Test generate_tikz with various options (replacing tutorial notebook
+    coverage for option variants)."""
+
+    def test_color_scheme_default(self):
+        ef_file = GAMES_DIR / "x1.ef"
+        if not ef_file.exists():
+            pytest.skip("Repository game file not found")
+        result = draw_tree.generate_tikz(str(ef_file), color_scheme="default")
+        assert "\\begin{tikzpicture}" in result
+
+    def test_color_scheme_gambit(self):
+        ef_file = GAMES_DIR / "x1.ef"
+        if not ef_file.exists():
+            pytest.skip("Repository game file not found")
+        result = draw_tree.generate_tikz(str(ef_file), color_scheme="gambit")
+        assert "\\begin{tikzpicture}" in result
+
+    def test_color_scheme_distinctipy(self):
+        ef_file = GAMES_DIR / "x1.ef"
+        if not ef_file.exists():
+            pytest.skip("Repository game file not found")
+        result = draw_tree.generate_tikz(
+            str(ef_file), color_scheme="distinctipy"
+        )
+        assert "\\begin{tikzpicture}" in result
+
+    def test_color_scheme_colorblind(self):
+        ef_file = GAMES_DIR / "x1.ef"
+        if not ef_file.exists():
+            pytest.skip("Repository game file not found")
+        result = draw_tree.generate_tikz(
+            str(ef_file), color_scheme="colorblind"
+        )
+        assert "\\begin{tikzpicture}" in result
+
+    def test_scale_factor_affects_output(self):
+        ef_file = GAMES_DIR / "x1.ef"
+        if not ef_file.exists():
+            pytest.skip("Repository game file not found")
+        result_default = draw_tree.generate_tikz(str(ef_file))
+        result_scaled = draw_tree.generate_tikz(
+            str(ef_file), scale_factor=2.0
+        )
+        assert result_default != result_scaled
+        assert "scale=1.6" in result_scaled  # 2.0 * 0.8
+
+    def test_edge_thickness_and_action_label_position(self):
+        ef_file = GAMES_DIR / "x1.ef"
+        if not ef_file.exists():
+            pytest.skip("Repository game file not found")
+        result = draw_tree.generate_tikz(
+            str(ef_file), edge_thickness=2.0, action_label_position=0.8
+        )
+        assert "\\treethickn2.0pt" in result
+        assert "\\begin{tikzpicture}" in result
+
+    def test_pygambit_game_with_layout_options(self, tmp_path):
+        """Test pygambit-specific options: level_scaling, sublevel_scaling,
+        width_scaling, shared_terminal_depth, hide_action_labels."""
+        g = _make_pygambit_game()
+        result = draw_tree.generate_tikz(
+            g,
+            save_to=str(tmp_path / "opts.ef"),
+            level_scaling=2,
+            sublevel_scaling=2,
+            width_scaling=2,
+            shared_terminal_depth=True,
+            hide_action_labels=True,
+        )
+        assert "\\begin{tikzpicture}" in result
+        # hide_action_labels means no "move" keyword in the intermediate .ef
+        ef_content = (tmp_path / "opts.ef").read_text()
+        assert "move" not in ef_content
+
+
+# ---------------------------------------------------------------------------
+# Smoke test: generate_tikz over all repo .efg files via pygambit
+# ---------------------------------------------------------------------------
+
+
+def _find_efg_files():
+    """Return list of .efg paths under games/efg/."""
+    efg_dir = GAMES_DIR / "efg"
+    if not efg_dir.exists():
+        return []
+    return sorted(efg_dir.glob("*.efg"))
+
+
+_EFG_FILES = _find_efg_files()
+
+
+@pytest.mark.parametrize("efg_path", _EFG_FILES, ids=[p.name for p in _EFG_FILES])
+def test_pygambit_generate_tikz_smoke(efg_path, tmp_path):
+    """Smoke test: read each .efg with pygambit and generate TikZ without
+    crashing. This replaces the tutorial notebooks' role as a crash-check
+    for the pygambit → draw_tree pipeline."""
+    g = pygambit.read_efg(str(efg_path))
+    result = draw_tree.generate_tikz(
+        g, save_to=str(tmp_path / "smoke.ef")
+    )
+    assert isinstance(result, str)
+    assert "\\begin{tikzpicture}" in result
+    assert len(result) > 100  # sanity check: non-trivial output
+
+
+@pytest.mark.parametrize("efg_path", _EFG_FILES, ids=[p.name for p in _EFG_FILES])
+@requires_pdflatex
+def test_pygambit_generate_pdf_smoke(efg_path, tmp_path):
+    """Smoke test: read each .efg with pygambit and generate PDF.
+    Verifies the full pipeline doesn't crash and produces a valid PDF."""
+    g = pygambit.read_efg(str(efg_path))
+    pdf_path = draw_tree.generate_pdf(
+        g, save_to=str(tmp_path / "smoke.pdf")
+    )
+    assert os.path.isfile(pdf_path)
+    with open(pdf_path, "rb") as f:
+        assert f.read(4) == b"%PDF"
 
 
 if __name__ == "__main__":
