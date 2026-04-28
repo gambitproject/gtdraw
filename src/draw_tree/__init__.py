@@ -16,7 +16,6 @@ from .core import (
     generate_svg,
     ef_to_tex,
     latex_wrapper,
-    efg_dl_ef,
 )
 
 from .gambit_layout import gambit_layout_to_ef
@@ -30,6 +29,5 @@ __all__ = [
     "generate_svg",
     "ef_to_tex",
     "latex_wrapper",
-    "efg_dl_ef",
     "gambit_layout_to_ef",
 ]
