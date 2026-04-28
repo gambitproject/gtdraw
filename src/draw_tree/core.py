@@ -1682,18 +1682,14 @@ def generate_tikz(
     Returns:
         Complete TikZ code ready for use in Jupyter notebooks or LaTeX documents.
     """
-    # If user supplied an EFG file, read it with pygambit to use the gambit layout.
+    # If user supplied an EFG file, read it with pygambit to get the pygambit.gambit.Game object.
     if isinstance(game, str) and game.lower().endswith(".efg"):
         import pygambit
-        try:
-            game = pygambit.read_efg(game)
-        except Exception:
-            # Fallback to legacy efg_dl_ef if reading with pygambit fails
-            try:
-                game = efg_dl_ef(game)
-            except Exception:
-                pass
 
+        game = pygambit.read_efg(game)
+
+    # If user supplied a pygambit.gambit.Game object,
+    # or an EFG file (now converted to a game object), convert the tree to an .ef file.
     if not isinstance(game, str):
         from .gambit_layout import gambit_layout_to_ef
 
@@ -1708,6 +1704,7 @@ def generate_tikz(
             shared_terminal_depth=shared_terminal_depth,
         )
     else:
+        # If user supplied an EF file path directly, use it.
         ef_file = game
 
     # Determine the number of players for dynamic color schemes
@@ -2135,8 +2132,6 @@ def generate_png(
         else:
             output_png = save_to
 
-
-
     # Step 1: Generate PDF first
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_pdf = str(Path(temp_dir) / "temp_output.pdf")
@@ -2306,8 +2301,6 @@ def generate_svg(
             output_svg = save_to + ".svg"
         else:
             output_svg = save_to
-
-
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_pdf = str(Path(temp_dir) / "temp_output.pdf")
