@@ -105,7 +105,7 @@ def run_app():
         )
         action_label_dist = st.slider(
             "Action Label Distance",
-            0.0,
+            1.0,
             5.0,
             1.0,
             0.1,
