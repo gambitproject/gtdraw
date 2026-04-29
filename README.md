@@ -10,9 +10,9 @@ This package is at an early stage of development; please read the Gambit project
 - [Installation](#installation)
 - [Requirements](#requirements)
 - [CLI](#cli)
+- [Interactive GUI](#interactive-gui)
 - [Python API](#python-api)
     - [Rendering in Jupyter Notebooks](#rendering-in-jupyter-notebooks)
-    - [Interactive GUI](#interactive-gui)
     - [Interoperability with pygambit](#interoperability-with-pygambit)
 - [Developer docs](#developer-docs)
     - [Testing](#testing)
@@ -51,13 +51,13 @@ pip install .
 
 ### Installing LaTeX
 
-Note: PDF, PNG and SVG generation require `pdflatex` to be installed and available in PATH. Tested methods have a ✅ next to them. Methods include:
+Note: PDF, PNG and SVG generation require `pdflatex` to be installed and available in PATH.
 
 - macOS:
-    - Install [MacTEX](https://www.tug.org/mactex/mactex-download.html) ✅
+    - Install [MacTEX](https://www.tug.org/mactex/mactex-download.html)
     - `brew install --cask mactex`
 - Ubuntu:
-    - `sudo apt-get install texlive-full` ✅
+    - `sudo apt-get install texlive-full`
 - Windows: Install [MiKTeX](https://miktex.org/download)
 
 ### PNG generation
@@ -77,7 +77,7 @@ PNG generation will default to using any of ImageMagick or Ghostscript or Popple
 
 SVG generation requires `pdf2svg` to be installed and available in PATH.
 - macOS:
-    - `brew install pdf2svg` ✅
+    - `brew install pdf2svg`
 - Ubuntu:
     - `sudo apt-get install pdf2svg`
 - Windows: Download binaries from [GitHub](https://github.com/dawbarton/pdf2svg)
@@ -97,6 +97,15 @@ draw_tree games/example.ef --png                           # Creates example.png
 draw_tree games/example.ef --svg                           # Creates example.svg
 draw_tree games/example.ef --png --dpi=600                 # Creates high-res example.png (72-2400, default: 300)
 draw_tree games/example.ef --output=mygame.png scale=0.8   # Creates mygame.png with 0.8 scaling (0.01 to 100)
+```
+
+## Interactive GUI
+
+`draw_tree` includes a lightweight, interactive GUI built with Streamlit. It allows you to upload `.ef` or `.efg` files and adjust drawing parameters in real-time.
+
+Launch it from the CLI:
+```bash
+draw_tree --gui
 ```
 
 ## Python API
@@ -126,15 +135,6 @@ draw_tree('games/example.ef')
 Take a look in the `tutorial/` folder for example notebooks.
 
 > ⚠️ Warning: Images do not render correctly in notebooks opened in VSCode; open notebooks in Jupyter Lab.
-
-### Interactive GUI
-
-`draw_tree` includes a lightweight, interactive GUI built with Streamlit. It allows you to upload `.ef` or `.efg` files and adjust drawing parameters in real-time.
-
-Launch it from the CLI:
-```bash
-draw_tree --gui
-```
 
 ### Interoperability with pygambit
 
