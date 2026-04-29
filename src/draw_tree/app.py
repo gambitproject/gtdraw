@@ -83,9 +83,9 @@ def run_app():
     # Conditional Layout Scaling
     if is_efg:
         st.sidebar.subheader("🕹️ Layout Scaling")
-        level_scaling = st.sidebar.slider("Level Scaling", 0.0, 1.0, 1.0, 0.05)
-        sublevel_scaling = st.sidebar.slider("Sublevel Scaling", 0.0, 1.0, 1.0, 0.05)
-        width_scaling = st.sidebar.slider("Width Scaling", 0.0, 1.0, 1.0, 0.05)
+        level_scaling = st.sidebar.slider("Level Scaling", 0.0, 2.0, 1.0, 0.05)
+        sublevel_scaling = st.sidebar.slider("Sublevel Scaling", 0.0, 2.0, 1.0, 0.05)
+        width_scaling = st.sidebar.slider("Width Scaling", 0.0, 2.0, 1.0, 0.05)
 
         st.sidebar.subheader("⚙️ Layout Flags")
         hide_action_labels = st.sidebar.checkbox("Hide Action Labels", False)
@@ -265,7 +265,6 @@ def run_app():
                         "image/png",
                         use_container_width=True,
                     )
-
 
     except Exception as e:
         st.error(f"Error: {e}")
