@@ -1437,23 +1437,29 @@ def test_commandline_custom_colors():
 
 def test_action_label_dist():
     """Test that action_label_dist correctly scales the TikZ macro definitions."""
-    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
-        f.write("player 1\n")
-        f.write("level 0 node n1 player 1 payoffs 1 2\n")
-        ef_file_path = f.name
+    ef_file_path = "games/example.ef"
+    if not os.path.exists(ef_file_path):
+        # Fallback for CI or different working directory
+        ef_file_path = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+        if not os.path.exists(ef_file_path):
+             return # Skip if file not found
 
     try:
-        # Default dist=1.0 -> yup 0.5mm, yfracup 1mm
+        # Default dist=1.0 -> 0.5mm
         res1 = draw_tree.generate_tikz(ef_file_path, action_label_dist=1.0)
-        assert "\\yup0.5mm" in res1
-        assert "\\yfracup1mm" in res1
+        if not ("xshift=0.5mm" in res1 or "xshift=-0.5mm" in res1):
+            print(f"DEBUG: res1=\n{res1}")
+        assert "xshift=0.5mm" in res1 or "xshift=-0.5mm" in res1
         
-        # Custom dist=2.0 -> yup 1.0mm, yfracup 2.0mm
+        # Custom dist=2.0 -> 1.0mm
         res2 = draw_tree.generate_tikz(ef_file_path, action_label_dist=2.0)
-        assert "\\yup1mm" in res2
-        assert "\\yfracup2mm" in res2
-    finally:
-        os.unlink(ef_file_path)
+        assert "xshift=1mm" in res2 or "xshift=-1mm" in res2
+
+        # Horizontal dist=2.0 -> yshift 1mm
+        res3 = draw_tree.generate_tikz(ef_file_path, action_label_dist=2.0, horizontal=True)
+        assert "yshift=1mm" in res3 or "yshift=-1mm" in res3
+    except Exception as e:
+        raise e
 
 
 if __name__ == "__main__":

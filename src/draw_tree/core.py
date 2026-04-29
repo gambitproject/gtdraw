@@ -46,8 +46,6 @@ playerdefined: List[bool] = [False] * (maxplayer + 1)
 
 # TikZ/TeX constants used, defined in TeX file, not here
 paydown: str = "\\paydown"  # 2.5ex % yshift payoffs down
-yup: str = "\\yup"  # 0.5mm % yshift up for moves
-yfracup: str = "\\yfracup"  # 0.8mm % yshift up for chance probabilities
 spx: str = "\\spx"  # 1mm % single player node xshift
 spy: str = "\\spy"  # .5 mm % single player node yshift
 ndiam: str = "\\ndiam"  # 1.5mm % node diameter disks
@@ -1267,6 +1265,9 @@ def level(
         xx = ((-xs) if _horizontal else xs)
         if fromn:
             error("No 'from' node, move '" + mov + "' ignored")
+
+    # effective_xs accounts for the horizontal layout inversion
+    # effective_xs = -xs if _horizontal else xs  # REMOVED: using explicit _horizontal checks for clarity
     # direction down (for later expansion)
     yy = -lev
     nodes[nodeid] = {"x": xx, "y": yy, "player": p}
@@ -1298,12 +1299,24 @@ def level(
         p >= 0 and playername[p] and not node_in_iset and color_scheme == "default"
     )
     if show_label:
-        # default: player to the right of node. perhaps left?
-        if existsfrom and xs < 0:
-            s += " node[left,xshift=-"
+        # Determine side and shifts based on layout
+        if _horizontal:
+            # In horizontal mode, original X is Page-Vertical (UP/DOWN)
+            if existsfrom and xs < 0: # Original left is Page-DOWN
+                side = "below"
+            else:
+                side = "above"
+            s += f" node[{side},yshift=" + spy + ",xshift=" + spx
         else:
-            s += " node[right,xshift="
-        s += spx + ",yshift=" + spy
+            # Vertical mode
+            if existsfrom and xs < 0:
+                side = "left"
+                s += f" node[{side},xshift=-"
+            else:
+                side = "right"
+                s += f" node[{side},xshift="
+            s += spx + ",yshift=" + spy
+        
         if color_style:
             s += "," + color_style
         s += "] {\\"
@@ -1318,20 +1331,40 @@ def level(
         xmove = xx * convex + xfrom * (1 - convex)
         ymove = yy * convex + yfrom * (1 - convex)
         s = "\\draw " + coord(xmove, ymove)
-        # decide if left or right
-        if movpos == "r":
-            side = "right,xshift=0.0cm"
-        elif movpos == "l":
-            side = "left,xshift=0.0cm"
-        elif xs > 0:  # default
-            side = "right"
+        # decide side and shift type based on layout
+        if _horizontal:
+            # Horizontal mode: branches grow Page-Right. Perpendicular is Page-Vertical.
+            if movpos == "r":
+                side = "above"
+            elif movpos == "l":
+                side = "below"
+            elif xs > 0: # Original right is Page-UP
+                side = "above"
+            else: # Original left is Page-DOWN
+                side = "below"
+            shift_type = "yshift"
         else:
-            side = "left"
-        s += " node[" + side + ",yshift="
+            # Vertical mode
+            if movpos == "r":
+                side = "right"
+            elif movpos == "l":
+                side = "left"
+            elif xs > 0:
+                side = "right"
+            else:
+                side = "left"
+            shift_type = "xshift"
+
+        # Calculate distance
         if "frac" in mov:
-            s += yfracup
+            dist = 1.0 * _action_label_dist
         else:
-            s += yup
+            dist = 0.5 * _action_label_dist
+            
+        if side in ["left", "below"]:
+            dist = -dist
+            
+        s += f" node[{side},{shift_type}={fformat(dist)}mm"
         # Add edge color to action label
         if edge_color_style:
             s += "," + edge_color_style
@@ -1883,10 +1916,6 @@ def generate_tikz(
         "\\spx.7mm",
         "\\newdimen\\spy",
         "\\spy.5mm",
-        "\\newdimen\\yup",
-        f"\\yup{fformat(0.5 * _action_label_dist)}mm",
-        "\\newdimen\\yfracup",
-        f"\\yfracup{fformat(1.0 * _action_label_dist)}mm",
         "\\newdimen\\paydown",
         "\\paydown2.5ex",
         "\\newdimen\\treethickn",
