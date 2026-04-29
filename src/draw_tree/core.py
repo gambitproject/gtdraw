@@ -77,6 +77,15 @@ allowcomments: bool = True
 outstream: List[str] = []
 stream0: List[str] = []
 
+# Module-level storage for custom colors (set by generate_tikz, cleared after)
+_custom_colors: Optional[dict] = None
+
+# Module-level font configuration (set by generate_tikz, cleared after)
+_font_family: str = "rmfamily"
+_font_bold: bool = False
+_font_italic: bool = False
+_font_size: str = "normalsize"
+
 
 def get_player_color(player: int, color_scheme: str = "default") -> str:
     """
@@ -114,6 +123,12 @@ def get_player_color(player: int, color_scheme: str = "default") -> str:
                 f"or 'colorblind' color scheme for games with more players."
             )
         return color_map[player]
+
+    elif color_scheme == "custom":
+        if player == 0:
+            return "customchancecolor"
+        elif player > 0:
+            return f"customp{player}color"
 
     elif color_scheme in ("distinctipy", "colorblind"):
         if player == 0:
@@ -157,6 +172,15 @@ def color_definitions(color_scheme: str = "default", num_players: int = 6) -> li
                 "\\colorlet{playersixcolor}{magenta}",
             ]
         )
+
+    elif color_scheme == "custom":
+        if _custom_colors:
+            for player_num, hex_color in _custom_colors.items():
+                hex_val = hex_color.lstrip("#")
+                if player_num == 0:
+                    defs.append(f"\\definecolor{{customchancecolor}}{{HTML}}{{{hex_val}}}")
+                else:
+                    defs.append(f"\\definecolor{{customp{player_num}color}}{{HTML}}{{{hex_val}}}")
 
     elif color_scheme in ("distinctipy", "colorblind"):
         # Chance color in 0-1 float format for exclusion
@@ -1304,7 +1328,14 @@ def level(
             mov_display = re.sub(r"(_[a-zA-Z0-9]+|_{[^}]+})", r"$\1$", mov_display)
             mov_display = re.sub(r"(\^[a-zA-Z0-9]+|\^{[^}]+})", r"$\1$", mov_display)
 
-        s += "] {\\textsf{\\textit{" + mov_display + "}}\\strut};"
+        # Build the font command for the action label based on global font settings
+        font_cmds = f"\\{_font_family}"
+        if _font_bold:
+            font_cmds += "\\bfseries"
+        if _font_italic:
+            font_cmds += "\\itshape"
+            
+        s += f"] {{{font_cmds}{{{mov_display}}}\\strut}};"
         outs(s)
         # output arrows
         while arrowposlist:
@@ -1418,7 +1449,7 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
 
 def commandline(
     argv: List[str],
-) -> tuple[str, bool, bool, bool, bool, Optional[str], Optional[int]]:
+) -> tuple[str, bool, bool, bool, bool, Optional[str], Optional[int], str, bool, bool, str, Optional[dict]]:
     """
     Process command-line arguments to set global configuration.
 
@@ -1448,6 +1479,11 @@ def commandline(
     tex_requested = False
     output_file = None
     dpi = None
+    font_family = "rmfamily"
+    font_bold = False
+    font_italic = False
+    font_size = "normalsize"
+    custom_colors = None
 
     for arg in argv[1:]:
         if arg[:5] == "scale":
@@ -1497,6 +1533,29 @@ def commandline(
             except ValueError:
                 print("Warning: Invalid DPI value, using default 300", file=sys.stderr)
                 dpi = 300
+        elif arg.startswith("--font="):
+            val = arg[7:].lower()
+            if val == "serif":
+                font_family = "rmfamily"
+            elif val == "sans-serif":
+                font_family = "sffamily"
+            elif val == "monospace":
+                font_family = "ttfamily"
+        elif arg == "--bold":
+            font_bold = True
+        elif arg == "--italic":
+            font_italic = True
+        elif arg.startswith("--font-size="):
+            font_size = arg[12:]
+        elif arg.startswith("--custom-colors="):
+            try:
+                custom_colors = {}
+                pairs = arg[16:].strip('"').split(",")
+                for pair in pairs:
+                    p, c = pair.split(":")
+                    custom_colors[int(p)] = c
+            except Exception:
+                print("Warning: Invalid custom-colors format, expected '0:#hex,1:#hex'", file=sys.stderr)
         elif arg.endswith(".ef"):
             ef_file = arg
         else:
@@ -1523,6 +1582,11 @@ def commandline(
         tex_requested,
         output_file,
         dpi,
+        font_family,
+        font_bold,
+        font_italic,
+        font_size,
+        custom_colors,
     )
 
 
@@ -1532,6 +1596,10 @@ def ef_to_tex(
     show_grid: bool = False,
     color_scheme: str = "default",
     action_label_position: float = 0.5,
+    font_family: str = "rmfamily",
+    font_bold: bool = False,
+    font_italic: bool = False,
+    font_size: str = "normalsize",
 ) -> str:
     """
     Convert an extensive form (.ef) file to TikZ code.
@@ -1545,6 +1613,10 @@ def ef_to_tex(
         show_grid: Whether to show grid lines (default: False).
         color_scheme: Color scheme for player nodes.
         action_label_position: Position of action labels along edges.
+        font_family: LaTeX font family command (default: "rmfamily").
+        font_bold: Whether to use bold text (default: False).
+        font_italic: Whether to use italic text (default: False).
+        font_size: LaTeX font size command (default: "normalsize").
 
     Returns:
         Complete TikZ code as a string.
@@ -1577,6 +1649,12 @@ def ef_to_tex(
         # Set parameters
         scale = scale_factor
         grid = show_grid
+        
+        global _font_family, _font_bold, _font_italic, _font_size
+        _font_family = font_family
+        _font_bold = font_bold
+        _font_italic = font_italic
+        _font_size = font_size
 
         # Process the .ef file
         lines = readfile(ef_file)
@@ -1650,15 +1728,20 @@ def generate_tikz(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
     scale_factor: float = 1.0,
-    level_scaling: int = 1,
-    sublevel_scaling: int = 1,
-    width_scaling: int = 1,
+    level_scaling: float = 1.0,
+    sublevel_scaling: float = 1.0,
+    width_scaling: float = 1.0,
     hide_action_labels: bool = False,
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
     action_label_position: float = 0.5,
+    font_family: str = "rmfamily",
+    font_bold: bool = False,
+    font_italic: bool = False,
+    font_size: str = "normalsize",
+    custom_colors: Optional[dict[int, str]] = None,
 ) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
@@ -1676,6 +1759,11 @@ def generate_tikz(
         color_scheme: Color scheme for player nodes.
         edge_thickness: Thickness of edges.
         action_label_position: Position of action labels along edges.
+        font_family: LaTeX font family command (default: "rmfamily").
+        font_bold: Whether to use bold text (default: False).
+        font_italic: Whether to use italic text (default: False).
+        font_size: LaTeX font size command (default: "normalsize").
+        custom_colors: Optional dictionary mapping player index to hex color string for the "custom" scheme.
 
     Returns:
         Complete TikZ code ready for use in Jupyter notebooks or LaTeX documents.
@@ -1727,9 +1815,21 @@ def generate_tikz(
         except Exception:
             num_players = 6
 
+    # Set custom colors if provided
+    global _custom_colors
+    _custom_colors = custom_colors
+
     # Step 1: Generate the tikzpicture content using ef_to_tex logic
     tikz_picture_content = ef_to_tex(
-        ef_file, scale_factor, show_grid, color_scheme, action_label_position
+        ef_file,
+        scale_factor,
+        show_grid,
+        color_scheme,
+        action_label_position,
+        font_family=font_family,
+        font_bold=font_bold,
+        font_italic=font_italic,
+        font_size=font_size,
     )
 
     # Step 2: Define built-in macro definitions (from macros-drawtree.tex)
@@ -1754,19 +1854,28 @@ def generate_tikz(
     # Step 2a: Define player color macros
     macro_definitions.extend(color_definitions(color_scheme, num_players))
 
+    # Build the TikZ set font style
+    font_style = f"font=\\{font_family}"
+    if font_bold:
+        font_style += "\\bfseries"
+    if font_italic:
+        font_style += "\\itshape"
+    if font_size and font_size != "normalsize":
+        font_style += f"\\{font_size}"
+
     # Step 3: Combine everything into complete TikZ code
-    tikz_code = """% TikZ code with built-in styling for game trees
+    tikz_code = f"""% TikZ code with built-in styling for game trees
 % TikZ libraries required for game trees
-\\usetikzlibrary{shapes}
-\\usetikzlibrary{arrows.meta}
+\\usetikzlibrary{{shapes}}
+\\usetikzlibrary{{arrows.meta}}
 
 % Style settings for game tree formatting
-\\tikzset{
-    every node/.append style={font=\\rmfamily},
-    every text node part/.append style={align=center},
+\\tikzset{{
+    every node/.append style={{{font_style}}},
+    every text node part/.append style={{align=center}},
     node distance=1.5mm,
     thick
-}
+}}
 
 % Built-in macro definitions for game tree drawing
 """
@@ -1778,22 +1887,71 @@ def generate_tikz(
     tikz_code += f"\n% Game tree content from {ef_file}\n"
     tikz_code += tikz_picture_content
 
+    # Clear custom colors
+    _custom_colors = None
+
     return tikz_code
+
+
+def count_players(game_source: str | "pygambit.gambit.Game") -> int:
+    """
+    Count the number of players in a game.
+
+    Args:
+        game_source: Path to the .ef or .efg file, or a pygambit.gambit.Game object.
+
+    Returns:
+        Number of players (excluding chance).
+    """
+    if not isinstance(game_source, str):
+        try:
+            return len(game_source.players)
+        except AttributeError:
+            return 6
+    
+    # If EFG file, read it
+    if game_source.lower().endswith(".efg"):
+        import pygambit
+        try:
+            g = pygambit.read_efg(game_source)
+            return len(g.players)
+        except Exception:
+            return 6
+
+    # If EF file, parse for 'player' lines
+    try:
+        player_nums = set()
+        for line in readfile(game_source):
+            if line.startswith("player"):
+                try:
+                    p = int(line.split()[1])
+                    if p > 0:
+                        player_nums.add(p)
+                except (IndexError, ValueError):
+                    pass
+        return len(player_nums) if player_nums else 6
+    except Exception:
+        return 6
 
 
 def draw_tree(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
     scale_factor: float = 1.0,
-    level_scaling: int = 1,
-    sublevel_scaling: int = 1,
-    width_scaling: int = 1,
+    level_scaling: float = 1.0,
+    sublevel_scaling: float = 1.0,
+    width_scaling: float = 1.0,
     hide_action_labels: bool = False,
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
     action_label_position: float = 0.5,
+    font_family: str = "rmfamily",
+    font_bold: bool = False,
+    font_italic: bool = False,
+    font_size: str = "normalsize",
+    custom_colors: Optional[dict[int, str]] = None,
 ) -> Optional[str]:
     """
     Generate TikZ code and display in Jupyter notebooks.
@@ -1831,6 +1989,11 @@ def draw_tree(
         color_scheme=color_scheme,
         edge_thickness=edge_thickness,
         action_label_position=action_label_position,
+        font_family=font_family,
+        font_bold=font_bold,
+        font_italic=font_italic,
+        font_size=font_size,
+        custom_colors=custom_colors,
     )
 
     # Execute cell magic or return TikZ
@@ -1877,15 +2040,20 @@ def generate_tex(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
     scale_factor: float = 1.0,
-    level_scaling: int = 1,
-    sublevel_scaling: int = 1,
-    width_scaling: int = 1,
+    level_scaling: float = 1.0,
+    sublevel_scaling: float = 1.0,
+    width_scaling: float = 1.0,
     hide_action_labels: bool = False,
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
     action_label_position: float = 0.5,
+    font_family: str = "rmfamily",
+    font_bold: bool = False,
+    font_italic: bool = False,
+    font_size: str = "normalsize",
+    custom_colors: Optional[dict[int, str]] = None,
 ) -> str:
     """
     Generate a complete LaTeX document file directly from an extensive form (.ef) file.
@@ -1906,6 +2074,11 @@ def generate_tex(
         color_scheme: Color scheme for player nodes.
         edge_thickness: Thickness of edges.
         action_label_position: Position of action labels along edges.
+        font_family: LaTeX font family command (default: "rmfamily").
+        font_bold: Whether to use bold text (default: False).
+        font_italic: Whether to use italic text (default: False).
+        font_size: LaTeX font size command (default: "normalsize").
+        custom_colors: Optional dictionary mapping player index to hex color string for the "custom" scheme.
 
     Returns:
         Path to the generated LaTeX file.
@@ -1940,6 +2113,11 @@ def generate_tex(
         color_scheme=color_scheme,
         edge_thickness=edge_thickness,
         action_label_position=action_label_position,
+        font_family=font_family,
+        font_bold=font_bold,
+        font_italic=font_italic,
+        font_size=font_size,
+        custom_colors=custom_colors,
     )
 
     # Wrap in complete LaTeX document
@@ -1956,15 +2134,20 @@ def generate_pdf(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
     scale_factor: float = 1.0,
-    level_scaling: int = 1,
-    sublevel_scaling: int = 1,
-    width_scaling: int = 1,
+    level_scaling: float = 1.0,
+    sublevel_scaling: float = 1.0,
+    width_scaling: float = 1.0,
     hide_action_labels: bool = False,
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
     action_label_position: float = 0.5,
+    font_family: str = "rmfamily",
+    font_bold: bool = False,
+    font_italic: bool = False,
+    font_size: str = "normalsize",
+    custom_colors: Optional[dict[int, str]] = None,
 ) -> str:
     """
     Generate a PDF directly from an extensive form (.ef) file.
@@ -1985,6 +2168,11 @@ def generate_pdf(
         color_scheme: Color scheme for player nodes.
         edge_thickness: Thickness of edges.
         action_label_position: Position of action labels along edges.
+        font_family: LaTeX font family command (default: "rmfamily").
+        font_bold: Whether to use bold text (default: False).
+        font_italic: Whether to use italic text (default: False).
+        font_size: LaTeX font size command (default: "normalsize").
+        custom_colors: Optional dictionary mapping player index to hex color string for the "custom" scheme.
 
     Returns:
         Path to the generated PDF file.
@@ -2020,6 +2208,11 @@ def generate_pdf(
         color_scheme=color_scheme,
         edge_thickness=edge_thickness,
         action_label_position=action_label_position,
+        font_family=font_family,
+        font_bold=font_bold,
+        font_italic=font_italic,
+        font_size=font_size,
+        custom_colors=custom_colors,
     )
 
     # Create LaTeX wrapper document
@@ -2079,9 +2272,9 @@ def generate_png(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
     scale_factor: float = 1.0,
-    level_scaling: int = 1,
-    sublevel_scaling: int = 1,
-    width_scaling: int = 1,
+    level_scaling: float = 1.0,
+    sublevel_scaling: float = 1.0,
+    width_scaling: float = 1.0,
     hide_action_labels: bool = False,
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
@@ -2089,6 +2282,11 @@ def generate_png(
     edge_thickness: float = 1.0,
     action_label_position: float = 0.5,
     dpi: int = 300,
+    font_family: str = "rmfamily",
+    font_bold: bool = False,
+    font_italic: bool = False,
+    font_size: str = "normalsize",
+    custom_colors: Optional[dict[int, str]] = None,
 ) -> str:
     """
     Generate a PNG image directly from an extensive form (.ef) file.
@@ -2098,7 +2296,7 @@ def generate_png(
 
     Args:
         game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
-        save_to: path to save intermediate .ef file when generating from a pygambit.gambit.Game object and output png file.
+        save_to: Path to save intermediate .ef file when generating from a pygambit.gambit.Game object and output png file.
         scale_factor: Scale factor for the diagram.
         level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
         sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
@@ -2109,6 +2307,12 @@ def generate_png(
         color_scheme: Color scheme for player nodes.
         edge_thickness: Thickness of edges.
         action_label_position: Position of action labels along edges.
+        dpi: Set PNG resolution in DPI (default: 300).
+        font_family: LaTeX font family command (default: "rmfamily").
+        font_bold: Whether to use bold text (default: False).
+        font_italic: Whether to use italic text (default: False).
+        font_size: LaTeX font size command (default: "normalsize").
+        custom_colors: Optional dictionary mapping player index to hex color string for the "custom" scheme.
 
     Returns:
         Path to the generated PNG file.
@@ -2149,6 +2353,11 @@ def generate_png(
                 color_scheme=color_scheme,
                 edge_thickness=edge_thickness,
                 action_label_position=action_label_position,
+                font_family=font_family,
+                font_bold=font_bold,
+                font_italic=font_italic,
+                font_size=font_size,
+                custom_colors=custom_colors,
             )
 
             # Step 2: Convert PDF to PNG
@@ -2255,9 +2464,9 @@ def generate_svg(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
     scale_factor: float = 1.0,
-    level_scaling: int = 1,
-    sublevel_scaling: int = 1,
-    width_scaling: int = 1,
+    level_scaling: float = 1.0,
+    sublevel_scaling: float = 1.0,
+    width_scaling: float = 1.0,
     hide_action_labels: bool = False,
     shared_terminal_depth: bool = False,
     show_grid: bool = False,
@@ -2265,6 +2474,11 @@ def generate_svg(
     edge_thickness: float = 1.0,
     action_label_position: float = 0.5,
     responsive_sizing: bool = False,
+    font_family: str = "rmfamily",
+    font_bold: bool = False,
+    font_italic: bool = False,
+    font_size: str = "normalsize",
+    custom_colors: Optional[dict[int, str]] = None,
 ) -> str:
     """
     Generate an SVG image directly from an extensive form (.ef) file.
@@ -2286,6 +2500,11 @@ def generate_svg(
         edge_thickness: Thickness of edges.
         action_label_position: Position of action labels along edges.
         responsive_sizing: Whether to make the SVG responsive (width="100%", height="auto").
+        font_family: LaTeX font family command (default: "rmfamily").
+        font_bold: Whether to use bold text (default: False).
+        font_italic: Whether to use italic text (default: False).
+        font_size: LaTeX font size command (default: "normalsize").
+        custom_colors: Optional dictionary mapping player index to hex color string for the "custom" scheme.
 
     Returns:
         Absolute path to the generated SVG file.
@@ -2319,6 +2538,11 @@ def generate_svg(
                 color_scheme=color_scheme,
                 edge_thickness=edge_thickness,
                 action_label_position=action_label_position,
+                font_family=font_family,
+                font_bold=font_bold,
+                font_italic=font_italic,
+                font_size=font_size,
+                custom_colors=custom_colors,
             )
 
             # Convert PDF to SVG using pdf2svg

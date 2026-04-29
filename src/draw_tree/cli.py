@@ -33,12 +33,19 @@ def main():
         print("  --tex        Generate LaTeX document instead of TikZ")
         print("  --output=X   Specify output filename (.pdf, .png, .svg, or .tex extension determines format)")
         print("  --dpi=X      Set PNG resolution in DPI (72-2400, default: 300)")
+        print("  --font=X     Set font family (serif, sans-serif, monospace)")
+        print("  --bold       Use bold text")
+        print("  --italic     Use italic text")
+        print("  --font-size=X Set font size (small, normalsize, large, Large)")
+        print("  --custom-colors=X Set custom colors (e.g. \"0:#FF0000,1:#0000FF\")")
         print()
         print("Examples:")
         print("  draw_tree games/example.ef --pdf")
         print("  draw_tree games/example.ef --png --dpi=600")
         print("  draw_tree games/example.ef --tex")
         print("  draw_tree games/example.ef --output=mygame.tex scale=0.8")
+        print("  draw_tree games/example.ef --pdf --font=sans-serif --bold")
+        print("  draw_tree games/example.ef --png --custom-colors=\"0:#FF0000,1:#0000FF\"")
         print()
         print("Note: PDF/PNG/SVG generation requires pdflatex. PNG also needs ImageMagick or Ghostscript. SVG needs pdf2svg.")
         sys.exit(0)
@@ -55,7 +62,20 @@ def main():
             sys.exit(1)
 
     # Process command-line arguments
-    output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi = commandline(sys.argv)
+    (
+        output_mode,
+        pdf_requested,
+        png_requested,
+        svg_requested,
+        tex_requested,
+        output_file,
+        dpi,
+        font_family,
+        font_bold,
+        font_italic,
+        font_size,
+        custom_colors,
+    ) = commandline(sys.argv)
     
     # Import the core module to access global variables after commandline() has set them
     from . import core
@@ -76,7 +96,12 @@ def main():
                 game=current_ef_file,
                 save_to=output_file,
                 scale_factor=current_scale,
-                show_grid=current_grid
+                show_grid=current_grid,
+                font_family=font_family,
+                font_bold=font_bold,
+                font_italic=font_italic,
+                font_size=font_size,
+                custom_colors=custom_colors,
             )
             print(f"PDF generated successfully: {pdf_path}")
         
@@ -90,7 +115,12 @@ def main():
                 save_to=output_file,
                 scale_factor=current_scale,
                 show_grid=current_grid,
-                dpi=dpi if dpi is not None else 300
+                dpi=dpi if dpi is not None else 300,
+                font_family=font_family,
+                font_bold=font_bold,
+                font_italic=font_italic,
+                font_size=font_size,
+                custom_colors=custom_colors,
             )
             print(f"PNG generated successfully: {png_path}")
 
@@ -104,6 +134,11 @@ def main():
                 save_to=output_file,
                 scale_factor=current_scale,
                 show_grid=current_grid,
+                font_family=font_family,
+                font_bold=font_bold,
+                font_italic=font_italic,
+                font_size=font_size,
+                custom_colors=custom_colors,
             )
             print(f"SVG generated successfully: {svg_path}")
 
@@ -117,6 +152,11 @@ def main():
                 save_to=output_file,
                 scale_factor=current_scale,
                 show_grid=current_grid,
+                font_family=font_family,
+                font_bold=font_bold,
+                font_italic=font_italic,
+                font_size=font_size,
+                custom_colors=custom_colors,
             )
             print(f"LaTeX generated successfully: {tex_path}")
         
@@ -125,7 +165,12 @@ def main():
             tikz_code = draw_tree(
                 game=current_ef_file, 
                 scale_factor=current_scale, 
-                show_grid=current_grid
+                show_grid=current_grid,
+                font_family=font_family,
+                font_bold=font_bold,
+                font_italic=font_italic,
+                font_size=font_size,
+                custom_colors=custom_colors,
             )
             
             # Output the complete TikZ code

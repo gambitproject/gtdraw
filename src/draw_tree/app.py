@@ -18,6 +18,7 @@ from draw_tree import (
     generate_tex,
     generate_pdf,
     generate_png,
+    count_players,
 )
 
 
@@ -107,9 +108,68 @@ def run_app():
     with st.sidebar.expander("🎨 Aesthetics", expanded=False):
         color_scheme = st.selectbox(
             "Color Scheme",
-            ["default", "gambit", "distinctipy", "colorblind"],
+            ["default", "gambit", "distinctipy", "colorblind", "custom"],
             index=2,  # distinctipy
         )
+
+        custom_colors = None
+        if color_scheme == "custom":
+            st.markdown("---")
+            st.markdown("##### Custom Palette")
+            num_players = count_players(game_source) if game_source else 2
+            custom_colors = {}
+            # Chance color
+            custom_colors[0] = st.color_picker(
+                "Chance Node", value="#759138", key="cp_chance"
+            )
+            # Player colors
+            for i in range(1, num_players + 1):
+                default_val = "#000000"
+                # Use some sensible defaults for first few players
+                if i == 1:
+                    default_val = "#E41A1C"
+                elif i == 2:
+                    default_val = "#377EB8"
+                elif i == 3:
+                    default_val = "#4DAF4A"
+                
+                custom_colors[i] = st.color_picker(
+                    f"Player {i}", value=default_val, key=f"cp_p{i}"
+                )
+
+        st.markdown("---")
+        st.markdown("##### Typography")
+        font_family_name = st.selectbox(
+            "Font Family",
+            ["Serif", "Sans-Serif", "Monospace"],
+            index=0,
+            help="Global font family for the diagram.",
+        )
+        font_map = {"Serif": "rmfamily", "Sans-Serif": "sffamily", "Monospace": "ttfamily"}
+        font_family = font_map[font_family_name]
+
+        col1, col2 = st.columns(2)
+        with col1:
+            font_bold = st.checkbox("Bold")
+        with col2:
+            font_italic = st.checkbox("Italic")
+
+        font_size_name = st.selectbox(
+            "Text Size",
+            ["Small", "Normal", "Large", "Huge"],
+            index=1,
+            help="Global text size for the diagram.",
+        )
+        size_map = {
+            "Small": "small",
+            "Normal": "normalsize",
+            "Large": "large",
+            "Huge": "Large",
+        }
+        font_size = size_map[font_size_name]
+
+        st.markdown("---")
+        st.markdown("##### Layout")
         edge_thickness = st.slider("Edge Thickness", 0.1, 5.0, 1.0, 0.1)
         action_label_position = st.slider(
             "Action Label Pos",
@@ -137,9 +197,9 @@ def run_app():
 
         base_name = f"gui_temp_{os.getpid()}"
         svg_path = str(work_dir / f"{base_name}.svg")
+        output_base = str(work_dir / base_name)
 
-        # generate_svg handles .ef and .efg files automatically
-        generate_svg(
+        svg_code = generate_svg(
             game=game_source,
             save_to=svg_path,
             scale_factor=scale_factor,
@@ -153,6 +213,11 @@ def run_app():
             edge_thickness=edge_thickness,
             action_label_position=action_label_position,
             responsive_sizing=True,
+            font_family=font_family,
+            font_bold=font_bold,
+            font_italic=font_italic,
+            font_size=font_size,
+            custom_colors=custom_colors,
         )
 
         if not os.path.exists(svg_path):
@@ -168,7 +233,7 @@ def run_app():
         # Pre-generate all download formats
         tikz_code = generate_tikz(
             game=game_source,
-            save_to=svg_path.replace(".svg", ".ef"),
+            save_to=output_base + ".tikz",
             scale_factor=scale_factor,
             level_scaling=level_scaling,
             sublevel_scaling=sublevel_scaling,
@@ -179,12 +244,16 @@ def run_app():
             color_scheme=color_scheme,
             edge_thickness=edge_thickness,
             action_label_position=action_label_position,
+            font_family=font_family,
+            font_bold=font_bold,
+            font_italic=font_italic,
+            font_size=font_size,
+            custom_colors=custom_colors,
         )
 
-        tex_path = str(work_dir / f"{base_name}.tex")
-        generate_tex(
+        tex_path = generate_tex(
             game=game_source,
-            save_to=tex_path,
+            save_to=output_base + ".tex",
             scale_factor=scale_factor,
             level_scaling=level_scaling,
             sublevel_scaling=sublevel_scaling,
@@ -194,14 +263,18 @@ def run_app():
             color_scheme=color_scheme,
             edge_thickness=edge_thickness,
             action_label_position=action_label_position,
+            font_family=font_family,
+            font_bold=font_bold,
+            font_italic=font_italic,
+            font_size=font_size,
+            custom_colors=custom_colors,
         )
         with open(tex_path, "r") as f:
             tex_data = f.read()
 
-        pdf_path = str(work_dir / f"{base_name}.pdf")
-        generate_pdf(
+        pdf_path = generate_pdf(
             game=game_source,
-            save_to=pdf_path,
+            save_to=output_base + ".pdf",
             scale_factor=scale_factor,
             level_scaling=level_scaling,
             sublevel_scaling=sublevel_scaling,
@@ -211,14 +284,18 @@ def run_app():
             color_scheme=color_scheme,
             edge_thickness=edge_thickness,
             action_label_position=action_label_position,
+            font_family=font_family,
+            font_bold=font_bold,
+            font_italic=font_italic,
+            font_size=font_size,
+            custom_colors=custom_colors,
         )
         with open(pdf_path, "rb") as f:
             pdf_data = f.read()
 
-        png_path = str(work_dir / f"{base_name}.png")
-        generate_png(
+        png_path = generate_png(
             game=game_source,
-            save_to=png_path,
+            save_to=output_base + ".png",
             scale_factor=scale_factor,
             level_scaling=level_scaling,
             sublevel_scaling=sublevel_scaling,
@@ -229,6 +306,11 @@ def run_app():
             edge_thickness=edge_thickness,
             action_label_position=action_label_position,
             dpi=300,
+            font_family=font_family,
+            font_bold=font_bold,
+            font_italic=font_italic,
+            font_size=font_size,
+            custom_colors=custom_colors,
         )
         with open(png_path, "rb") as f:
             png_data = f.read()

@@ -16,6 +16,7 @@ from .core import (
     generate_svg,
     ef_to_tex,
     latex_wrapper,
+    count_players,
 )
 
 from .gambit_layout import gambit_layout_to_ef
@@ -30,4 +31,5 @@ __all__ = [
     "ef_to_tex",
     "latex_wrapper",
     "gambit_layout_to_ef",
+    "count_players",
 ]

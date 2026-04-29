@@ -97,6 +97,9 @@ draw_tree games/example.ef --png                           # Creates example.png
 draw_tree games/example.ef --svg                           # Creates example.svg
 draw_tree games/example.ef --png --dpi=600                 # Creates high-res example.png (72-2400, default: 300)
 draw_tree games/example.ef --output=mygame.png scale=0.8   # Creates mygame.png with 0.8 scaling (0.01 to 100)
+draw_tree games/example.ef --pdf --font=sans-serif --bold  # Sans-serif bold font
+draw_tree games/example.ef --png --font-size=large         # Larger text size
+draw_tree games/example.efg --svg --custom-colors="0:#FF0000,1:#0000FF" # Custom player colors
 ```
 
 ## Interactive GUI
@@ -121,6 +124,10 @@ generate_png('games/example.ef')                                    # Creates ex
 generate_svg('games/example.ef')                                    # Creates example.svg
 generate_png('games/example.ef', dpi=600)                           # Creates high-res example.png (72-2400, default: 300)
 generate_png('games/example.ef', save_to='mygame', scale_factor=0.8)    # Creates mygame.png with 0.8 scaling (0.01 to 100)
+
+# Custom styling examples
+generate_pdf('game.ef', font_family='sffamily', font_bold=True, font_size='large')
+generate_svg('game.efg', color_scheme='custom', custom_colors={0: '#FF0000', 1: '#0000FF'})
 ```
 
 ### Rendering in Jupyter Notebooks

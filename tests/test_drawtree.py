@@ -637,6 +637,11 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -659,6 +664,11 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -681,6 +691,11 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -703,6 +718,11 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
         ) = result
         assert output_mode == "pdf"
         assert pdf_requested
@@ -723,6 +743,11 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -745,6 +770,11 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -766,6 +796,11 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -781,6 +816,11 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -797,6 +837,11 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
         ) = result
         assert dpi == 300  # Should default to 300 for invalid values
 
@@ -811,6 +856,11 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -833,6 +883,11 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -1154,6 +1209,103 @@ def test_pygambit_generate_pdf_smoke(efg_path, tmp_path):
     assert os.path.isfile(pdf_path)
     with open(pdf_path, "rb") as f:
         assert f.read(4) == b"%PDF"
+
+
+class TestFontStyling:
+    """Test font styling in TikZ output."""
+
+    def test_generate_tikz_font_styles(self):
+        """Test that font styles are correctly injected into TikZ output."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1\nlevel 0 node root player 1\n")
+            ef_file_path = f.name
+
+        try:
+            # Test sans-serif bold italic
+            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f2:
+                f2.write("player 1\n")
+                f2.write("level 0 node root player 1\n")
+                f2.write("level 1 node child from 0,root player 2 move Move payoffs 1 2\n")
+                ef2_path = f2.name
+
+            result = draw_tree.generate_tikz(
+                ef2_path, font_family="sffamily", font_bold=True, font_italic=True
+            )
+            assert "every node/.append style={font=\\sffamily\\bfseries\\itshape}" in result
+            
+            # Action labels should also use the styling
+            assert "\\sffamily\\bfseries\\itshape{Move}\\strut" in result
+
+            # Test font size
+            result_size = draw_tree.generate_tikz(ef2_path, font_size="large")
+            assert "every node/.append style={font=\\rmfamily\\large}" in result_size
+            
+            os.unlink(ef2_path)
+        finally:
+            os.unlink(ef_file_path)
+
+
+class TestCustomColors:
+    """Test custom color scheme functionality."""
+
+    def test_count_players(self):
+        """Test player counting utility."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1 name Alice\n")
+            f.write("player 2 name Bob\n")
+            f.write("level 0 node root player 1\n")
+            ef_file_path = f.name
+        
+        try:
+            assert draw_tree.count_players(ef_file_path) == 2
+        finally:
+            os.unlink(ef_file_path)
+
+    def test_custom_color_definitions(self):
+        """Test custom color LaTeX definitions."""
+        custom_colors = {0: "#759138", 1: "#FF0000", 2: "#0000FF"}
+        
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1\nlevel 0 node root player 1\n")
+            ef_file_path = f.name
+
+        try:
+            result = draw_tree.generate_tikz(
+                ef_file_path, color_scheme="custom", custom_colors=custom_colors
+            )
+            assert "\\definecolor{customchancecolor}{HTML}{759138}" in result
+            assert "\\definecolor{customp1color}{HTML}{FF0000}" in result
+            assert "\\definecolor{customp2color}{HTML}{0000FF}" in result
+        finally:
+            os.unlink(ef_file_path)
+
+
+def test_commandline_font_options():
+    """Test font-related argument parsing."""
+    # Test font family
+    result = draw_tree.commandline(["draw_tree.py", "test.ef", "--font=sans-serif"])
+    assert result[7] == "sffamily"
+    
+    result = draw_tree.commandline(["draw_tree.py", "test.ef", "--font=monospace"])
+    assert result[7] == "ttfamily"
+
+    # Test bold/italic flags
+    result = draw_tree.commandline(["draw_tree.py", "test.ef", "--bold", "--italic"])
+    assert result[8] is True  # bold
+    assert result[9] is True  # italic
+
+    # Test font size
+    result = draw_tree.commandline(["draw_tree.py", "test.ef", "--font-size=large"])
+    assert result[10] == "large"
+
+
+def test_commandline_custom_colors():
+    """Test custom color argument parsing."""
+    result = draw_tree.commandline(
+        ["draw_tree.py", "test.ef", '--custom-colors="0:#FF0000,1:#0000FF"']
+    )
+    custom_colors = result[11]
+    assert custom_colors == {0: "#FF0000", 1: "#0000FF"}
 
 
 if __name__ == "__main__":
