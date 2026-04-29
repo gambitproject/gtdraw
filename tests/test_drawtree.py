@@ -1390,9 +1390,9 @@ class TestHorizontalLayout:
             
             # In horizontal mode, it should use a positive x_offset (right side in original coords)
             # which becomes top side in final rotated coords.
-            # Look for shift={(X,Y)}
+            # Look for shift={(X,Y)} and rotate=-90
             import re
-            shift_h = re.search(r"\\begin{scope}\[scale=1,shift={\(([\d.-]+),([\d.-]+)\)}\]", res_h)
+            shift_h = re.search(r"\\begin{scope}\[scale=1,shift={\(([\d.-]+),([\d.-]+)\)}, rotate=-90\]", res_h)
             shift_v = re.search(r"\\begin{scope}\[scale=1,shift={\(([\d.-]+),([\d.-]+)\)}\]", res_v)
             
             assert shift_h and shift_v

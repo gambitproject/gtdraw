@@ -1125,7 +1125,8 @@ def generate_legend(
         # Original 0 (Root Y) becomes Final Left
         x_offset = max_x + 0.5
         y_loc = 0.5 # Near the root in final X
-        legend_code += f"\\begin{{scope}}[scale=1,shift={{({x_offset},{y_loc})}}]\n"
+        # Rotate the scope -90 to cancel the global rotation for the legend
+        legend_code += f"\\begin{{scope}}[scale=1,shift={{({x_offset},{y_loc})}}, rotate=-90]\n"
     else:
         x_offset = min_x - 1.5
         legend_code += f"\\begin{{scope}}[scale=1,shift={{({x_offset},{max_y})}}]\n"
