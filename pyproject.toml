@@ -25,11 +25,10 @@ classifiers = [
 ]
 keywords = ["game theory", "tikz", "visualization", "trees", "economics"]
 
-# Required runtime dependencies (previously optional under the 'jupyter' extra)
-dependencies = ["jupyter-tikz", "ipykernel", "distinctipy"]
+dependencies = ["jupyter-tikz", "ipykernel", "distinctipy", "streamlit", "pygambit"]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0.0", "pytest-cov", "pygambit", "streamlit"]
+dev = ["pytest>=7.0.0", "pytest-cov"]
 
 [project.scripts]
 draw_tree = "draw_tree.cli:main"
