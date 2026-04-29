@@ -234,16 +234,45 @@ def run_app():
             png_data = f.read()
 
         # Sidebar: Download Buttons
-        with st.sidebar.expander("📥 Downloads", expanded=True):
+        with st.sidebar.expander("📥 Downloads", expanded=False):
             c1, c2 = st.columns(2)
             with c1:
-                st.download_button("SVG", svg_content, f"{base_filename}.svg", "image/svg+xml", use_container_width=True)
-                st.download_button("PDF", pdf_data, f"{base_filename}.pdf", "application/pdf", use_container_width=True)
-                st.download_button("PNG", png_data, f"{base_filename}.png", "image/png", use_container_width=True)
+                st.download_button(
+                    "SVG",
+                    svg_content,
+                    f"{base_filename}.svg",
+                    "image/svg+xml",
+                    use_container_width=True,
+                )
+                st.download_button(
+                    "PDF",
+                    pdf_data,
+                    f"{base_filename}.pdf",
+                    "application/pdf",
+                    use_container_width=True,
+                )
+                st.download_button(
+                    "PNG",
+                    png_data,
+                    f"{base_filename}.png",
+                    "image/png",
+                    use_container_width=True,
+                )
             with c2:
-                st.download_button("TikZ", tikz_code, f"{base_filename}.tikz", "text/plain", use_container_width=True)
-                st.download_button("LaTeX", tex_data, f"{base_filename}.tex", "text/x-tex", use_container_width=True)
-
+                st.download_button(
+                    "TikZ",
+                    tikz_code,
+                    f"{base_filename}.tikz",
+                    "text/plain",
+                    use_container_width=True,
+                )
+                st.download_button(
+                    "LaTeX",
+                    tex_data,
+                    f"{base_filename}.tex",
+                    "text/x-tex",
+                    use_container_width=True,
+                )
 
     except Exception as e:
         st.error(f"Error: {e}")
