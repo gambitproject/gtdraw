@@ -39,14 +39,13 @@ Clone the repo and install the package using pip:
 ```bash
 git clone https://github.com/gambitproject/draw_tree
 cd draw_tree
-pip install -e .
+pip install .
 ```
 
 ## Requirements
 
 - Python 3.10+ (tested on 3.13)
 - LaTeX with TikZ (for PDF/PNG/SVG generation)
-- (optional) `pygambit` (required for `.efg` support and Game objects)
 - (optional) ImageMagick or Ghostscript or Poppler (for PNG generation)
 - (optional) pdf2svg (for SVG generation)
 
@@ -132,12 +131,7 @@ Take a look in the `tutorial/` folder for example notebooks.
 
 `draw_tree` includes a lightweight, interactive GUI built with Streamlit. It allows you to upload `.ef` or `.efg` files and adjust drawing parameters in real-time.
 
-To use the GUI, first install Streamlit:
-```bash
-pip install streamlit
-```
-
-Then launch it from the CLI:
+Launch it from the CLI:
 ```bash
 draw_tree --gui
 ```
@@ -169,6 +163,16 @@ generate_pdf('somegame.efg')
 > Note: Without setting the `save_to` parameter, the saved file will be based on the title field of the pygambit game object.
 
 ## Developer docs
+
+### Installation for Development
+
+To set up the project for development, clone the repository and install with the `dev` extra:
+
+```bash
+git clone https://github.com/gambitproject/draw_tree
+cd draw_tree
+pip install -e ".[dev]"
+```
 
 ### Testing
 
