@@ -1381,14 +1381,7 @@ def level(
             mov_display = re.sub(r"(_[a-zA-Z0-9]+|_{[^}]+})", r"$\1$", mov_display)
             mov_display = re.sub(r"(\^[a-zA-Z0-9]+|\^{[^}]+})", r"$\1$", mov_display)
 
-        # Build the font command for the action label based on global font settings
-        font_cmds = f"\\{_font_family}"
-        if _font_bold:
-            font_cmds += "\\bfseries\\boldmath"
-        if _font_italic:
-            font_cmds += "\\itshape"
-            
-        s += f"] {{{font_cmds}{{{mov_display}}}\\strut}};"
+        s += f"] {{{mov_display}\\strut}};"
         outs(s)
         # output arrows
         while arrowposlist:
@@ -1931,13 +1924,15 @@ def generate_tikz(
     # Build the TikZ set font style
     font_style = f"font=\\{font_family}"
     if font_bold:
-        font_style += "\\bfseries\\boldmath"
+        font_style += "\\bfseries"
     if font_italic:
         font_style += "\\itshape"
     if font_size and font_size != "normalsize":
         font_style += f"\\{font_size}"
     
     node_style = font_style
+    if font_bold:
+        node_style += ", execute at begin node=\\boldmath"
 
     # Step 3: Combine everything into complete TikZ code
     tikz_code = f"""% TikZ code with built-in styling for game trees
