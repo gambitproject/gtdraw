@@ -924,7 +924,8 @@ def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
     for i in range(1, maxp):
         # tikz code
         if _horizontal:
-            t = "   node[right,yshift="
+            # Use centered anchor with xshift to keep payoffs aligned horizontally
+            t = "   node[xshift=0.6cm,yshift="
         else:
             t = "   node[below,yshift="
         t += fformat(payup - (i - 1)) + paydown

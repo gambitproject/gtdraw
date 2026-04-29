@@ -1412,9 +1412,9 @@ class TestHorizontalLayout:
 
         try:
             result = draw_tree.generate_tikz(ef_file_path, horizontal=True)
-            # Payoffs should use node[right,...] instead of node[below,...]
-            assert "node[right,yshift=" in result
-            assert "node[below,yshift=" not in result
+            # Payoffs should use node[xshift=0.6cm,...] (centered) instead of node[right,...]
+            assert "node[xshift=0.6cm,yshift=" in result
+            assert "node[right,yshift=" not in result
         finally:
             os.unlink(ef_file_path)
 
