@@ -26,7 +26,9 @@ def run_app():
 
     # Sidebar: Title and Input
     st.sidebar.title("🎨 DrawTree")
-    st.sidebar.markdown("Interactive Game Tree Drawing")
+    st.sidebar.markdown(
+        "Welcome to DrawTree! Load a Game in EFG or EF format, then adjust the layout and download your publication-ready image."
+    )
 
     # Try to find games directory
     base_path = Path(__file__).parent.parent.parent
@@ -42,7 +44,7 @@ def run_app():
             all_examples = sorted(
                 [f.relative_to(base_path) for f in ef_examples + efg_examples]
             )
-            
+
             # Default selection
             default_idx = 0
             target_example = "games/efg/one_card_poker.efg"
@@ -75,7 +77,7 @@ def run_app():
         base_filename = Path(game_source).stem
 
     # Sidebar: Configuration
-    with st.sidebar.expander("📐 Diagram Options", expanded=True):
+    with st.sidebar.expander("📐 Layout Options", expanded=False):
         scale_factor = st.slider(
             "Overall Scale",
             0.0,
@@ -97,7 +99,7 @@ def run_app():
             with c1:
                 hide_action_labels = st.checkbox("Hide Labels", False)
             with c2:
-                shared_terminal_depth = st.checkbox("Shared Depth", False)
+                shared_terminal_depth = st.checkbox("Shared Terminal Node Depth", False)
         else:
             # Defaults for .ef files
             level_scaling = 1.0
@@ -108,8 +110,9 @@ def run_app():
 
     with st.sidebar.expander("🎨 Aesthetics", expanded=False):
         color_scheme = st.selectbox(
-            "Color Scheme", ["default", "gambit", "distinctipy", "colorblind"],
-            index=2 # distinctipy
+            "Color Scheme",
+            ["default", "gambit", "distinctipy", "colorblind"],
+            index=2,  # distinctipy
         )
         edge_thickness = st.slider("Edge Thickness", 0.1, 5.0, 1.0, 0.1)
         action_label_position = st.slider(
@@ -167,7 +170,7 @@ def run_app():
         st.markdown(svg_content, unsafe_allow_html=True)
 
         # Sidebar: Download Buttons
-        with st.sidebar.expander("📥 Downloads", expanded=True):
+        with st.sidebar.expander("📥 Downloads", expanded=False):
             # Fast downloads (always ready)
             st.download_button(
                 label="Download SVG",
@@ -198,7 +201,7 @@ def run_app():
                 mime="text/plain",
                 use_container_width=True,
             )
-            
+
             # Slower downloads
             if st.button("Generate LaTeX, PDF, PNG", use_container_width=True):
                 with st.status("Generating..."):
