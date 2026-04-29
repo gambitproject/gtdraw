@@ -642,7 +642,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
-            horizontal,
+            horizontal, action_label_dist,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -670,7 +670,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
-            horizontal,
+            horizontal, action_label_dist,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -698,7 +698,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
-            horizontal,
+            horizontal, action_label_dist,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -726,7 +726,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
-            horizontal,
+            horizontal, action_label_dist,
         ) = result
         assert output_mode == "pdf"
         assert pdf_requested
@@ -752,7 +752,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
-            horizontal,
+            horizontal, action_label_dist,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -780,7 +780,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
-            horizontal,
+            horizontal, action_label_dist,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -807,7 +807,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
-            horizontal,
+            horizontal, action_label_dist,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -828,7 +828,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
-            horizontal,
+            horizontal, action_label_dist,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -850,7 +850,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
-            horizontal,
+            horizontal, action_label_dist,
         ) = result
         assert dpi == 300  # Should default to 300 for invalid values
 
@@ -870,7 +870,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
-            horizontal,
+            horizontal, action_label_dist,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -898,7 +898,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
-            horizontal,
+            horizontal, action_label_dist,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -907,6 +907,13 @@ class TestCommandlineArguments:
         assert not tex_requested
         assert output_file == "custom.svg"
         assert dpi is None
+        assert action_label_dist == 1.0
+
+
+def test_commandline_action_label_dist():
+    """Test parsing of action label distance flag."""
+    result = draw_tree.commandline(["draw_tree", "game.ef", "--action-label-dist=2.5"])
+    assert result[-1] == 2.5
 
 
 # ---------------------------------------------------------------------------
@@ -1426,6 +1433,27 @@ def test_commandline_custom_colors():
     )
     custom_colors = result[11]
     assert custom_colors == {0: "#FF0000", 1: "#0000FF"}
+
+
+def test_action_label_dist():
+    """Test that action_label_dist correctly scales the TikZ macro definitions."""
+    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+        f.write("player 1\n")
+        f.write("level 0 node n1 player 1 payoffs 1 2\n")
+        ef_file_path = f.name
+
+    try:
+        # Default dist=1.0 -> yup 0.5mm, yfracup 1mm
+        res1 = draw_tree.generate_tikz(ef_file_path, action_label_dist=1.0)
+        assert "\\yup0.5mm" in res1
+        assert "\\yfracup1mm" in res1
+        
+        # Custom dist=2.0 -> yup 1.0mm, yfracup 2.0mm
+        res2 = draw_tree.generate_tikz(ef_file_path, action_label_dist=2.0)
+        assert "\\yup1mm" in res2
+        assert "\\yfracup2mm" in res2
+    finally:
+        os.unlink(ef_file_path)
 
 
 if __name__ == "__main__":

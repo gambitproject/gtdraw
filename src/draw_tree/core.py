@@ -86,6 +86,7 @@ _font_bold: bool = False
 _font_italic: bool = False
 _font_size: str = "normalsize"
 _horizontal: bool = False
+_action_label_dist: float = 1.0
 
 
 def get_player_color(player: int, color_scheme: str = "default") -> str:
@@ -1489,6 +1490,7 @@ def commandline(
         - font_size: LaTeX font size command
         - custom_colors: Dict of custom player colors
         - horizontal: True if horizontal layout requested
+        - action_label_dist: Distance of action labels from edges
     """
     global grid
     global scale
@@ -1506,6 +1508,7 @@ def commandline(
     font_size = "normalsize"
     custom_colors = None
     horizontal = False
+    action_label_dist = 1.0
 
     for arg in argv[1:]:
         if arg[:5] == "scale":
@@ -1580,6 +1583,11 @@ def commandline(
                 print("Warning: Invalid custom-colors format, expected '0:#hex,1:#hex'", file=sys.stderr)
         elif arg == "--horizontal":
             horizontal = True
+        elif arg.startswith("--action-label-dist="):
+            try:
+                action_label_dist = float(arg[20:])
+            except ValueError:
+                print("Warning: Invalid action-label-dist value, using default 1.0", file=sys.stderr)
         elif arg.endswith(".ef"):
             ef_file = arg
         else:
@@ -1612,6 +1620,7 @@ def commandline(
         font_size,
         custom_colors,
         horizontal,
+        action_label_dist,
     )
 
 
@@ -1625,7 +1634,7 @@ def ef_to_tex(
     font_bold: bool = False,
     font_italic: bool = False,
     font_size: str = "normalsize",
-    horizontal: bool = False,
+    horizontal: bool = False, action_label_dist: float = 1.0,
 ) -> str:
     """
     Convert an extensive form (.ef) file to TikZ code.
@@ -1682,7 +1691,9 @@ def ef_to_tex(
         _font_italic = font_italic
         _font_size = font_size
         global _horizontal
+        global _action_label_dist
         _horizontal = horizontal
+        _action_label_dist = action_label_dist
 
         # Process the .ef file
         lines = readfile(ef_file)
@@ -1770,7 +1781,7 @@ def generate_tikz(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False,
+    horizontal: bool = False, action_label_dist: float = 1.0
 ) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
@@ -1859,7 +1870,7 @@ def generate_tikz(
         font_bold=font_bold,
         font_italic=font_italic,
         font_size=font_size,
-        horizontal=horizontal,
+        horizontal=horizontal, action_label_dist=action_label_dist,
     )
 
     # Step 2: Define built-in macro definitions (from macros-drawtree.tex)
@@ -1873,9 +1884,9 @@ def generate_tikz(
         "\\newdimen\\spy",
         "\\spy.5mm",
         "\\newdimen\\yup",
-        "\\yup0.5mm",
+        f"\\yup{fformat(0.5 * _action_label_dist)}mm",
         "\\newdimen\\yfracup",
-        "\\yfracup1mm",
+        f"\\yfracup{fformat(1.0 * _action_label_dist)}mm",
         "\\newdimen\\paydown",
         "\\paydown2.5ex",
         "\\newdimen\\treethickn",
@@ -1988,7 +1999,7 @@ def draw_tree(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False,
+    horizontal: bool = False, action_label_dist: float = 1.0,
 ) -> Optional[str]:
     """
     Generate TikZ code and display in Jupyter notebooks.
@@ -2031,7 +2042,7 @@ def draw_tree(
         font_italic=font_italic,
         font_size=font_size,
         custom_colors=custom_colors,
-        horizontal=horizontal,
+        horizontal=horizontal, action_label_dist=action_label_dist,
     )
 
     # Execute cell magic or return TikZ
@@ -2093,7 +2104,7 @@ def generate_tex(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False,
+    horizontal: bool = False, action_label_dist: float = 1.0,
 ) -> str:
     """
     Generate a complete LaTeX document file directly from an extensive form (.ef) file.
@@ -2158,7 +2169,7 @@ def generate_tex(
         font_italic=font_italic,
         font_size=font_size,
         custom_colors=custom_colors,
-        horizontal=horizontal,
+        horizontal=horizontal, action_label_dist=action_label_dist,
     )
 
     # Wrap in complete LaTeX document
@@ -2189,7 +2200,7 @@ def generate_pdf(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False,
+    horizontal: bool = False, action_label_dist: float = 1.0,
 ) -> str:
     """
     Generate a PDF directly from an extensive form (.ef) file.
@@ -2255,7 +2266,7 @@ def generate_pdf(
         font_italic=font_italic,
         font_size=font_size,
         custom_colors=custom_colors,
-        horizontal=horizontal,
+        horizontal=horizontal, action_label_dist=action_label_dist,
     )
 
     # Create LaTeX wrapper document
@@ -2330,7 +2341,7 @@ def generate_png(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False,
+    horizontal: bool = False, action_label_dist: float = 1.0,
 ) -> str:
     """
     Generate a PNG image directly from an extensive form (.ef) file.
@@ -2402,7 +2413,7 @@ def generate_png(
                 font_italic=font_italic,
                 font_size=font_size,
                 custom_colors=custom_colors,
-                horizontal=horizontal,
+                horizontal=horizontal, action_label_dist=action_label_dist,
             )
 
             # Step 2: Convert PDF to PNG
@@ -2524,7 +2535,7 @@ def generate_svg(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False,
+    horizontal: bool = False, action_label_dist: float = 1.0,
 ) -> str:
     """
     Generate an SVG image directly from an extensive form (.ef) file.
@@ -2589,7 +2600,7 @@ def generate_svg(
                 font_italic=font_italic,
                 font_size=font_size,
                 custom_colors=custom_colors,
-                horizontal=horizontal,
+                horizontal=horizontal, action_label_dist=action_label_dist,
             )
 
             # Convert PDF to SVG using pdf2svg

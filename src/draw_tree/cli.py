@@ -77,6 +77,7 @@ def main():
         font_size,
         custom_colors,
         horizontal,
+        action_label_dist,
     ) = commandline(sys.argv)
     
     # Import the core module to access global variables after commandline() has set them
@@ -104,7 +105,7 @@ def main():
                 font_italic=font_italic,
                 font_size=font_size,
                 custom_colors=custom_colors,
-                horizontal=horizontal,
+                horizontal=horizontal, action_label_dist=action_label_dist,
             )
             print(f"PDF generated successfully: {pdf_path}")
         
@@ -124,7 +125,7 @@ def main():
                 font_italic=font_italic,
                 font_size=font_size,
                 custom_colors=custom_colors,
-                horizontal=horizontal,
+                horizontal=horizontal, action_label_dist=action_label_dist,
             )
             print(f"PNG generated successfully: {png_path}")
 
@@ -143,7 +144,7 @@ def main():
                 font_italic=font_italic,
                 font_size=font_size,
                 custom_colors=custom_colors,
-                horizontal=horizontal,
+                horizontal=horizontal, action_label_dist=action_label_dist,
             )
             print(f"SVG generated successfully: {svg_path}")
 
@@ -162,7 +163,7 @@ def main():
                 font_italic=font_italic,
                 font_size=font_size,
                 custom_colors=custom_colors,
-                horizontal=horizontal,
+                horizontal=horizontal, action_label_dist=action_label_dist,
             )
             print(f"LaTeX generated successfully: {tex_path}")
         
@@ -177,7 +178,7 @@ def main():
                 font_italic=font_italic,
                 font_size=font_size,
                 custom_colors=custom_colors,
-                horizontal=horizontal,
+                horizontal=horizontal, action_label_dist=action_label_dist,
             )
             
             # Output the complete TikZ code

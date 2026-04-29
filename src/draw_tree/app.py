@@ -94,6 +94,24 @@ def run_app():
             help="Scale factor for the entire TikZ diagram.",
         )
 
+        edge_thickness = st.slider("Edge Thickness", 0.1, 5.0, 1.0, 0.1)
+        action_label_position = st.slider(
+            "Action Label Position",
+            0.0,
+            1.0,
+            0.5,
+            0.05,
+            help="Position of action labels along the edge (0=start, 1=end).",
+        )
+        action_label_dist = st.slider(
+            "Action Label Distance",
+            0.0,
+            5.0,
+            1.0,
+            0.1,
+            help="Distance of action labels from the edge.",
+        )
+
         # Conditional Layout Scaling
         if is_efg:
             st.markdown("**Layout Scaling**")
@@ -178,18 +196,6 @@ def run_app():
         }
         font_size = size_map[font_size_name]
 
-        st.markdown("---")
-        st.markdown("##### Layout")
-        edge_thickness = st.slider("Edge Thickness", 0.1, 5.0, 1.0, 0.1)
-        action_label_position = st.slider(
-            "Action Label Pos",
-            0.0,
-            1.0,
-            0.5,
-            0.05,
-            help="Position of action labels along the edge (0=start, 1=end).",
-        )
-
     # Main Area: Display
     if not game_source:
         st.title("🎨 DrawTree")
@@ -229,6 +235,7 @@ def run_app():
             font_size=font_size,
             custom_colors=custom_colors,
             horizontal=horizontal,
+            action_label_dist=action_label_dist,
         )
 
         if not os.path.exists(svg_path):
@@ -261,6 +268,7 @@ def run_app():
             font_size=font_size,
             custom_colors=custom_colors,
             horizontal=horizontal,
+            action_label_dist=action_label_dist,
         )
 
         tex_path = generate_tex(
@@ -281,6 +289,7 @@ def run_app():
             font_size=font_size,
             custom_colors=custom_colors,
             horizontal=horizontal,
+            action_label_dist=action_label_dist,
         )
         with open(tex_path, "r") as f:
             tex_data = f.read()
@@ -303,6 +312,7 @@ def run_app():
             font_size=font_size,
             custom_colors=custom_colors,
             horizontal=horizontal,
+            action_label_dist=action_label_dist,
         )
         with open(pdf_path, "rb") as f:
             pdf_data = f.read()
@@ -326,6 +336,7 @@ def run_app():
             font_size=font_size,
             custom_colors=custom_colors,
             horizontal=horizontal,
+            action_label_dist=action_label_dist,
         )
         with open(png_path, "rb") as f:
             png_data = f.read()

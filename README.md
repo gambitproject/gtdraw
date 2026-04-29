@@ -108,6 +108,7 @@ draw_tree games/example.efg --svg --custom-colors="0:#FF0000,1:#0000FF" # Custom
 | Option | CLI Flag | Python Argument | Description |
 | :--- | :--- | :--- | :--- |
 | **Layout** | `--horizontal` | `horizontal=True` | Switch between vertical (top-down) and horizontal (left-right) layout. |
+| **Label Dist** | `--action-label-dist=X.X` | `action_label_dist=X.X` | Distance of action labels from the edge (default: 1.0). |
 | **Font Family** | `--font=[serif\|sans-serif\|monospace]` | `font_family=['rmfamily'\|'sffamily'\|'ttfamily']` | Set the global LaTeX font family. |
 | **Font Weight** | `--bold` | `font_bold=True` | Use bold text for labels and payoffs. |
 | **Font Style** | `--italic` | `font_italic=True` | Use italic text for labels and payoffs. |
