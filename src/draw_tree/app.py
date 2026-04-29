@@ -28,8 +28,6 @@ def run_app():
     st.sidebar.title("🎨 DrawTree")
     st.sidebar.markdown("Interactive Game Tree Drawing")
 
-    st.sidebar.header("📂 Input Game")
-
     # Try to find games directory
     base_path = Path(__file__).parent.parent.parent
     example_dir = base_path / "games"
@@ -37,24 +35,32 @@ def run_app():
     game_source = None
     is_efg = False
 
-    if example_dir.exists():
-        ef_examples = list(example_dir.glob("*.ef"))
-        efg_examples = list((example_dir / "efg").glob("*.efg"))
-        all_examples = sorted(
-            [f.relative_to(base_path) for f in ef_examples + efg_examples]
-        )
+    with st.sidebar.expander("📂 Input Game", expanded=True):
+        if example_dir.exists():
+            ef_examples = list(example_dir.glob("*.ef"))
+            efg_examples = list((example_dir / "efg").glob("*.efg"))
+            all_examples = sorted(
+                [f.relative_to(base_path) for f in ef_examples + efg_examples]
+            )
+            
+            # Default selection
+            default_idx = 0
+            target_example = "games/efg/one_card_poker.efg"
+            example_list = ["None"] + [str(e) for e in all_examples]
+            if target_example in example_list:
+                default_idx = example_list.index(target_example)
 
-        example_selection = st.sidebar.selectbox(
-            "Select an example", ["None"] + [str(e) for e in all_examples]
-        )
-        if example_selection != "None":
-            game_source = str(base_path / example_selection)
-            if game_source.lower().endswith(".efg"):
-                is_efg = True
+            example_selection = st.selectbox(
+                "Select an example", example_list, index=default_idx
+            )
+            if example_selection != "None":
+                game_source = str(base_path / example_selection)
+                if game_source.lower().endswith(".efg"):
+                    is_efg = True
 
-    uploaded_file = st.sidebar.file_uploader(
-        "Or upload your own .ef or .efg file", type=["ef", "efg"]
-    )
+        uploaded_file = st.file_uploader(
+            "Or upload your own .ef or .efg file", type=["ef", "efg"]
+        )
 
     base_filename = "game_tree"
     if uploaded_file:
@@ -69,48 +75,51 @@ def run_app():
         base_filename = Path(game_source).stem
 
     # Sidebar: Configuration
-    st.sidebar.header("📐 Diagram Options")
+    with st.sidebar.expander("📐 Diagram Options", expanded=True):
+        scale_factor = st.slider(
+            "Overall Scale",
+            0.0,
+            2.0,
+            1.0,
+            0.05,
+            help="Scale factor for the entire TikZ diagram.",
+        )
 
-    scale_factor = st.sidebar.slider(
-        "Overall Scale",
-        0.0,
-        2.0,
-        1.0,
-        0.05,
-        help="Scale factor for the entire TikZ diagram.",
-    )
+        # Conditional Layout Scaling
+        if is_efg:
+            st.markdown("**Layout Scaling**")
+            level_scaling = st.slider("Level", 0.0, 2.0, 1.0, 0.05)
+            sublevel_scaling = st.slider("Sublevel", 0.0, 2.0, 1.0, 0.05)
+            width_scaling = st.slider("Width", 0.0, 2.0, 1.0, 0.05)
 
-    # Conditional Layout Scaling
-    if is_efg:
-        st.sidebar.subheader("🕹️ Layout Scaling")
-        level_scaling = st.sidebar.slider("Level Scaling", 0.0, 2.0, 1.0, 0.05)
-        sublevel_scaling = st.sidebar.slider("Sublevel Scaling", 0.0, 2.0, 1.0, 0.05)
-        width_scaling = st.sidebar.slider("Width Scaling", 0.0, 2.0, 1.0, 0.05)
+            st.markdown("**Layout Flags**")
+            c1, c2 = st.columns(2)
+            with c1:
+                hide_action_labels = st.checkbox("Hide Labels", False)
+            with c2:
+                shared_terminal_depth = st.checkbox("Shared Depth", False)
+        else:
+            # Defaults for .ef files
+            level_scaling = 1.0
+            sublevel_scaling = 1.0
+            width_scaling = 1.0
+            hide_action_labels = False
+            shared_terminal_depth = False
 
-        st.sidebar.subheader("⚙️ Layout Flags")
-        hide_action_labels = st.sidebar.checkbox("Hide Action Labels", False)
-        shared_terminal_depth = st.sidebar.checkbox("Shared Terminal Depth", False)
-    else:
-        # Defaults for .ef files
-        level_scaling = 1.0
-        sublevel_scaling = 1.0
-        width_scaling = 1.0
-        hide_action_labels = False
-        shared_terminal_depth = False
-
-    st.sidebar.subheader("🎨 Aesthetics")
-    color_scheme = st.sidebar.selectbox(
-        "Color Scheme", ["default", "gambit", "distinctipy", "colorblind"]
-    )
-    edge_thickness = st.sidebar.slider("Edge Thickness", 0.1, 5.0, 1.0, 0.1)
-    action_label_position = st.sidebar.slider(
-        "Action Label Pos",
-        0.0,
-        1.0,
-        0.5,
-        0.05,
-        help="Position of action labels along the edge (0=start, 1=end).",
-    )
+    with st.sidebar.expander("🎨 Aesthetics", expanded=False):
+        color_scheme = st.selectbox(
+            "Color Scheme", ["default", "gambit", "distinctipy", "colorblind"],
+            index=2 # distinctipy
+        )
+        edge_thickness = st.slider("Edge Thickness", 0.1, 5.0, 1.0, 0.1)
+        action_label_position = st.slider(
+            "Action Label Pos",
+            0.0,
+            1.0,
+            0.5,
+            0.05,
+            help="Position of action labels along the edge (0=start, 1=end).",
+        )
 
     # Main Area: Display
     if not game_source:
@@ -158,113 +167,113 @@ def run_app():
         st.markdown(svg_content, unsafe_allow_html=True)
 
         # Sidebar: Download Buttons
-        st.sidebar.header("📥 Downloads")
+        with st.sidebar.expander("📥 Downloads", expanded=True):
+            # Fast downloads (always ready)
+            st.download_button(
+                label="Download SVG",
+                data=svg_content,
+                file_name=f"{base_filename}.svg",
+                mime="image/svg+xml",
+                use_container_width=True,
+            )
 
-        st.sidebar.download_button(
-            label="Download SVG",
-            data=svg_content,
-            file_name=f"{base_filename}.svg",
-            mime="image/svg+xml",
-            use_container_width=True,
-        )
-
-        tikz_code = generate_tikz(
-            game=game_source,
-            save_to=svg_path.replace(".svg", ".ef"),
-            scale_factor=scale_factor,
-            level_scaling=level_scaling,
-            sublevel_scaling=sublevel_scaling,
-            width_scaling=width_scaling,
-            hide_action_labels=hide_action_labels,
-            shared_terminal_depth=shared_terminal_depth,
-            show_grid=False,
-            color_scheme=color_scheme,
-            edge_thickness=edge_thickness,
-            action_label_position=action_label_position,
-        )
-        st.sidebar.download_button(
-            label="Download TikZ",
-            data=tikz_code,
-            file_name=f"{base_filename}.tikz",
-            mime="text/plain",
-            use_container_width=True,
-        )
-
-        # Other formats
-        if st.sidebar.button("Prepare Other Formats", use_container_width=True):
-            with st.status("Generating extra formats..."):
-                # LaTeX (.tex)
-                tex_path = str(work_dir / f"{base_name}.tex")
-                generate_tex(
-                    game=game_source,
-                    save_to=tex_path,
-                    scale_factor=scale_factor,
-                    level_scaling=level_scaling,
-                    sublevel_scaling=sublevel_scaling,
-                    width_scaling=width_scaling,
-                    hide_action_labels=hide_action_labels,
-                    shared_terminal_depth=shared_terminal_depth,
-                    color_scheme=color_scheme,
-                    edge_thickness=edge_thickness,
-                    action_label_position=action_label_position,
-                )
-                with open(tex_path, "r") as f:
-                    st.sidebar.download_button(
-                        "Download LaTeX (.tex)",
-                        f.read(),
-                        f"{base_filename}.tex",
-                        "text/x-tex",
-                        use_container_width=True,
+            tikz_code = generate_tikz(
+                game=game_source,
+                save_to=svg_path.replace(".svg", ".ef"),
+                scale_factor=scale_factor,
+                level_scaling=level_scaling,
+                sublevel_scaling=sublevel_scaling,
+                width_scaling=width_scaling,
+                hide_action_labels=hide_action_labels,
+                shared_terminal_depth=shared_terminal_depth,
+                show_grid=False,
+                color_scheme=color_scheme,
+                edge_thickness=edge_thickness,
+                action_label_position=action_label_position,
+            )
+            st.download_button(
+                label="Download TikZ",
+                data=tikz_code,
+                file_name=f"{base_filename}.tikz",
+                mime="text/plain",
+                use_container_width=True,
+            )
+            
+            # Slower downloads
+            if st.button("Generate LaTeX, PDF, PNG", use_container_width=True):
+                with st.status("Generating..."):
+                    # LaTeX (.tex)
+                    tex_path = str(work_dir / f"{base_name}.tex")
+                    generate_tex(
+                        game=game_source,
+                        save_to=tex_path,
+                        scale_factor=scale_factor,
+                        level_scaling=level_scaling,
+                        sublevel_scaling=sublevel_scaling,
+                        width_scaling=width_scaling,
+                        hide_action_labels=hide_action_labels,
+                        shared_terminal_depth=shared_terminal_depth,
+                        color_scheme=color_scheme,
+                        edge_thickness=edge_thickness,
+                        action_label_position=action_label_position,
                     )
+                    with open(tex_path, "r") as f:
+                        st.download_button(
+                            "Download LaTeX",
+                            f.read(),
+                            f"{base_filename}.tex",
+                            "text/x-tex",
+                            use_container_width=True,
+                        )
 
-                # PDF
-                pdf_path = str(work_dir / f"{base_name}.pdf")
-                generate_pdf(
-                    game=game_source,
-                    save_to=pdf_path,
-                    scale_factor=scale_factor,
-                    level_scaling=level_scaling,
-                    sublevel_scaling=sublevel_scaling,
-                    width_scaling=width_scaling,
-                    hide_action_labels=hide_action_labels,
-                    shared_terminal_depth=shared_terminal_depth,
-                    color_scheme=color_scheme,
-                    edge_thickness=edge_thickness,
-                    action_label_position=action_label_position,
-                )
-                with open(pdf_path, "rb") as f:
-                    st.sidebar.download_button(
-                        "Download PDF (.pdf)",
-                        f.read(),
-                        f"{base_filename}.pdf",
-                        "application/pdf",
-                        use_container_width=True,
+                    # PDF
+                    pdf_path = str(work_dir / f"{base_name}.pdf")
+                    generate_pdf(
+                        game=game_source,
+                        save_to=pdf_path,
+                        scale_factor=scale_factor,
+                        level_scaling=level_scaling,
+                        sublevel_scaling=sublevel_scaling,
+                        width_scaling=width_scaling,
+                        hide_action_labels=hide_action_labels,
+                        shared_terminal_depth=shared_terminal_depth,
+                        color_scheme=color_scheme,
+                        edge_thickness=edge_thickness,
+                        action_label_position=action_label_position,
                     )
+                    with open(pdf_path, "rb") as f:
+                        st.download_button(
+                            "Download PDF",
+                            f.read(),
+                            f"{base_filename}.pdf",
+                            "application/pdf",
+                            use_container_width=True,
+                        )
 
-                # PNG
-                png_path = str(work_dir / f"{base_name}.png")
-                generate_png(
-                    game=game_source,
-                    save_to=png_path,
-                    scale_factor=scale_factor,
-                    level_scaling=level_scaling,
-                    sublevel_scaling=sublevel_scaling,
-                    width_scaling=width_scaling,
-                    hide_action_labels=hide_action_labels,
-                    shared_terminal_depth=shared_terminal_depth,
-                    color_scheme=color_scheme,
-                    edge_thickness=edge_thickness,
-                    action_label_position=action_label_position,
-                    dpi=300,
-                )
-                with open(png_path, "rb") as f:
-                    st.sidebar.download_button(
-                        "Download PNG (.png)",
-                        f.read(),
-                        f"{base_filename}.png",
-                        "image/png",
-                        use_container_width=True,
+                    # PNG
+                    png_path = str(work_dir / f"{base_name}.png")
+                    generate_png(
+                        game=game_source,
+                        save_to=png_path,
+                        scale_factor=scale_factor,
+                        level_scaling=level_scaling,
+                        sublevel_scaling=sublevel_scaling,
+                        width_scaling=width_scaling,
+                        hide_action_labels=hide_action_labels,
+                        shared_terminal_depth=shared_terminal_depth,
+                        color_scheme=color_scheme,
+                        edge_thickness=edge_thickness,
+                        action_label_position=action_label_position,
+                        dpi=300,
                     )
+                    with open(png_path, "rb") as f:
+                        st.download_button(
+                            "Download PNG",
+                            f.read(),
+                            f"{base_filename}.png",
+                            "image/png",
+                            use_container_width=True,
+                        )
 
     except Exception as e:
         st.error(f"Error: {e}")
