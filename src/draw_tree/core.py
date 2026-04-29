@@ -1302,10 +1302,12 @@ def level(
         # Determine side and shifts based on layout
         if _horizontal:
             # In horizontal mode, original X is Page-Vertical (UP/DOWN)
-            if existsfrom and xs < 0: # Original left is Page-DOWN
-                side = "below"
-            else:
+            # xs > 0 (original right) moves Page-DOWN (due to xx = xfrom - xs)
+            # xs < 0 (original left) moves Page-UP
+            if existsfrom and xs < 0: # Original left is Page-UP
                 side = "above"
+            else: # Original right is Page-DOWN
+                side = "below"
             s += f" node[{side},yshift=" + spy + ",xshift=" + spx
         else:
             # Vertical mode
@@ -1334,14 +1336,16 @@ def level(
         # decide side and shift type based on layout
         if _horizontal:
             # Horizontal mode: branches grow Page-Right. Perpendicular is Page-Vertical.
+            # xs > 0 (original right) moves Page-DOWN (due to xx = xfrom - xs)
+            # xs < 0 (original left) moves Page-UP
             if movpos == "r":
-                side = "above"
+                side = "below"
             elif movpos == "l":
-                side = "below"
-            elif xs > 0: # Original right is Page-UP
                 side = "above"
-            else: # Original left is Page-DOWN
+            elif xs > 0: # Page-DOWN
                 side = "below"
+            else: # Page-UP
+                side = "above"
             shift_type = "yshift"
         else:
             # Vertical mode
