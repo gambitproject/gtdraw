@@ -79,6 +79,12 @@ def run_app():
 
     # Sidebar: Configuration
     with st.sidebar.expander("📐 Layout Options", expanded=False):
+        horizontal = st.checkbox(
+            "Horizontal Layout",
+            value=False,
+            help="Switch between vertical (top-down) and horizontal (left-right) layout.",
+        )
+
         scale_factor = st.slider(
             "Overall Scale",
             0.0,
@@ -132,7 +138,7 @@ def run_app():
                     default_val = "#377EB8"
                 elif i == 3:
                     default_val = "#4DAF4A"
-                
+
                 custom_colors[i] = st.color_picker(
                     f"Player {i}", value=default_val, key=f"cp_p{i}"
                 )
@@ -145,7 +151,11 @@ def run_app():
             index=0,
             help="Global font family for the diagram.",
         )
-        font_map = {"Serif": "rmfamily", "Sans-Serif": "sffamily", "Monospace": "ttfamily"}
+        font_map = {
+            "Serif": "rmfamily",
+            "Sans-Serif": "sffamily",
+            "Monospace": "ttfamily",
+        }
         font_family = font_map[font_family_name]
 
         col1, col2 = st.columns(2)
@@ -178,12 +188,6 @@ def run_app():
             0.5,
             0.05,
             help="Position of action labels along the edge (0=start, 1=end).",
-        )
-        
-        horizontal = st.checkbox(
-            "Horizontal Layout",
-            value=False,
-            help="Switch between vertical (top-down) and horizontal (left-right) layout.",
         )
 
     # Main Area: Display
