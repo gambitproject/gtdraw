@@ -56,13 +56,17 @@ def run_app():
         "Or upload your own .ef or .efg file", type=["ef", "efg"]
     )
 
+    base_filename = "game_tree"
     if uploaded_file:
+        base_filename = Path(uploaded_file.name).stem
         suffix = f".{uploaded_file.name.split('.')[-1]}"
         if suffix.lower() == ".efg":
             is_efg = True
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             tmp.write(uploaded_file.getvalue())
             game_source = tmp.name
+    elif game_source:
+        base_filename = Path(game_source).stem
 
     # Sidebar: Configuration
     st.sidebar.header("📐 Diagram Options")
@@ -156,11 +160,10 @@ def run_app():
         # Sidebar: Download Buttons
         st.sidebar.header("📥 Downloads")
 
-        # SVG and TikZ
         st.sidebar.download_button(
             label="Download SVG",
             data=svg_content,
-            file_name="game_tree.svg",
+            file_name=f"{base_filename}.svg",
             mime="image/svg+xml",
             use_container_width=True,
         )
@@ -182,7 +185,7 @@ def run_app():
         st.sidebar.download_button(
             label="Download TikZ",
             data=tikz_code,
-            file_name="game_tree.tikz",
+            file_name=f"{base_filename}.tikz",
             mime="text/plain",
             use_container_width=True,
         )
@@ -196,6 +199,11 @@ def run_app():
                     game=game_source,
                     save_to=tex_path,
                     scale_factor=scale_factor,
+                    level_scaling=level_scaling,
+                    sublevel_scaling=sublevel_scaling,
+                    width_scaling=width_scaling,
+                    hide_action_labels=hide_action_labels,
+                    shared_terminal_depth=shared_terminal_depth,
                     color_scheme=color_scheme,
                     edge_thickness=edge_thickness,
                     action_label_position=action_label_position,
@@ -204,7 +212,7 @@ def run_app():
                     st.sidebar.download_button(
                         "Download LaTeX (.tex)",
                         f.read(),
-                        "game_tree.tex",
+                        f"{base_filename}.tex",
                         "text/x-tex",
                         use_container_width=True,
                     )
@@ -215,6 +223,11 @@ def run_app():
                     game=game_source,
                     save_to=pdf_path,
                     scale_factor=scale_factor,
+                    level_scaling=level_scaling,
+                    sublevel_scaling=sublevel_scaling,
+                    width_scaling=width_scaling,
+                    hide_action_labels=hide_action_labels,
+                    shared_terminal_depth=shared_terminal_depth,
                     color_scheme=color_scheme,
                     edge_thickness=edge_thickness,
                     action_label_position=action_label_position,
@@ -223,7 +236,7 @@ def run_app():
                     st.sidebar.download_button(
                         "Download PDF (.pdf)",
                         f.read(),
-                        "game_tree.pdf",
+                        f"{base_filename}.pdf",
                         "application/pdf",
                         use_container_width=True,
                     )
@@ -234,6 +247,11 @@ def run_app():
                     game=game_source,
                     save_to=png_path,
                     scale_factor=scale_factor,
+                    level_scaling=level_scaling,
+                    sublevel_scaling=sublevel_scaling,
+                    width_scaling=width_scaling,
+                    hide_action_labels=hide_action_labels,
+                    shared_terminal_depth=shared_terminal_depth,
                     color_scheme=color_scheme,
                     edge_thickness=edge_thickness,
                     action_label_position=action_label_position,
@@ -243,10 +261,11 @@ def run_app():
                     st.sidebar.download_button(
                         "Download PNG (.png)",
                         f.read(),
-                        "game_tree.png",
+                        f"{base_filename}.png",
                         "image/png",
                         use_container_width=True,
                     )
+
 
     except Exception as e:
         st.error(f"Error: {e}")
