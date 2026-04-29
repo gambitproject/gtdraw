@@ -642,6 +642,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
+            horizontal,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -669,6 +670,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
+            horizontal,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -696,6 +698,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
+            horizontal,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -723,6 +726,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
+            horizontal,
         ) = result
         assert output_mode == "pdf"
         assert pdf_requested
@@ -748,6 +752,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
+            horizontal,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -775,6 +780,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
+            horizontal,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -801,6 +807,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
+            horizontal,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -821,6 +828,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
+            horizontal,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -842,6 +850,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
+            horizontal,
         ) = result
         assert dpi == 300  # Should default to 300 for invalid values
 
@@ -861,6 +870,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
+            horizontal,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -888,6 +898,7 @@ class TestCommandlineArguments:
             font_italic,
             font_size,
             custom_colors,
+            horizontal,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -1316,6 +1327,80 @@ def test_commandline_font_options():
     # Test font size
     result = draw_tree.commandline(["draw_tree.py", "test.ef", "--font-size=large"])
     assert result[10] == "large"
+
+
+def test_commandline_horizontal_flag():
+    """Test --horizontal flag parsing."""
+    result = draw_tree.commandline(["draw_tree.py", "test.ef", "--horizontal"])
+    assert result[12] is True
+
+
+class TestHorizontalLayout:
+    """Test horizontal layout specific features."""
+
+    def test_horizontal_tikz_output(self):
+        """Test that horizontal layout injects correct TikZ rotation."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1\nlevel 0 node root player 1\n")
+            ef_file_path = f.name
+
+        try:
+            result = draw_tree.generate_tikz(ef_file_path, horizontal=True)
+            
+            # Check for picture rotation
+            assert "rotate=90" in result
+            
+            # Labels should NOT be rotated back anymore
+            assert "rotate=-90" not in result
+            
+            # Action labels should NOT have redundant rotatebox anymore
+            # (Adding a child to check action labels)
+            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f2:
+                f2.write("player 1\n")
+                f2.write("level 0 node root player 1\n")
+                f2.write("level 1 node child from 0,root player 2 move Move payoffs 1 2\n")
+                ef2_path = f2.name
+                
+            result2 = draw_tree.generate_tikz(ef2_path, horizontal=True)
+            # Should NOT contain \rotatebox{-90} in Move label
+            assert "\\rotatebox{-90}" not in result2
+            # But Move label should be present
+            assert "{Move}" in result2
+            
+            os.unlink(ef2_path)
+        finally:
+            os.unlink(ef_file_path)
+
+    def test_horizontal_legend_position(self):
+        """Test that legend is repositioned in horizontal mode."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1\n")
+            f.write("level 0 node n1 player 1\n")
+            ef_file_path = f.name
+
+        try:
+            # Vertical legend (default)
+            res_v = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit")
+            # Horizontal legend
+            res_h = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", horizontal=True)
+            
+            assert "Player color legend" in res_v
+            assert "Player color legend" in res_h
+            assert res_v != res_h
+            
+            # In horizontal mode, it should use a positive x_offset (right side in original coords)
+            # which becomes top side in final rotated coords.
+            # Look for shift={(X,Y)}
+            import re
+            shift_h = re.search(r"\\begin{scope}\[scale=1,shift={\(([\d.-]+),([\d.-]+)\)}\]", res_h)
+            shift_v = re.search(r"\\begin{scope}\[scale=1,shift={\(([\d.-]+),([\d.-]+)\)}\]", res_v)
+            
+            assert shift_h and shift_v
+            # X coordinate in horizontal mode should be larger (max_x based)
+            assert float(shift_h.group(1)) > float(shift_v.group(1))
+
+        finally:
+            os.unlink(ef_file_path)
 
 
 def test_commandline_custom_colors():

@@ -99,8 +99,21 @@ draw_tree games/example.ef --png --dpi=600                 # Creates high-res ex
 draw_tree games/example.ef --output=mygame.png scale=0.8   # Creates mygame.png with 0.8 scaling (0.01 to 100)
 draw_tree games/example.ef --pdf --font=sans-serif --bold  # Sans-serif bold font
 draw_tree games/example.ef --png --font-size=large         # Larger text size
+draw_tree games/example.ef --pdf --horizontal              # Horizontal layout (left-to-right)
 draw_tree games/example.efg --svg --custom-colors="0:#FF0000,1:#0000FF" # Custom player colors
 ```
+
+### Formatting Options
+
+| Option | CLI Flag | Python Argument | Description |
+| :--- | :--- | :--- | :--- |
+| **Layout** | `--horizontal` | `horizontal=True` | Switch between vertical (top-down) and horizontal (left-right) layout. |
+| **Font Family** | `--font=[serif\|sans-serif\|monospace]` | `font_family=['rmfamily'\|'sffamily'\|'ttfamily']` | Set the global LaTeX font family. |
+| **Font Weight** | `--bold` | `font_bold=True` | Use bold text for labels and payoffs. |
+| **Font Style** | `--italic` | `font_italic=True` | Use italic text for labels and payoffs. |
+| **Font Size** | `--font-size=[small\|normalsize\|large\|Large]` | `font_size=['small'\|'normalsize'\|'large'\|'Large']` | Set the LaTeX font size command. |
+| **Colors** | `--custom-colors="0:#HEX,..."` | `custom_colors={0: '#HEX', ...}` | Map player indices (0=chance) to hex colors. |
+| **Edges** | N/A | `edge_thickness=X.X` | Adjust thickness of edges and information set ovals. |
 
 ## Interactive GUI
 
@@ -122,11 +135,12 @@ generate_tex('games/example.ef', save_to='custom')                  # Creates cu
 generate_pdf('games/example.ef')                                    # Creates example.pdf
 generate_png('games/example.ef')                                    # Creates example.png
 generate_svg('games/example.ef')                                    # Creates example.svg
+generate_pdf('games/example.ef', horizontal=True)                   # Horizontal PDF
 generate_png('games/example.ef', dpi=600)                           # Creates high-res example.png (72-2400, default: 300)
 generate_png('games/example.ef', save_to='mygame', scale_factor=0.8)    # Creates mygame.png with 0.8 scaling (0.01 to 100)
 
 # Custom styling examples
-generate_pdf('game.ef', font_family='sffamily', font_bold=True, font_size='large')
+generate_pdf('game.ef', font_family='sffamily', font_bold=True, font_size='large', horizontal=True)
 generate_svg('game.efg', color_scheme='custom', custom_colors={0: '#FF0000', 1: '#0000FF'})
 ```
 

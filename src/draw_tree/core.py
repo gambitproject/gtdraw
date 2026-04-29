@@ -85,6 +85,7 @@ _font_family: str = "rmfamily"
 _font_bold: bool = False
 _font_italic: bool = False
 _font_size: str = "normalsize"
+_horizontal: bool = False
 
 
 def get_player_color(player: int, color_scheme: str = "default") -> str:
@@ -1110,15 +1111,24 @@ def generate_legend(
 
     # Calculate x and y coordinates for legend placement
     min_x = 0
+    max_x = 0
     max_y = 0
     if nodes:
         min_x = min(nodes[nodeid]["x"] for nodeid in nodes)
+        max_x = max(nodes[nodeid]["x"] for nodeid in nodes)
         max_y = max(nodes[nodeid]["y"] for nodeid in nodes)
 
     # Position legend in top left corner
     legend_code = "\n% Player color legend\n"
-    x_offset = min_x - 1.5
-    legend_code += f"\\begin{{scope}}[scale=1,shift={{({x_offset},{max_y})}}]\n"
+    if _horizontal:
+        # In horizontal mode (rotated 90 CCW), original Max X becomes Final Top
+        # Original 0 (Root Y) becomes Final Left
+        x_offset = max_x + 0.5
+        y_loc = 0.5 # Near the root in final X
+        legend_code += f"\\begin{{scope}}[scale=1,shift={{({x_offset},{y_loc})}}]\n"
+    else:
+        x_offset = min_x - 1.5
+        legend_code += f"\\begin{{scope}}[scale=1,shift={{({x_offset},{max_y})}}]\n"
 
     # Add each player with their color (no title)
     # Adjust vertical spacing to compensate for the tree's scale factor
@@ -1246,9 +1256,9 @@ def level(
     if existsfrom:  # father exists
         xfrom = nodes[fromn]["x"]
         yfrom = nodes[fromn]["y"]
-        xx = xfrom + xs
+        xx = xfrom + ((-xs) if _horizontal else xs)
     else:  # no father
-        xx = xs
+        xx = ((-xs) if _horizontal else xs)
         if fromn:
             error("No 'from' node, move '" + mov + "' ignored")
     # direction down (for later expansion)
@@ -1449,7 +1459,7 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
 
 def commandline(
     argv: List[str],
-) -> tuple[str, bool, bool, bool, bool, Optional[str], Optional[int], str, bool, bool, str, Optional[dict]]:
+) -> tuple[str, bool, bool, bool, bool, Optional[str], Optional[int], str, bool, bool, str, Optional[dict], bool]:
     """
     Process command-line arguments to set global configuration.
 
@@ -1460,7 +1470,7 @@ def commandline(
         argv: List of command-line arguments (including script name).
 
     Returns:
-        Tuple of (output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi) where:
+        Tuple of (output_mode, pdf_requested, png_requested, svg_requested, tex_requested, output_file, dpi, font_family, font_bold, font_italic, font_size, custom_colors, horizontal) where:
         - output_mode: 'tikz', 'pdf', 'png', 'svg', or 'tex'
         - pdf_requested: True if --pdf flag was provided
         - png_requested: True if --png flag was provided
@@ -1468,6 +1478,12 @@ def commandline(
         - tex_requested: True if --tex flag was provided
         - output_file: Custom output filename if specified
         - dpi: DPI setting for PNG output (None if not specified)
+        - font_family: LaTeX font family command
+        - font_bold: True if bold text requested
+        - font_italic: True if italic text requested
+        - font_size: LaTeX font size command
+        - custom_colors: Dict of custom player colors
+        - horizontal: True if horizontal layout requested
     """
     global grid
     global scale
@@ -1484,6 +1500,7 @@ def commandline(
     font_italic = False
     font_size = "normalsize"
     custom_colors = None
+    horizontal = False
 
     for arg in argv[1:]:
         if arg[:5] == "scale":
@@ -1556,6 +1573,8 @@ def commandline(
                     custom_colors[int(p)] = c
             except Exception:
                 print("Warning: Invalid custom-colors format, expected '0:#hex,1:#hex'", file=sys.stderr)
+        elif arg == "--horizontal":
+            horizontal = True
         elif arg.endswith(".ef"):
             ef_file = arg
         else:
@@ -1587,6 +1606,7 @@ def commandline(
         font_italic,
         font_size,
         custom_colors,
+        horizontal,
     )
 
 
@@ -1600,6 +1620,7 @@ def ef_to_tex(
     font_bold: bool = False,
     font_italic: bool = False,
     font_size: str = "normalsize",
+    horizontal: bool = False,
 ) -> str:
     """
     Convert an extensive form (.ef) file to TikZ code.
@@ -1655,6 +1676,8 @@ def ef_to_tex(
         _font_bold = font_bold
         _font_italic = font_italic
         _font_size = font_size
+        global _horizontal
+        _horizontal = horizontal
 
         # Process the .ef file
         lines = readfile(ef_file)
@@ -1742,6 +1765,7 @@ def generate_tikz(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
+    horizontal: bool = False,
 ) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
@@ -1830,6 +1854,7 @@ def generate_tikz(
         font_bold=font_bold,
         font_italic=font_italic,
         font_size=font_size,
+        horizontal=horizontal,
     )
 
     # Step 2: Define built-in macro definitions (from macros-drawtree.tex)
@@ -1862,6 +1887,8 @@ def generate_tikz(
         font_style += "\\itshape"
     if font_size and font_size != "normalsize":
         font_style += f"\\{font_size}"
+    
+    node_style = font_style
 
     # Step 3: Combine everything into complete TikZ code
     tikz_code = f"""% TikZ code with built-in styling for game trees
@@ -1871,7 +1898,7 @@ def generate_tikz(
 
 % Style settings for game tree formatting
 \\tikzset{{
-    every node/.append style={{{font_style}}},
+    every node/.append style={{{node_style}}},
     every text node part/.append style={{align=center}},
     node distance=1.5mm,
     thick
@@ -1883,6 +1910,10 @@ def generate_tikz(
     # Add macro definitions
     for macro in macro_definitions:
         tikz_code += macro + "\n"
+
+    if horizontal:
+        # Inject rotate=90 into the \begin{tikzpicture} line
+        tikz_picture_content = tikz_picture_content.replace("\\begin{tikzpicture}[", "\\begin{tikzpicture}[rotate=90, ")
 
     tikz_code += f"\n% Game tree content from {ef_file}\n"
     tikz_code += tikz_picture_content
@@ -1952,6 +1983,7 @@ def draw_tree(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
+    horizontal: bool = False,
 ) -> Optional[str]:
     """
     Generate TikZ code and display in Jupyter notebooks.
@@ -1994,6 +2026,7 @@ def draw_tree(
         font_italic=font_italic,
         font_size=font_size,
         custom_colors=custom_colors,
+        horizontal=horizontal,
     )
 
     # Execute cell magic or return TikZ
@@ -2026,6 +2059,7 @@ def latex_wrapper(tikz_code: str) -> str:
                         \\linespread{{1.10}}
                         \\usetikzlibrary{{shapes}}
                         \\usetikzlibrary{{arrows.meta}}
+                        \\usepackage{{graphicx}}
 
                         \\begin{{document}}
 
@@ -2054,6 +2088,7 @@ def generate_tex(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
+    horizontal: bool = False,
 ) -> str:
     """
     Generate a complete LaTeX document file directly from an extensive form (.ef) file.
@@ -2118,6 +2153,7 @@ def generate_tex(
         font_italic=font_italic,
         font_size=font_size,
         custom_colors=custom_colors,
+        horizontal=horizontal,
     )
 
     # Wrap in complete LaTeX document
@@ -2148,6 +2184,7 @@ def generate_pdf(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
+    horizontal: bool = False,
 ) -> str:
     """
     Generate a PDF directly from an extensive form (.ef) file.
@@ -2213,6 +2250,7 @@ def generate_pdf(
         font_italic=font_italic,
         font_size=font_size,
         custom_colors=custom_colors,
+        horizontal=horizontal,
     )
 
     # Create LaTeX wrapper document
@@ -2287,6 +2325,7 @@ def generate_png(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
+    horizontal: bool = False,
 ) -> str:
     """
     Generate a PNG image directly from an extensive form (.ef) file.
@@ -2358,6 +2397,7 @@ def generate_png(
                 font_italic=font_italic,
                 font_size=font_size,
                 custom_colors=custom_colors,
+                horizontal=horizontal,
             )
 
             # Step 2: Convert PDF to PNG
@@ -2479,6 +2519,7 @@ def generate_svg(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
+    horizontal: bool = False,
 ) -> str:
     """
     Generate an SVG image directly from an extensive form (.ef) file.
@@ -2543,6 +2584,7 @@ def generate_svg(
                 font_italic=font_italic,
                 font_size=font_size,
                 custom_colors=custom_colors,
+                horizontal=horizontal,
             )
 
             # Convert PDF to SVG using pdf2svg

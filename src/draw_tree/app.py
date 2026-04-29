@@ -179,6 +179,12 @@ def run_app():
             0.05,
             help="Position of action labels along the edge (0=start, 1=end).",
         )
+        
+        horizontal = st.checkbox(
+            "Horizontal Layout",
+            value=False,
+            help="Switch between vertical (top-down) and horizontal (left-right) layout.",
+        )
 
     # Main Area: Display
     if not game_source:
@@ -218,6 +224,7 @@ def run_app():
             font_italic=font_italic,
             font_size=font_size,
             custom_colors=custom_colors,
+            horizontal=horizontal,
         )
 
         if not os.path.exists(svg_path):
@@ -249,6 +256,7 @@ def run_app():
             font_italic=font_italic,
             font_size=font_size,
             custom_colors=custom_colors,
+            horizontal=horizontal,
         )
 
         tex_path = generate_tex(
@@ -268,6 +276,7 @@ def run_app():
             font_italic=font_italic,
             font_size=font_size,
             custom_colors=custom_colors,
+            horizontal=horizontal,
         )
         with open(tex_path, "r") as f:
             tex_data = f.read()
@@ -289,6 +298,7 @@ def run_app():
             font_italic=font_italic,
             font_size=font_size,
             custom_colors=custom_colors,
+            horizontal=horizontal,
         )
         with open(pdf_path, "rb") as f:
             pdf_data = f.read()
@@ -311,6 +321,7 @@ def run_app():
             font_italic=font_italic,
             font_size=font_size,
             custom_colors=custom_colors,
+            horizontal=horizontal,
         )
         with open(png_path, "rb") as f:
             png_data = f.read()

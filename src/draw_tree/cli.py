@@ -38,6 +38,7 @@ def main():
         print("  --italic     Use italic text")
         print("  --font-size=X Set font size (small, normalsize, large, Large)")
         print("  --custom-colors=X Set custom colors (e.g. \"0:#FF0000,1:#0000FF\")")
+        print("  --horizontal Use horizontal layout (growing left-to-right)")
         print()
         print("Examples:")
         print("  draw_tree games/example.ef --pdf")
@@ -75,6 +76,7 @@ def main():
         font_italic,
         font_size,
         custom_colors,
+        horizontal,
     ) = commandline(sys.argv)
     
     # Import the core module to access global variables after commandline() has set them
@@ -102,6 +104,7 @@ def main():
                 font_italic=font_italic,
                 font_size=font_size,
                 custom_colors=custom_colors,
+                horizontal=horizontal,
             )
             print(f"PDF generated successfully: {pdf_path}")
         
@@ -121,6 +124,7 @@ def main():
                 font_italic=font_italic,
                 font_size=font_size,
                 custom_colors=custom_colors,
+                horizontal=horizontal,
             )
             print(f"PNG generated successfully: {png_path}")
 
@@ -139,6 +143,7 @@ def main():
                 font_italic=font_italic,
                 font_size=font_size,
                 custom_colors=custom_colors,
+                horizontal=horizontal,
             )
             print(f"SVG generated successfully: {svg_path}")
 
@@ -157,6 +162,7 @@ def main():
                 font_italic=font_italic,
                 font_size=font_size,
                 custom_colors=custom_colors,
+                horizontal=horizontal,
             )
             print(f"LaTeX generated successfully: {tex_path}")
         
@@ -171,6 +177,7 @@ def main():
                 font_italic=font_italic,
                 font_size=font_size,
                 custom_colors=custom_colors,
+                horizontal=horizontal,
             )
             
             # Output the complete TikZ code
