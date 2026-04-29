@@ -1231,10 +1231,10 @@ class TestFontStyling:
             result = draw_tree.generate_tikz(
                 ef2_path, font_family="sffamily", font_bold=True, font_italic=True
             )
-            assert "every node/.append style={font=\\sffamily\\bfseries\\itshape}" in result
+            assert "every node/.append style={font=\\sffamily\\bfseries\\boldmath\\itshape}" in result
             
             # Action labels should also use the styling
-            assert "\\sffamily\\bfseries\\itshape{Move}\\strut" in result
+            assert "\\sffamily\\bfseries\\boldmath\\itshape{Move}\\strut" in result
 
             # Test font size
             result_size = draw_tree.generate_tikz(ef2_path, font_size="large")
@@ -1258,6 +1258,8 @@ class TestCustomColors:
         
         try:
             assert draw_tree.count_players(ef_file_path) == 2
+            # Chance player name should be capitalized
+            assert draw_tree.playername[0] == "Chance"
         finally:
             os.unlink(ef_file_path)
 
@@ -1276,6 +1278,23 @@ class TestCustomColors:
             assert "\\definecolor{customchancecolor}{HTML}{759138}" in result
             assert "\\definecolor{customp1color}{HTML}{FF0000}" in result
             assert "\\definecolor{customp2color}{HTML}{0000FF}" in result
+        finally:
+            os.unlink(ef_file_path)
+
+    def test_iset_edge_thickness(self):
+        """Test that edge thickness applies to info sets."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1\n")
+            f.write("level 0 node n1 player 1\n")
+            f.write("level 0 node n2 player 1\n")
+            f.write("iset 0,n1 0,n2 player 1\n")
+            ef_file_path = f.name
+        
+        try:
+            result = draw_tree.generate_tikz(ef_file_path, edge_thickness=2.5)
+            # The iset draw command should contain the line width/thickn
+            assert "line width=\\treethickn" in result
+            assert "\\treethickn2.5pt" in result
         finally:
             os.unlink(ef_file_path)
 

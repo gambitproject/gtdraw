@@ -33,7 +33,7 @@ radius: float = 0.3  # iset radius
 
 # Up to 4 players and chance (in principle more)
 # Default names
-playername: List[str] = [r"\small chance", "1", "2", "3", "4"]
+playername: List[str] = ["Chance", "1", "2", "3", "4"]
 playertexname: List[str] = [
     "playerzero",
     "playerone",
@@ -629,7 +629,7 @@ def iset(nodes: List[List[float]], radius: float = isetradius) -> str:
     """
     arcs = arcseq(nodes, radius)
     # tikz code
-    return "\\draw [" + isetparams + "] " + "\n  -- ".join(arcs) + " -- cycle;"
+    return "\\draw [" + thickn + ("," + isetparams if isetparams else "") + "] " + "\n  -- ".join(arcs) + " -- cycle;"
 
 
 ######################## handling players
@@ -1331,7 +1331,7 @@ def level(
         # Build the font command for the action label based on global font settings
         font_cmds = f"\\{_font_family}"
         if _font_bold:
-            font_cmds += "\\bfseries"
+            font_cmds += "\\bfseries\\boldmath"
         if _font_italic:
             font_cmds += "\\itshape"
             
@@ -1857,7 +1857,7 @@ def generate_tikz(
     # Build the TikZ set font style
     font_style = f"font=\\{font_family}"
     if font_bold:
-        font_style += "\\bfseries"
+        font_style += "\\bfseries\\boldmath"
     if font_italic:
         font_style += "\\itshape"
     if font_size and font_size != "normalsize":
