@@ -923,7 +923,10 @@ def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
     paylist = []
     for i in range(1, maxp):
         # tikz code
-        t = "   node[below,yshift="
+        if _horizontal:
+            t = "   node[right,yshift="
+        else:
+            t = "   node[below,yshift="
         t += fformat(payup - (i - 1)) + paydown
         if color_scheme != "default":
             player_color = get_player_color(i, color_scheme)

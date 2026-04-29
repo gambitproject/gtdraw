@@ -1403,6 +1403,22 @@ class TestHorizontalLayout:
             os.unlink(ef_file_path)
 
 
+    def test_horizontal_payoff_position(self):
+        """Test that payoffs are positioned to the right in horizontal mode."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1\n")
+            f.write("level 0 node n1 player 1 payoffs 1 2\n")
+            ef_file_path = f.name
+
+        try:
+            result = draw_tree.generate_tikz(ef_file_path, horizontal=True)
+            # Payoffs should use node[right,...] instead of node[below,...]
+            assert "node[right,yshift=" in result
+            assert "node[below,yshift=" not in result
+        finally:
+            os.unlink(ef_file_path)
+
+
 def test_commandline_custom_colors():
     """Test custom color argument parsing."""
     result = draw_tree.commandline(
