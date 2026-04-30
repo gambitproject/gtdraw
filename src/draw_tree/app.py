@@ -215,188 +215,184 @@ def run_app():
         return
 
     try:
-        # Use games/efg/ for intermediate files as requested (gitignored)
-        efg_dir = Path(__file__).parent.parent.parent / "games" / "efg"
-        if not efg_dir.exists():
-            # Fallback to system temp if games/efg/ doesn't exist
-            work_dir = Path(tempfile.gettempdir())
-        else:
-            work_dir = efg_dir
+        # Use a temporary directory for all GUI-generated files to ensure cleanup
+        with tempfile.TemporaryDirectory() as work_dir_str:
+            work_dir = Path(work_dir_str)
 
-        base_name = f"gui_temp_{os.getpid()}"
-        svg_path = str(work_dir / f"{base_name}.svg")
-        output_base = str(work_dir / base_name)
+            base_name = f"gui_temp_{os.getpid()}"
+            svg_path = str(work_dir / f"{base_name}.svg")
+            output_base = str(work_dir / base_name)
 
-        svg_code = generate_svg(
-            game=game_source,
-            save_to=svg_path,
-            scale_factor=scale_factor,
-            level_scaling=level_scaling,
-            sublevel_scaling=sublevel_scaling,
-            width_scaling=width_scaling,
-            hide_action_labels=hide_action_labels,
-            shared_terminal_depth=shared_terminal_depth,
-            show_grid=False,
-            color_scheme=color_scheme,
-            edge_thickness=edge_thickness,
-            action_label_position=action_label_position,
-            responsive_sizing=True,
-            font_family=font_family,
-            font_bold=font_bold,
-            font_italic=font_italic,
-            font_size=font_size,
-            custom_colors=custom_colors,
-            horizontal=horizontal,
-            action_label_dist=action_label_dist,
-            iset_fill=iset_fill,
-            iset_fill_opacity=iset_fill_opacity,
-            iset_boundary=iset_boundary,
-            node_size=node_size,
-        )
+            svg_code = generate_svg(
+                game=game_source,
+                save_to=svg_path,
+                scale_factor=scale_factor,
+                level_scaling=level_scaling,
+                sublevel_scaling=sublevel_scaling,
+                width_scaling=width_scaling,
+                hide_action_labels=hide_action_labels,
+                shared_terminal_depth=shared_terminal_depth,
+                show_grid=False,
+                color_scheme=color_scheme,
+                edge_thickness=edge_thickness,
+                action_label_position=action_label_position,
+                responsive_sizing=True,
+                font_family=font_family,
+                font_bold=font_bold,
+                font_italic=font_italic,
+                font_size=font_size,
+                custom_colors=custom_colors,
+                horizontal=horizontal,
+                action_label_dist=action_label_dist,
+                iset_fill=iset_fill,
+                iset_fill_opacity=iset_fill_opacity,
+                iset_boundary=iset_boundary,
+                node_size=node_size,
+            )
 
-        if not os.path.exists(svg_path):
-            st.error("SVG generation failed.")
-            return
+            if not os.path.exists(svg_path):
+                st.error("SVG generation failed.")
+                return
 
-        with open(svg_path, "r") as f:
-            svg_content = f.read()
+            with open(svg_path, "r") as f:
+                svg_content = f.read()
 
-        # Display the responsive SVG directly
-        st.markdown(svg_content, unsafe_allow_html=True)
+            # Display the responsive SVG directly
+            st.markdown(svg_content, unsafe_allow_html=True)
 
-        # Pre-generate all download formats
-        tikz_code = generate_tikz(
-            game=game_source,
-            save_to=output_base + ".tikz",
-            scale_factor=scale_factor,
-            level_scaling=level_scaling,
-            sublevel_scaling=sublevel_scaling,
-            width_scaling=width_scaling,
-            hide_action_labels=hide_action_labels,
-            shared_terminal_depth=shared_terminal_depth,
-            show_grid=False,
-            color_scheme=color_scheme,
-            edge_thickness=edge_thickness,
-            action_label_position=action_label_position,
-            font_family=font_family,
-            font_bold=font_bold,
-            font_italic=font_italic,
-            font_size=font_size,
-            custom_colors=custom_colors,
-            horizontal=horizontal,
-            action_label_dist=action_label_dist,
-        )
+            # Pre-generate all download formats
+            tikz_code = generate_tikz(
+                game=game_source,
+                save_to=output_base + ".tikz",
+                scale_factor=scale_factor,
+                level_scaling=level_scaling,
+                sublevel_scaling=sublevel_scaling,
+                width_scaling=width_scaling,
+                hide_action_labels=hide_action_labels,
+                shared_terminal_depth=shared_terminal_depth,
+                show_grid=False,
+                color_scheme=color_scheme,
+                edge_thickness=edge_thickness,
+                action_label_position=action_label_position,
+                font_family=font_family,
+                font_bold=font_bold,
+                font_italic=font_italic,
+                font_size=font_size,
+                custom_colors=custom_colors,
+                horizontal=horizontal,
+                action_label_dist=action_label_dist,
+            )
 
-        tex_path = generate_tex(
-            game=game_source,
-            save_to=output_base + ".tex",
-            scale_factor=scale_factor,
-            level_scaling=level_scaling,
-            sublevel_scaling=sublevel_scaling,
-            width_scaling=width_scaling,
-            hide_action_labels=hide_action_labels,
-            shared_terminal_depth=shared_terminal_depth,
-            color_scheme=color_scheme,
-            edge_thickness=edge_thickness,
-            action_label_position=action_label_position,
-            font_family=font_family,
-            font_bold=font_bold,
-            font_italic=font_italic,
-            font_size=font_size,
-            custom_colors=custom_colors,
-            horizontal=horizontal,
-            action_label_dist=action_label_dist,
-        )
-        with open(tex_path, "r") as f:
-            tex_data = f.read()
+            tex_path = generate_tex(
+                game=game_source,
+                save_to=output_base + ".tex",
+                scale_factor=scale_factor,
+                level_scaling=level_scaling,
+                sublevel_scaling=sublevel_scaling,
+                width_scaling=width_scaling,
+                hide_action_labels=hide_action_labels,
+                shared_terminal_depth=shared_terminal_depth,
+                color_scheme=color_scheme,
+                edge_thickness=edge_thickness,
+                action_label_position=action_label_position,
+                font_family=font_family,
+                font_bold=font_bold,
+                font_italic=font_italic,
+                font_size=font_size,
+                custom_colors=custom_colors,
+                horizontal=horizontal,
+                action_label_dist=action_label_dist,
+            )
+            with open(tex_path, "r") as f:
+                tex_data = f.read()
 
-        pdf_path = generate_pdf(
-            game=game_source,
-            save_to=output_base + ".pdf",
-            scale_factor=scale_factor,
-            level_scaling=level_scaling,
-            sublevel_scaling=sublevel_scaling,
-            width_scaling=width_scaling,
-            hide_action_labels=hide_action_labels,
-            shared_terminal_depth=shared_terminal_depth,
-            color_scheme=color_scheme,
-            edge_thickness=edge_thickness,
-            action_label_position=action_label_position,
-            font_family=font_family,
-            font_bold=font_bold,
-            font_italic=font_italic,
-            font_size=font_size,
-            custom_colors=custom_colors,
-            horizontal=horizontal,
-            action_label_dist=action_label_dist,
-        )
-        with open(pdf_path, "rb") as f:
-            pdf_data = f.read()
+            pdf_path = generate_pdf(
+                game=game_source,
+                save_to=output_base + ".pdf",
+                scale_factor=scale_factor,
+                level_scaling=level_scaling,
+                sublevel_scaling=sublevel_scaling,
+                width_scaling=width_scaling,
+                hide_action_labels=hide_action_labels,
+                shared_terminal_depth=shared_terminal_depth,
+                color_scheme=color_scheme,
+                edge_thickness=edge_thickness,
+                action_label_position=action_label_position,
+                font_family=font_family,
+                font_bold=font_bold,
+                font_italic=font_italic,
+                font_size=font_size,
+                custom_colors=custom_colors,
+                horizontal=horizontal,
+                action_label_dist=action_label_dist,
+            )
+            with open(pdf_path, "rb") as f:
+                pdf_data = f.read()
 
-        png_path = generate_png(
-            game=game_source,
-            save_to=output_base + ".png",
-            scale_factor=scale_factor,
-            level_scaling=level_scaling,
-            sublevel_scaling=sublevel_scaling,
-            width_scaling=width_scaling,
-            hide_action_labels=hide_action_labels,
-            shared_terminal_depth=shared_terminal_depth,
-            color_scheme=color_scheme,
-            edge_thickness=edge_thickness,
-            action_label_position=action_label_position,
-            dpi=300,
-            font_family=font_family,
-            font_bold=font_bold,
-            font_italic=font_italic,
-            font_size=font_size,
-            custom_colors=custom_colors,
-            horizontal=horizontal,
-            action_label_dist=action_label_dist,
-        )
-        with open(png_path, "rb") as f:
-            png_data = f.read()
+            png_path = generate_png(
+                game=game_source,
+                save_to=output_base + ".png",
+                scale_factor=scale_factor,
+                level_scaling=level_scaling,
+                sublevel_scaling=sublevel_scaling,
+                width_scaling=width_scaling,
+                hide_action_labels=hide_action_labels,
+                shared_terminal_depth=shared_terminal_depth,
+                color_scheme=color_scheme,
+                edge_thickness=edge_thickness,
+                action_label_position=action_label_position,
+                dpi=300,
+                font_family=font_family,
+                font_bold=font_bold,
+                font_italic=font_italic,
+                font_size=font_size,
+                custom_colors=custom_colors,
+                horizontal=horizontal,
+                action_label_dist=action_label_dist,
+            )
+            with open(png_path, "rb") as f:
+                png_data = f.read()
 
-        # Sidebar: Download Buttons
-        with st.sidebar.expander("📥 Downloads", expanded=False):
-            c1, c2 = st.columns(2)
-            with c1:
-                st.download_button(
-                    "SVG",
-                    svg_content,
-                    f"{base_filename}.svg",
-                    "image/svg+xml",
-                    use_container_width=True,
-                )
-                st.download_button(
-                    "PDF",
-                    pdf_data,
-                    f"{base_filename}.pdf",
-                    "application/pdf",
-                    use_container_width=True,
-                )
-                st.download_button(
-                    "PNG",
-                    png_data,
-                    f"{base_filename}.png",
-                    "image/png",
-                    use_container_width=True,
-                )
-            with c2:
-                st.download_button(
-                    "TikZ",
-                    tikz_code,
-                    f"{base_filename}.tikz",
-                    "text/plain",
-                    use_container_width=True,
-                )
-                st.download_button(
-                    "LaTeX",
-                    tex_data,
-                    f"{base_filename}.tex",
-                    "text/x-tex",
-                    use_container_width=True,
-                )
+            # Sidebar: Download Buttons
+            with st.sidebar.expander("📥 Downloads", expanded=False):
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.download_button(
+                        "SVG",
+                        svg_content,
+                        f"{base_filename}.svg",
+                        "image/svg+xml",
+                        use_container_width=True,
+                    )
+                    st.download_button(
+                        "PDF",
+                        pdf_data,
+                        f"{base_filename}.pdf",
+                        "application/pdf",
+                        use_container_width=True,
+                    )
+                    st.download_button(
+                        "PNG",
+                        png_data,
+                        f"{base_filename}.png",
+                        "image/png",
+                        use_container_width=True,
+                    )
+                with c2:
+                    st.download_button(
+                        "TikZ",
+                        tikz_code,
+                        f"{base_filename}.tikz",
+                        "text/plain",
+                        use_container_width=True,
+                    )
+                    st.download_button(
+                        "LaTeX",
+                        tex_data,
+                        f"{base_filename}.tex",
+                        "text/x-tex",
+                        use_container_width=True,
+                    )
 
     except Exception as e:
         st.error(f"Error: {e}")
