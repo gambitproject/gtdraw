@@ -1002,7 +1002,8 @@ def drawnode(v: List[float], player: int = 1, color_scheme: str = "default") -> 
         shape = "circle"
         size = ndiam
 
-    out = f"\\node[inner sep=0pt,minimum size={size},draw=black,fill={fillcolor},shape={shape}] at {coord(v[0], v[1])} {{}};"
+    draw_color = "black" if color_scheme == "default" else fillcolor
+    out = f"\\node[inner sep=0pt,minimum size={size},draw={draw_color},fill={fillcolor},shape={shape}] at {coord(v[0], v[1])} {{}};"
     outs(out)
     return out
 
