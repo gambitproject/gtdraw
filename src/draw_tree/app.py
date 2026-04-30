@@ -78,24 +78,43 @@ def run_app():
         base_filename = Path(game_source).stem
 
     # Sidebar: Configuration
-    with st.sidebar.expander("📐 Layout Options", expanded=False):
+    with st.sidebar.expander("📐 Layout", expanded=False):
         horizontal = st.checkbox(
             "Horizontal Layout",
             value=False,
             help="Switch between vertical (top-down) and horizontal (left-right) layout.",
         )
 
+        if is_efg:
+            shared_terminal_depth = st.checkbox("Shared Terminal Node Depth", False)
+
         scale_factor = st.slider(
-            "Overall Scale",
-            0.0,
+            "Scale factor",
+            0.5,
             2.0,
             1.0,
             0.05,
             help="Scale factor for the entire TikZ diagram.",
         )
 
+        # Conditional Layout Scaling
+        if is_efg:
+            level_scaling = st.slider("Level Spacing", 0.0, 5.0, 1.0, 0.05)
+            sublevel_scaling = st.slider("Sublevel Spacing", 0.0, 5.0, 1.0, 0.05)
+            width_scaling = st.slider("Width Spacing", 0.0, 5.0, 1.0, 0.05)
+            hide_action_labels = False
+        else:
+            # Defaults for .ef files
+            level_scaling = 1.0
+            sublevel_scaling = 1.0
+            width_scaling = 1.0
+            hide_action_labels = False
+            shared_terminal_depth = False
+
         edge_thickness = st.slider("Edge Thickness", 0.1, 5.0, 1.0, 0.1)
-        node_size = st.slider("Node Size", 0.5, 5.0, 1.5, 0.1, help="Size of player nodes in mm.")
+        node_size = st.slider(
+            "Node Size", 0.5, 5.0, 1.5, 0.1, help="Size of player nodes in mm."
+        )
         action_label_position = st.slider(
             "Action Label Position",
             0.0,
@@ -113,28 +132,20 @@ def run_app():
             help="Distance of action labels from the edge.",
         )
 
-        # Conditional Layout Scaling
-        if is_efg:
-            st.markdown("**Layout Scaling**")
-            level_scaling = st.slider("Level", 0.0, 5.0, 1.0, 0.05)
-            sublevel_scaling = st.slider("Sublevel", 0.0, 5.0, 1.0, 0.05)
-            width_scaling = st.slider("Width", 0.0, 5.0, 1.0, 0.05)
-
-            hide_action_labels = False
-            shared_terminal_depth = st.checkbox("Shared Terminal Node Depth", False)
-        else:
-            # Defaults for .ef files
-            level_scaling = 1.0
-            sublevel_scaling = 1.0
-            width_scaling = 1.0
-            hide_action_labels = False
-            shared_terminal_depth = False
+    with st.sidebar.expander("🔵 Information Sets", expanded=False):
+        iset_fill = st.checkbox("Fill Information Sets", value=False)
+        iset_fill_opacity = st.slider(
+            "Fill Opacity", 0.0, 1.0, 0.2, 0.05, disabled=not iset_fill
+        )
+        iset_boundary = st.selectbox(
+            "Boundary Style", ["solid", "dotted", "none"], index=0
+        )
 
     with st.sidebar.expander("🎨 Aesthetics", expanded=False):
         color_scheme = st.selectbox(
             "Color Scheme",
             ["default", "gambit", "distinctipy", "colorblind", "custom"],
-            index=2,  # distinctipy
+            index=4,  # custom
         )
 
         custom_colors = None
@@ -196,15 +207,6 @@ def run_app():
             "Huge": "Large",
         }
         font_size = size_map[font_size_name]
-
-    with st.sidebar.expander("🛡️ Information Sets", expanded=False):
-        iset_fill = st.checkbox("Fill Information Sets", value=False)
-        iset_fill_opacity = st.slider(
-            "Fill Opacity", 0.0, 1.0, 0.2, 0.05, disabled=not iset_fill
-        )
-        iset_boundary = st.selectbox(
-            "Boundary Style", ["solid", "dotted", "none"], index=0
-        )
 
     # Main Area: Display
     if not game_source:
