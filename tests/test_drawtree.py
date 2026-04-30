@@ -643,6 +643,9 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_dotted,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -671,6 +674,9 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_dotted,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -699,6 +705,9 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_dotted,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -727,6 +736,9 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_dotted,
         ) = result
         assert output_mode == "pdf"
         assert pdf_requested
@@ -753,6 +765,9 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_dotted,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -781,6 +796,9 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_dotted,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -808,6 +826,9 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_dotted,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -829,6 +850,9 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_dotted,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -851,6 +875,9 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_dotted,
         ) = result
         assert dpi == 300  # Should default to 300 for invalid values
 
@@ -871,6 +898,9 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_dotted,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -899,6 +929,9 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_dotted,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -913,7 +946,7 @@ class TestCommandlineArguments:
 def test_commandline_action_label_dist():
     """Test parsing of action label distance flag."""
     result = draw_tree.commandline(["draw_tree", "game.ef", "--action-label-dist=2.5"])
-    assert result[-1] == 2.5
+    assert result[13] == 2.5
 
 
 # ---------------------------------------------------------------------------
@@ -1460,6 +1493,67 @@ def test_action_label_dist():
         assert "yshift=1mm" in res3 or "yshift=-1mm" in res3
     except Exception as e:
         raise e
+
+
+
+def test_commandline_iset_options():
+    """Test parsing of information set styling flags."""
+    # Test all flags together
+    result = draw_tree.commandline([
+        "draw_tree.py", "test.ef", 
+        "--iset-fill", 
+        "--iset-fill-opacity=0.5", 
+        "--iset-dotted"
+    ])
+    assert result[14] is True      # iset_fill
+    assert result[15] == 0.5       # iset_fill_opacity
+    assert result[16] is True      # iset_dotted
+
+    # Test individual flags
+    result_fill = draw_tree.commandline(["draw_tree.py", "test.ef", "--iset-fill"])
+    assert result_fill[14] is True
+    assert result_fill[15] == 0.2  # Default
+    assert result_fill[16] is False
+
+    result_dotted = draw_tree.commandline(["draw_tree.py", "test.ef", "--iset-dotted"])
+    assert result_dotted[14] is False
+    assert result_dotted[16] is True
+
+
+class TestIsetStylingIntegration:
+    """Test information set styling in generated TikZ."""
+
+    def test_iset_styling_in_tikz(self, tmp_path):
+        """Verify that iset styling options correctly affect TikZ output."""
+        ef_file = tmp_path / "iset_test.ef"
+        ef_file.write_text(
+            "player 1\n"
+            "player 2\n"
+            "level 0 node 1 player 1\n"
+            "level 1 node 1 from 0,1 player 2 move L\n"
+            "level 1 node 2 from 0,1 player 2 move R\n"
+            "iset 1,1 1,2 player 2\n"
+        )
+        ef_file_path = str(ef_file)
+
+        # 1. Default (no fill, not dotted)
+        res_default = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit")
+        # Check for iset draw command (not the node definition)
+        iset_draw_lines = [line for line in res_default.split("\n") if "\\draw [" in line and "playertwocolor" in line]
+        assert len(iset_draw_lines) > 0
+        assert "fill=playertwocolor" not in iset_draw_lines[0]
+        assert "dotted" not in iset_draw_lines[0]
+
+        # 2. Filled
+        res_fill = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", iset_fill=True, iset_fill_opacity=0.4)
+        iset_draw_fill = [line for line in res_fill.split("\n") if "\\draw [" in line and "playertwocolor" in line]
+        assert "fill=playertwocolor" in iset_draw_fill[0]
+        assert "fill opacity=0.4" in iset_draw_fill[0]
+
+        # 3. Dotted
+        res_dotted = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", iset_dotted=True)
+        iset_draw_dotted = [line for line in res_dotted.split("\n") if "\\draw [" in line and "playertwocolor" in line]
+        assert "dotted" in iset_draw_dotted[0]
 
 
 if __name__ == "__main__":
