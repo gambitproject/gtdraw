@@ -85,9 +85,8 @@ _font_italic: bool = False
 _font_size: str = "normalsize"
 _horizontal: bool = False
 _action_label_dist: float = 1.0
-_iset_fill: bool = False
-_iset_fill_opacity: float = 0.2
-_iset_dotted: bool = False
+_iset_boundary: str = "solid"
+_node_size: float = 1.5
 
 
 def get_player_color(player: int, color_scheme: str = "default") -> str:
@@ -634,8 +633,10 @@ def iset(nodes: List[List[float]], radius: float = isetradius) -> str:
     
     # Build TikZ options
     options = [thickn]
-    if _iset_dotted:
+    if _iset_boundary == "dotted":
         options.append("dotted")
+    elif _iset_boundary == "none":
+        options.append("draw=none")
     
     if isetparams:
         # Extract color if present in isetparams (e.g., "color=red")
@@ -954,10 +955,16 @@ def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
         if color_scheme != "default":
             player_color = get_player_color(i, color_scheme)
             t += f",color={player_color}"
-        t += "] {$" + words[i]
-        if words[i][0] == "-":  # negative payoff
-            t += "{\\phantom-}"
-        t += "$\\strut}"
+        if _font_family == "sffamily":
+            t += "] {$\\mathsf{" + words[i]
+            if words[i][0] == "-":  # negative payoff
+                t += "{\\phantom-}"
+            t += "}\\strut$}"
+        else:
+            t += "] {$" + words[i]
+            if words[i][0] == "-":  # negative payoff
+                t += "{\\phantom-}"
+            t += "\\strut$}"
         paylist.append(t)
     return paylist
     # # testing
@@ -983,23 +990,19 @@ def drawnode(v: List[float], player: int = 1, color_scheme: str = "default") -> 
     Returns:
         TikZ node command string.
     """
-    # tikz code
-    out = "\\node[inner sep=0pt,minimum size="
     fillcolor = get_player_color(player, color_scheme)
-
-    # chance nodes
+    
     if player == 0:
+        shape = "rectangle"
+        size = sqwidth
+        # Chance nodes are red in default scheme
         if color_scheme == "default":
-            out += sqwidth + ",draw=black,fill="
-            out += "red,shape=rectangle] at "
-        else:
-            out += sqwidth + ",draw=" + fillcolor + ",fill="
-            out += fillcolor + ",shape=rectangle] at "
-    # player nodes
+            fillcolor = "red"
     else:
-        out += ndiam + f", draw={fillcolor}, fill="
-        out += fillcolor + ", shape=circle] at "
-    out += coord(v[0], v[1]) + " {};"
+        shape = "circle"
+        size = ndiam
+
+    out = f"\\node[inner sep=0pt,minimum size={size},draw=black,fill={fillcolor},shape={shape}] at {coord(v[0], v[1])} {{}};"
     outs(out)
     return out
 
@@ -1564,7 +1567,8 @@ def commandline(
     action_label_dist = 1.0
     iset_fill = False
     iset_fill_opacity = 0.2
-    iset_dotted = False
+    iset_boundary = "solid"
+    node_size = 1.5
 
     for arg in argv[1:]:
         if arg[:5] == "scale":
@@ -1652,7 +1656,16 @@ def commandline(
             except ValueError:
                 print("Warning: Invalid iset-fill-opacity value, using default 0.2", file=sys.stderr)
         elif arg == "--iset-dotted":
-            iset_dotted = True
+            iset_boundary = "dotted"
+        elif arg.startswith("--iset-boundary="):
+            val = arg[16:].lower()
+            if val in ["solid", "dotted", "none"]:
+                iset_boundary = val
+        elif arg.startswith("--node-size="):
+            try:
+                node_size = float(arg[12:])
+            except ValueError:
+                print("Warning: Invalid node-size value, using default 1.5", file=sys.stderr)
         elif arg.endswith(".ef"):
             ef_file = arg
         else:
@@ -1688,7 +1701,8 @@ def commandline(
         action_label_dist,
         iset_fill,
         iset_fill_opacity,
-        iset_dotted,
+        iset_boundary,
+        node_size,
     )
 
 
@@ -1702,10 +1716,12 @@ def ef_to_tex(
     font_bold: bool = False,
     font_italic: bool = False,
     font_size: str = "normalsize",
-    horizontal: bool = False, action_label_dist: float = 1.0,
+    horizontal: bool = False,
+    action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
-    iset_dotted: bool = False,
+    iset_boundary: str = "solid",
+    node_size: float = 1.5,
 ) -> str:
     """
     Convert an extensive form (.ef) file to TikZ code.
@@ -1756,14 +1772,16 @@ def ef_to_tex(
         scale = scale_factor
         grid = show_grid
         
-        global _font_family, _font_bold, _font_italic, _font_size, _iset_fill, _iset_fill_opacity, _iset_dotted
+        global _font_family, _font_bold, _font_italic, _font_size
+        global _iset_fill, _iset_fill_opacity, _iset_boundary, _node_size
         _font_family = font_family
         _font_bold = font_bold
         _font_italic = font_italic
         _font_size = font_size
         _iset_fill = iset_fill
         _iset_fill_opacity = iset_fill_opacity
-        _iset_dotted = iset_dotted
+        _iset_boundary = iset_boundary
+        _node_size = node_size
         global _horizontal
         global _action_label_dist
         _horizontal = horizontal
@@ -1855,10 +1873,12 @@ def generate_tikz(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False, action_label_dist: float = 1.0,
+    horizontal: bool = False,
+    action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
-    iset_dotted: bool = False
+    iset_boundary: str = "solid",
+    node_size: float = 1.5,
 ) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
@@ -1947,18 +1967,20 @@ def generate_tikz(
         font_bold=font_bold,
         font_italic=font_italic,
         font_size=font_size,
-        horizontal=horizontal, action_label_dist=action_label_dist,
+        horizontal=horizontal,
+        action_label_dist=action_label_dist,
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
-        iset_dotted=iset_dotted,
+        iset_boundary=iset_boundary,
+        node_size=node_size,
     )
 
     # Step 2: Define built-in macro definitions (from macros-drawtree.tex)
     macro_definitions = [
         "\\newdimen\\ndiam",
-        "\\ndiam1.5mm",
+        f"\\ndiam{node_size}mm",
         "\\newdimen\\sqwidth",
-        "\\sqwidth1.6mm",
+        f"\\sqwidth{node_size + 0.1}mm",
         "\\newdimen\\spx",
         "\\spx.7mm",
         "\\newdimen\\spy",
@@ -2077,10 +2099,12 @@ def draw_tree(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False, action_label_dist: float = 1.0,
+    horizontal: bool = False,
+    action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
-    iset_dotted: bool = False,
+    iset_boundary: str = "solid",
+    node_size: float = 1.5,
 ) -> Optional[str]:
     """
     Generate TikZ code and display in Jupyter notebooks.
@@ -2123,10 +2147,12 @@ def draw_tree(
         font_italic=font_italic,
         font_size=font_size,
         custom_colors=custom_colors,
-        horizontal=horizontal, action_label_dist=action_label_dist,
+        horizontal=horizontal,
+        action_label_dist=action_label_dist,
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
-        iset_dotted=iset_dotted,
+        iset_boundary=iset_boundary,
+        node_size=node_size,
     )
 
     # Execute cell magic or return TikZ
@@ -2188,10 +2214,12 @@ def generate_tex(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False, action_label_dist: float = 1.0,
+    horizontal: bool = False,
+    action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
-    iset_dotted: bool = False,
+    iset_boundary: str = "solid",
+    node_size: float = 1.5,
 ) -> str:
     """
     Generate a complete LaTeX document file directly from an extensive form (.ef) file.
@@ -2256,10 +2284,12 @@ def generate_tex(
         font_italic=font_italic,
         font_size=font_size,
         custom_colors=custom_colors,
-        horizontal=horizontal, action_label_dist=action_label_dist,
+        horizontal=horizontal,
+        action_label_dist=action_label_dist,
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
-        iset_dotted=iset_dotted,
+        iset_boundary=iset_boundary,
+        node_size=node_size,
     )
 
     # Wrap in complete LaTeX document
@@ -2290,10 +2320,12 @@ def generate_pdf(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False, action_label_dist: float = 1.0,
+    horizontal: bool = False,
+    action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
-    iset_dotted: bool = False,
+    iset_boundary: str = "solid",
+    node_size: float = 1.5,
 ) -> str:
     """
     Generate a PDF directly from an extensive form (.ef) file.
@@ -2359,10 +2391,12 @@ def generate_pdf(
         font_italic=font_italic,
         font_size=font_size,
         custom_colors=custom_colors,
-        horizontal=horizontal, action_label_dist=action_label_dist,
+        horizontal=horizontal,
+        action_label_dist=action_label_dist,
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
-        iset_dotted=iset_dotted,
+        iset_boundary=iset_boundary,
+        node_size=node_size,
     )
 
     # Create LaTeX wrapper document
@@ -2437,10 +2471,12 @@ def generate_png(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False, action_label_dist: float = 1.0,
+    horizontal: bool = False,
+    action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
-    iset_dotted: bool = False,
+    iset_boundary: str = "solid",
+    node_size: float = 1.5,
 ) -> str:
     """
     Generate a PNG image directly from an extensive form (.ef) file.
@@ -2512,10 +2548,12 @@ def generate_png(
                 font_italic=font_italic,
                 font_size=font_size,
                 custom_colors=custom_colors,
-                horizontal=horizontal, action_label_dist=action_label_dist,
+                horizontal=horizontal,
+                action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
-                iset_dotted=iset_dotted,
+                iset_boundary=iset_boundary,
+                node_size=node_size,
             )
 
             # Step 2: Convert PDF to PNG
@@ -2637,10 +2675,12 @@ def generate_svg(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False, action_label_dist: float = 1.0,
+    horizontal: bool = False,
+    action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
-    iset_dotted: bool = False,
+    iset_boundary: str = "solid",
+    node_size: float = 1.5,
 ) -> str:
     """
     Generate an SVG image directly from an extensive form (.ef) file.
@@ -2705,10 +2745,12 @@ def generate_svg(
                 font_italic=font_italic,
                 font_size=font_size,
                 custom_colors=custom_colors,
-                horizontal=horizontal, action_label_dist=action_label_dist,
+                horizontal=horizontal,
+                action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
-                iset_dotted=iset_dotted,
+                iset_boundary=iset_boundary,
+                node_size=node_size,
             )
 
             # Convert PDF to SVG using pdf2svg

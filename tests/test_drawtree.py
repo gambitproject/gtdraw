@@ -645,7 +645,8 @@ class TestCommandlineArguments:
             horizontal, action_label_dist,
             iset_fill,
             iset_fill_opacity,
-            iset_dotted,
+            iset_boundary,
+            node_size,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -676,7 +677,8 @@ class TestCommandlineArguments:
             horizontal, action_label_dist,
             iset_fill,
             iset_fill_opacity,
-            iset_dotted,
+            iset_boundary,
+            node_size,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -707,7 +709,8 @@ class TestCommandlineArguments:
             horizontal, action_label_dist,
             iset_fill,
             iset_fill_opacity,
-            iset_dotted,
+            iset_boundary,
+            node_size,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -738,7 +741,8 @@ class TestCommandlineArguments:
             horizontal, action_label_dist,
             iset_fill,
             iset_fill_opacity,
-            iset_dotted,
+            iset_boundary,
+            node_size,
         ) = result
         assert output_mode == "pdf"
         assert pdf_requested
@@ -767,7 +771,8 @@ class TestCommandlineArguments:
             horizontal, action_label_dist,
             iset_fill,
             iset_fill_opacity,
-            iset_dotted,
+            iset_boundary,
+            node_size,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -798,7 +803,8 @@ class TestCommandlineArguments:
             horizontal, action_label_dist,
             iset_fill,
             iset_fill_opacity,
-            iset_dotted,
+            iset_boundary,
+            node_size,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -828,7 +834,8 @@ class TestCommandlineArguments:
             horizontal, action_label_dist,
             iset_fill,
             iset_fill_opacity,
-            iset_dotted,
+            iset_boundary,
+            node_size,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -852,7 +859,8 @@ class TestCommandlineArguments:
             horizontal, action_label_dist,
             iset_fill,
             iset_fill_opacity,
-            iset_dotted,
+            iset_boundary,
+            node_size,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -877,7 +885,8 @@ class TestCommandlineArguments:
             horizontal, action_label_dist,
             iset_fill,
             iset_fill_opacity,
-            iset_dotted,
+            iset_boundary,
+            node_size,
         ) = result
         assert dpi == 300  # Should default to 300 for invalid values
 
@@ -900,7 +909,8 @@ class TestCommandlineArguments:
             horizontal, action_label_dist,
             iset_fill,
             iset_fill_opacity,
-            iset_dotted,
+            iset_boundary,
+            node_size,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -931,7 +941,8 @@ class TestCommandlineArguments:
             horizontal, action_label_dist,
             iset_fill,
             iset_fill_opacity,
-            iset_dotted,
+            iset_boundary,
+            node_size,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -1503,21 +1514,25 @@ def test_commandline_iset_options():
         "draw_tree.py", "test.ef", 
         "--iset-fill", 
         "--iset-fill-opacity=0.5", 
-        "--iset-dotted"
+        "--iset-boundary=dotted",
+        "--node-size=2.0"
     ])
     assert result[14] is True      # iset_fill
     assert result[15] == 0.5       # iset_fill_opacity
-    assert result[16] is True      # iset_dotted
+    assert result[16] == "dotted"  # iset_boundary
+    assert result[17] == 2.0       # node_size
 
     # Test individual flags
     result_fill = draw_tree.commandline(["draw_tree.py", "test.ef", "--iset-fill"])
     assert result_fill[14] is True
     assert result_fill[15] == 0.2  # Default
-    assert result_fill[16] is False
+    assert result_fill[16] == "solid"
 
     result_dotted = draw_tree.commandline(["draw_tree.py", "test.ef", "--iset-dotted"])
-    assert result_dotted[14] is False
-    assert result_dotted[16] is True
+    assert result_dotted[16] == "dotted"
+
+    result_none = draw_tree.commandline(["draw_tree.py", "test.ef", "--iset-boundary=none"])
+    assert result_none[16] == "none"
 
 
 class TestIsetStylingIntegration:
@@ -1543,6 +1558,7 @@ class TestIsetStylingIntegration:
         assert len(iset_draw_lines) > 0
         assert "fill=playertwocolor" not in iset_draw_lines[0]
         assert "dotted" not in iset_draw_lines[0]
+        assert "draw=none" not in iset_draw_lines[0]
 
         # 2. Filled
         res_fill = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", iset_fill=True, iset_fill_opacity=0.4)
@@ -1551,9 +1567,50 @@ class TestIsetStylingIntegration:
         assert "fill opacity=0.4" in iset_draw_fill[0]
 
         # 3. Dotted
-        res_dotted = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", iset_dotted=True)
+        res_dotted = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", iset_boundary="dotted")
         iset_draw_dotted = [line for line in res_dotted.split("\n") if "\\draw [" in line and "playertwocolor" in line]
         assert "dotted" in iset_draw_dotted[0]
+
+        # 4. None (invisible)
+        res_none = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", iset_boundary="none")
+        iset_draw_none = [line for line in res_none.split("\n") if "\\draw [" in line and "playertwocolor" in line]
+        assert "draw=none" in iset_draw_none[0]
+
+
+def test_node_size_macro():
+    """Test that node_size correctly scales the TikZ macro definitions."""
+    ef_file_path = "games/example.ef"
+    if not os.path.exists(ef_file_path):
+        ef_file_path = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+        if not os.path.exists(ef_file_path):
+             return 
+
+    # Default size=1.5mm
+    res1 = draw_tree.generate_tikz(ef_file_path, node_size=1.5)
+    assert "\\ndiam1.5mm" in res1
+    assert "\\sqwidth1.6mm" in res1
+    
+    # Custom size=2.0mm
+    res2 = draw_tree.generate_tikz(ef_file_path, node_size=2.0)
+    assert "\\ndiam2.0mm" in res2
+    assert "\\sqwidth2.1mm" in res2
+
+
+def test_payoff_font_family():
+    """Test that payoffs pick up the sans-serif font family via \mathsf."""
+    ef_file_path = "games/example.ef"
+    if not os.path.exists(ef_file_path):
+        ef_file_path = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+        if not os.path.exists(ef_file_path):
+             return
+
+    # Serif (default)
+    res_serif = draw_tree.generate_tikz(ef_file_path, font_family="rmfamily")
+    assert "$\\mathsf{" not in res_serif
+    
+    # Sans-serif
+    res_sans = draw_tree.generate_tikz(ef_file_path, font_family="sffamily")
+    assert "$\\mathsf{" in res_sans
 
 
 if __name__ == "__main__":

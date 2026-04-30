@@ -95,6 +95,7 @@ def run_app():
         )
 
         edge_thickness = st.slider("Edge Thickness", 0.1, 5.0, 1.0, 0.1)
+        node_size = st.slider("Node Size", 0.5, 5.0, 1.5, 0.1, help="Size of player nodes in mm.")
         action_label_position = st.slider(
             "Action Label Position",
             0.0,
@@ -201,7 +202,9 @@ def run_app():
         iset_fill_opacity = st.slider(
             "Fill Opacity", 0.0, 1.0, 0.2, 0.05, disabled=not iset_fill
         )
-        iset_dotted = st.checkbox("Dotted Bounding Lines", value=False)
+        iset_boundary = st.selectbox(
+            "Boundary Style", ["solid", "dotted", "none"], index=0
+        )
 
     # Main Area: Display
     if not game_source:
@@ -245,7 +248,8 @@ def run_app():
             action_label_dist=action_label_dist,
             iset_fill=iset_fill,
             iset_fill_opacity=iset_fill_opacity,
-            iset_dotted=iset_dotted,
+            iset_boundary=iset_boundary,
+            node_size=node_size,
         )
 
         if not os.path.exists(svg_path):

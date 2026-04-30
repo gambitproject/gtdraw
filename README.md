@@ -117,7 +117,8 @@ draw_tree games/example.efg --svg --custom-colors="0:#FF0000,1:#0000FF" # Custom
 | **Edges** | N/A | `edge_thickness=X.X` | Adjust thickness of edges and information set ovals. |
 | **Info Sets** | `--iset-fill` | `iset_fill=True` | Fill information sets with player colors. |
 | **Iset Opacity**| `--iset-fill-opacity=X.X` | `iset_fill_opacity=X.X` | Opacity of the information set fill (default: 0.2). |
-| **Iset Dotted** | `--iset-dotted` | `iset_dotted=True` | Render information set boundary lines as dotted. |
+| **Iset Boundary** | `--iset-boundary=[solid\|dotted\|none]` | `iset_boundary=['solid'\|'dotted'\|'none']` | Set information set boundary style (default: solid). |
+| **Node Size** | `--node-size=X.X` | `node_size=X.X` | Set size of player nodes in mm (default: 1.5). |
 
 ## Interactive GUI
 
@@ -146,7 +147,7 @@ generate_png('games/example.ef', save_to='mygame', scale_factor=0.8)    # Create
 # Custom styling examples
 generate_pdf('game.ef', font_family='sffamily', font_bold=True, font_size='large', horizontal=True)
 generate_svg('game.efg', color_scheme='custom', custom_colors={0: '#FF0000', 1: '#0000FF'}, iset_fill=True, iset_fill_opacity=0.3)
-generate_pdf('game.ef', iset_dotted=True)
+generate_pdf('game.ef', iset_boundary='dotted', node_size=2.0)
 ```
 
 ### Rendering in Jupyter Notebooks
