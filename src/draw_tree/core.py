@@ -85,6 +85,9 @@ _font_italic: bool = False
 _font_size: str = "normalsize"
 _horizontal: bool = False
 _action_label_dist: float = 1.0
+_iset_fill: bool = False
+_iset_fill_opacity: float = 0.2
+_iset_dotted: bool = False
 
 
 def get_player_color(player: int, color_scheme: str = "default") -> str:
@@ -628,8 +631,28 @@ def iset(nodes: List[List[float]], radius: float = isetradius) -> str:
         Complete TikZ draw command string with semicolon.
     """
     arcs = arcseq(nodes, radius)
+    
+    # Build TikZ options
+    options = [thickn]
+    if _iset_dotted:
+        options.append("dotted")
+    
+    if isetparams:
+        # Extract color if present in isetparams (e.g., "color=red")
+        color = None
+        for opt in isetparams.split(","):
+            if opt.startswith("color="):
+                color = opt.split("=")[1]
+                break
+        
+        options.append(isetparams)
+        
+        if _iset_fill and color:
+            options.append(f"fill={color}")
+            options.append(f"fill opacity={fformat(_iset_fill_opacity)}")
+            
     # tikz code
-    return "\\draw [" + thickn + ("," + isetparams if isetparams else "") + "] " + "\n  -- ".join(arcs) + " -- cycle;"
+    return "\\draw [" + ",".join(options) + "] " + "\n  -- ".join(arcs) + " -- cycle;"
 
 
 ######################## handling players
@@ -1539,6 +1562,9 @@ def commandline(
     custom_colors = None
     horizontal = False
     action_label_dist = 1.0
+    iset_fill = False
+    iset_fill_opacity = 0.2
+    iset_dotted = False
 
     for arg in argv[1:]:
         if arg[:5] == "scale":
@@ -1618,6 +1644,15 @@ def commandline(
                 action_label_dist = float(arg[20:])
             except ValueError:
                 print("Warning: Invalid action-label-dist value, using default 1.0", file=sys.stderr)
+        elif arg == "--iset-fill":
+            iset_fill = True
+        elif arg.startswith("--iset-fill-opacity="):
+            try:
+                iset_fill_opacity = float(arg[20:])
+            except ValueError:
+                print("Warning: Invalid iset-fill-opacity value, using default 0.2", file=sys.stderr)
+        elif arg == "--iset-dotted":
+            iset_dotted = True
         elif arg.endswith(".ef"):
             ef_file = arg
         else:
@@ -1651,6 +1686,9 @@ def commandline(
         custom_colors,
         horizontal,
         action_label_dist,
+        iset_fill,
+        iset_fill_opacity,
+        iset_dotted,
     )
 
 
@@ -1665,6 +1703,9 @@ def ef_to_tex(
     font_italic: bool = False,
     font_size: str = "normalsize",
     horizontal: bool = False, action_label_dist: float = 1.0,
+    iset_fill: bool = False,
+    iset_fill_opacity: float = 0.2,
+    iset_dotted: bool = False,
 ) -> str:
     """
     Convert an extensive form (.ef) file to TikZ code.
@@ -1715,11 +1756,14 @@ def ef_to_tex(
         scale = scale_factor
         grid = show_grid
         
-        global _font_family, _font_bold, _font_italic, _font_size
+        global _font_family, _font_bold, _font_italic, _font_size, _iset_fill, _iset_fill_opacity, _iset_dotted
         _font_family = font_family
         _font_bold = font_bold
         _font_italic = font_italic
         _font_size = font_size
+        _iset_fill = iset_fill
+        _iset_fill_opacity = iset_fill_opacity
+        _iset_dotted = iset_dotted
         global _horizontal
         global _action_label_dist
         _horizontal = horizontal
@@ -1811,7 +1855,10 @@ def generate_tikz(
     font_italic: bool = False,
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False, action_label_dist: float = 1.0
+    horizontal: bool = False, action_label_dist: float = 1.0,
+    iset_fill: bool = False,
+    iset_fill_opacity: float = 0.2,
+    iset_dotted: bool = False
 ) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
@@ -1901,6 +1948,9 @@ def generate_tikz(
         font_italic=font_italic,
         font_size=font_size,
         horizontal=horizontal, action_label_dist=action_label_dist,
+        iset_fill=iset_fill,
+        iset_fill_opacity=iset_fill_opacity,
+        iset_dotted=iset_dotted,
     )
 
     # Step 2: Define built-in macro definitions (from macros-drawtree.tex)
@@ -2028,6 +2078,9 @@ def draw_tree(
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
     horizontal: bool = False, action_label_dist: float = 1.0,
+    iset_fill: bool = False,
+    iset_fill_opacity: float = 0.2,
+    iset_dotted: bool = False,
 ) -> Optional[str]:
     """
     Generate TikZ code and display in Jupyter notebooks.
@@ -2071,6 +2124,9 @@ def draw_tree(
         font_size=font_size,
         custom_colors=custom_colors,
         horizontal=horizontal, action_label_dist=action_label_dist,
+        iset_fill=iset_fill,
+        iset_fill_opacity=iset_fill_opacity,
+        iset_dotted=iset_dotted,
     )
 
     # Execute cell magic or return TikZ
@@ -2133,6 +2189,9 @@ def generate_tex(
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
     horizontal: bool = False, action_label_dist: float = 1.0,
+    iset_fill: bool = False,
+    iset_fill_opacity: float = 0.2,
+    iset_dotted: bool = False,
 ) -> str:
     """
     Generate a complete LaTeX document file directly from an extensive form (.ef) file.
@@ -2198,6 +2257,9 @@ def generate_tex(
         font_size=font_size,
         custom_colors=custom_colors,
         horizontal=horizontal, action_label_dist=action_label_dist,
+        iset_fill=iset_fill,
+        iset_fill_opacity=iset_fill_opacity,
+        iset_dotted=iset_dotted,
     )
 
     # Wrap in complete LaTeX document
@@ -2229,6 +2291,9 @@ def generate_pdf(
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
     horizontal: bool = False, action_label_dist: float = 1.0,
+    iset_fill: bool = False,
+    iset_fill_opacity: float = 0.2,
+    iset_dotted: bool = False,
 ) -> str:
     """
     Generate a PDF directly from an extensive form (.ef) file.
@@ -2295,6 +2360,9 @@ def generate_pdf(
         font_size=font_size,
         custom_colors=custom_colors,
         horizontal=horizontal, action_label_dist=action_label_dist,
+        iset_fill=iset_fill,
+        iset_fill_opacity=iset_fill_opacity,
+        iset_dotted=iset_dotted,
     )
 
     # Create LaTeX wrapper document
@@ -2370,6 +2438,9 @@ def generate_png(
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
     horizontal: bool = False, action_label_dist: float = 1.0,
+    iset_fill: bool = False,
+    iset_fill_opacity: float = 0.2,
+    iset_dotted: bool = False,
 ) -> str:
     """
     Generate a PNG image directly from an extensive form (.ef) file.
@@ -2442,6 +2513,9 @@ def generate_png(
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal, action_label_dist=action_label_dist,
+                iset_fill=iset_fill,
+                iset_fill_opacity=iset_fill_opacity,
+                iset_dotted=iset_dotted,
             )
 
             # Step 2: Convert PDF to PNG
@@ -2564,6 +2638,9 @@ def generate_svg(
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
     horizontal: bool = False, action_label_dist: float = 1.0,
+    iset_fill: bool = False,
+    iset_fill_opacity: float = 0.2,
+    iset_dotted: bool = False,
 ) -> str:
     """
     Generate an SVG image directly from an extensive form (.ef) file.
@@ -2629,6 +2706,9 @@ def generate_svg(
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal, action_label_dist=action_label_dist,
+                iset_fill=iset_fill,
+                iset_fill_opacity=iset_fill_opacity,
+                iset_dotted=iset_dotted,
             )
 
             # Convert PDF to SVG using pdf2svg

@@ -115,6 +115,9 @@ draw_tree games/example.efg --svg --custom-colors="0:#FF0000,1:#0000FF" # Custom
 | **Font Size** | `--font-size=[small\|normalsize\|large\|Large]` | `font_size=['small'\|'normalsize'\|'large'\|'Large']` | Set the LaTeX font size command. |
 | **Colors** | `--custom-colors="0:#HEX,..."` | `custom_colors={0: '#HEX', ...}` | Map player indices (0=chance) to hex colors. |
 | **Edges** | N/A | `edge_thickness=X.X` | Adjust thickness of edges and information set ovals. |
+| **Info Sets** | `--iset-fill` | `iset_fill=True` | Fill information sets with player colors. |
+| **Iset Opacity**| `--iset-fill-opacity=X.X` | `iset_fill_opacity=X.X` | Opacity of the information set fill (default: 0.2). |
+| **Iset Dotted** | `--iset-dotted` | `iset_dotted=True` | Render information set boundary lines as dotted. |
 
 ## Interactive GUI
 
@@ -142,7 +145,8 @@ generate_png('games/example.ef', save_to='mygame', scale_factor=0.8)    # Create
 
 # Custom styling examples
 generate_pdf('game.ef', font_family='sffamily', font_bold=True, font_size='large', horizontal=True)
-generate_svg('game.efg', color_scheme='custom', custom_colors={0: '#FF0000', 1: '#0000FF'})
+generate_svg('game.efg', color_scheme='custom', custom_colors={0: '#FF0000', 1: '#0000FF'}, iset_fill=True, iset_fill_opacity=0.3)
+generate_pdf('game.ef', iset_dotted=True)
 ```
 
 ### Rendering in Jupyter Notebooks

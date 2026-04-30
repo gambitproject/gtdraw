@@ -10,7 +10,7 @@ warnings.filterwarnings("ignore")
 
 
 # Add src to path if running from local dev
-sys.path.append(str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from draw_tree import (
     generate_svg,
@@ -196,6 +196,11 @@ def run_app():
         }
         font_size = size_map[font_size_name]
 
+    with st.sidebar.expander("🛡️ Information Sets", expanded=False):
+        iset_fill = st.checkbox("Fill Information Sets", value=False)
+        iset_fill_opacity = st.slider("Fill Opacity", 0.0, 1.0, 0.2, 0.05, disabled=not iset_fill)
+        iset_dotted = st.checkbox("Dotted Bounding Lines", value=False)
+
     # Main Area: Display
     if not game_source:
         st.title("🎨 DrawTree")
@@ -236,6 +241,9 @@ def run_app():
             custom_colors=custom_colors,
             horizontal=horizontal,
             action_label_dist=action_label_dist,
+            iset_fill=iset_fill,
+            iset_fill_opacity=iset_fill_opacity,
+            iset_dotted=iset_dotted,
         )
 
         if not os.path.exists(svg_path):

@@ -78,6 +78,9 @@ def main():
         custom_colors,
         horizontal,
         action_label_dist,
+        iset_fill,
+        iset_fill_opacity,
+        iset_dotted,
     ) = commandline(sys.argv)
     
     # Import the core module to access global variables after commandline() has set them
@@ -106,6 +109,9 @@ def main():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal, action_label_dist=action_label_dist,
+                iset_fill=iset_fill,
+                iset_fill_opacity=iset_fill_opacity,
+                iset_dotted=iset_dotted,
             )
             print(f"PDF generated successfully: {pdf_path}")
         
@@ -126,6 +132,9 @@ def main():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal, action_label_dist=action_label_dist,
+                iset_fill=iset_fill,
+                iset_fill_opacity=iset_fill_opacity,
+                iset_dotted=iset_dotted,
             )
             print(f"PNG generated successfully: {png_path}")
 
@@ -145,6 +154,9 @@ def main():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal, action_label_dist=action_label_dist,
+                iset_fill=iset_fill,
+                iset_fill_opacity=iset_fill_opacity,
+                iset_dotted=iset_dotted,
             )
             print(f"SVG generated successfully: {svg_path}")
 
@@ -164,6 +176,9 @@ def main():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal, action_label_dist=action_label_dist,
+                iset_fill=iset_fill,
+                iset_fill_opacity=iset_fill_opacity,
+                iset_dotted=iset_dotted,
             )
             print(f"LaTeX generated successfully: {tex_path}")
         
@@ -179,6 +194,9 @@ def main():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal, action_label_dist=action_label_dist,
+                iset_fill=iset_fill,
+                iset_fill_opacity=iset_fill_opacity,
+                iset_dotted=iset_dotted,
             )
             
             # Output the complete TikZ code
