@@ -115,9 +115,9 @@ def run_app():
         # Conditional Layout Scaling
         if is_efg:
             st.markdown("**Layout Scaling**")
-            level_scaling = st.slider("Level", 0.0, 2.0, 1.0, 0.05)
-            sublevel_scaling = st.slider("Sublevel", 0.0, 2.0, 1.0, 0.05)
-            width_scaling = st.slider("Width", 0.0, 2.0, 1.0, 0.05)
+            level_scaling = st.slider("Level", 0.0, 5.0, 1.0, 0.05)
+            sublevel_scaling = st.slider("Sublevel", 0.0, 5.0, 1.0, 0.05)
+            width_scaling = st.slider("Width", 0.0, 5.0, 1.0, 0.05)
 
             hide_action_labels = False
             shared_terminal_depth = st.checkbox("Shared Terminal Node Depth", False)
@@ -198,7 +198,9 @@ def run_app():
 
     with st.sidebar.expander("🛡️ Information Sets", expanded=False):
         iset_fill = st.checkbox("Fill Information Sets", value=False)
-        iset_fill_opacity = st.slider("Fill Opacity", 0.0, 1.0, 0.2, 0.05, disabled=not iset_fill)
+        iset_fill_opacity = st.slider(
+            "Fill Opacity", 0.0, 1.0, 0.2, 0.05, disabled=not iset_fill
+        )
         iset_dotted = st.checkbox("Dotted Bounding Lines", value=False)
 
     # Main Area: Display
