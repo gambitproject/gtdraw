@@ -10,6 +10,7 @@ This package is at an early stage of development; please read the Gambit project
 - [Installation](#installation)
 - [Requirements](#requirements)
 - [CLI](#cli)
+- [Interactive GUI](#interactive-gui)
 - [Python API](#python-api)
     - [Rendering in Jupyter Notebooks](#rendering-in-jupyter-notebooks)
     - [Interoperability with pygambit](#interoperability-with-pygambit)
@@ -38,26 +39,25 @@ Clone the repo and install the package using pip:
 ```bash
 git clone https://github.com/gambitproject/draw_tree
 cd draw_tree
-pip install -e .
+pip install .
 ```
 
 ## Requirements
 
 - Python 3.10+ (tested on 3.13)
 - LaTeX with TikZ (for PDF/PNG/SVG generation)
-- (optional) `pygambit` (required for `.efg` support and Game objects)
 - (optional) ImageMagick or Ghostscript or Poppler (for PNG generation)
 - (optional) pdf2svg (for SVG generation)
 
 ### Installing LaTeX
 
-Note: PDF, PNG and SVG generation require `pdflatex` to be installed and available in PATH. Tested methods have a ✅ next to them. Methods include:
+Note: PDF, PNG and SVG generation require `pdflatex` to be installed and available in PATH.
 
 - macOS:
-    - Install [MacTEX](https://www.tug.org/mactex/mactex-download.html) ✅
+    - Install [MacTEX](https://www.tug.org/mactex/mactex-download.html)
     - `brew install --cask mactex`
 - Ubuntu:
-    - `sudo apt-get install texlive-full` ✅
+    - `sudo apt-get install texlive-full`
 - Windows: Install [MiKTeX](https://miktex.org/download)
 
 ### PNG generation
@@ -77,7 +77,7 @@ PNG generation will default to using any of ImageMagick or Ghostscript or Popple
 
 SVG generation requires `pdf2svg` to be installed and available in PATH.
 - macOS:
-    - `brew install pdf2svg` ✅
+    - `brew install pdf2svg`
 - Ubuntu:
     - `sudo apt-get install pdf2svg`
 - Windows: Download binaries from [GitHub](https://github.com/dawbarton/pdf2svg)
@@ -97,6 +97,36 @@ draw_tree games/example.ef --png                           # Creates example.png
 draw_tree games/example.ef --svg                           # Creates example.svg
 draw_tree games/example.ef --png --dpi=600                 # Creates high-res example.png (72-2400, default: 300)
 draw_tree games/example.ef --output=mygame.png scale=0.8   # Creates mygame.png with 0.8 scaling (0.01 to 100)
+draw_tree games/example.ef --pdf --font=sans-serif --bold  # Sans-serif bold font
+draw_tree games/example.ef --png --font-size=large         # Larger text size
+draw_tree games/example.ef --pdf --horizontal              # Horizontal layout (left-to-right)
+draw_tree games/example.efg --svg --custom-colors="0:#FF0000,1:#0000FF" # Custom player colors
+```
+
+### Formatting Options
+
+| Option | CLI Flag | Python Argument | Description |
+| :--- | :--- | :--- | :--- |
+| **Layout** | `--horizontal` | `horizontal=True` | Switch between vertical (top-down) and horizontal (left-right) layout. |
+| **Label Dist** | `--action-label-dist=X.X` | `action_label_dist=X.X` | Distance of action labels from the edge (default: 1.0). |
+| **Font Family** | `--font=[serif\|sans-serif\|monospace]` | `font_family=['rmfamily'\|'sffamily'\|'ttfamily']` | Set the global LaTeX font family. |
+| **Font Weight** | `--bold` | `font_bold=True` | Use bold text for labels and payoffs. |
+| **Font Style** | `--italic` | `font_italic=True` | Use italic text for labels and payoffs. |
+| **Font Size** | `--font-size=[small\|normalsize\|large\|Large]` | `font_size=['small'\|'normalsize'\|'large'\|'Large']` | Set the LaTeX font size command. |
+| **Colors** | `--custom-colors="0:#HEX,..."` | `custom_colors={0: '#HEX', ...}` | Map player indices (0=chance) to hex colors. |
+| **Edges** | N/A | `edge_thickness=X.X` | Adjust thickness of edges and information set ovals. |
+| **Info Sets** | `--iset-fill` | `iset_fill=True` | Fill information sets with player colors. |
+| **Iset Opacity**| `--iset-fill-opacity=X.X` | `iset_fill_opacity=X.X` | Opacity of the information set fill (default: 0.2). |
+| **Iset Boundary** | `--iset-boundary=[solid\|dotted\|none]` | `iset_boundary=['solid'\|'dotted'\|'none']` | Set information set boundary style (default: solid). |
+| **Node Size** | `--node-size=X.X` | `node_size=X.X` | Set size of player nodes in mm (default: 1.5). |
+
+## Interactive GUI
+
+`draw_tree` includes a lightweight, interactive GUI built with Streamlit. It allows you to upload `.ef` or `.efg` files and adjust drawing parameters in real-time.
+
+Launch it from the CLI:
+```bash
+draw_tree --gui
 ```
 
 ## Python API
@@ -110,8 +140,14 @@ generate_tex('games/example.ef', save_to='custom')                  # Creates cu
 generate_pdf('games/example.ef')                                    # Creates example.pdf
 generate_png('games/example.ef')                                    # Creates example.png
 generate_svg('games/example.ef')                                    # Creates example.svg
+generate_pdf('games/example.ef', horizontal=True)                   # Horizontal PDF
 generate_png('games/example.ef', dpi=600)                           # Creates high-res example.png (72-2400, default: 300)
 generate_png('games/example.ef', save_to='mygame', scale_factor=0.8)    # Creates mygame.png with 0.8 scaling (0.01 to 100)
+
+# Custom styling examples
+generate_pdf('game.ef', font_family='sffamily', font_bold=True, font_size='large', horizontal=True)
+generate_svg('game.efg', color_scheme='custom', custom_colors={0: '#FF0000', 1: '#0000FF'}, iset_fill=True, iset_fill_opacity=0.3)
+generate_pdf('game.ef', iset_boundary='dotted', node_size=2.0)
 ```
 
 ### Rendering in Jupyter Notebooks
@@ -154,6 +190,16 @@ generate_pdf('somegame.efg')
 > Note: Without setting the `save_to` parameter, the saved file will be based on the title field of the pygambit game object.
 
 ## Developer docs
+
+### Installation for Development
+
+To set up the project for development, clone the repository and install with the `dev` extra:
+
+```bash
+git clone https://github.com/gambitproject/draw_tree
+cd draw_tree
+pip install -e ".[dev]"
+```
 
 ### Testing
 

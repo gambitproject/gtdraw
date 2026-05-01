@@ -637,6 +637,16 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -659,6 +669,16 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -681,6 +701,16 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -703,6 +733,16 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
         ) = result
         assert output_mode == "pdf"
         assert pdf_requested
@@ -723,6 +763,16 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -745,6 +795,16 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -766,6 +826,16 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -781,6 +851,16 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -797,6 +877,16 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
         ) = result
         assert dpi == 300  # Should default to 300 for invalid values
 
@@ -811,6 +901,16 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -833,6 +933,16 @@ class TestCommandlineArguments:
             tex_requested,
             output_file,
             dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal, action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -841,6 +951,13 @@ class TestCommandlineArguments:
         assert not tex_requested
         assert output_file == "custom.svg"
         assert dpi is None
+        assert action_label_dist == 1.0
+
+
+def test_commandline_action_label_dist():
+    """Test parsing of action label distance flag."""
+    result = draw_tree.commandline(["draw_tree", "game.ef", "--action-label-dist=2.5"])
+    assert result[13] == 2.5
 
 
 # ---------------------------------------------------------------------------
@@ -1013,6 +1130,23 @@ class TestSvgGenerationIntegration:
             content = f.read()
         assert "<svg" in content
 
+    @requires_pdf2svg
+    def test_generate_svg_responsive(self, tmp_path):
+        """Verify that responsive_sizing=True modifies the SVG content."""
+        ef_file = tmp_path / "game.ef"
+        ef_file.write_text(_simple_ef_content())
+        svg_path = draw_tree.generate_svg(
+            str(ef_file), save_to=str(tmp_path / "responsive.svg"), responsive_sizing=True
+        )
+        assert os.path.isfile(svg_path)
+        with open(svg_path) as f:
+            content = f.read()
+        assert "<svg" in content
+        # Verify responsive attributes are added
+        assert 'width="100%"' in content
+        assert 'height="auto"' in content
+        assert 'style="max-height: 80vh;"' in content
+
 
 # ---------------------------------------------------------------------------
 # TikZ / generate_tikz option tests
@@ -1137,6 +1271,346 @@ def test_pygambit_generate_pdf_smoke(efg_path, tmp_path):
     assert os.path.isfile(pdf_path)
     with open(pdf_path, "rb") as f:
         assert f.read(4) == b"%PDF"
+
+
+class TestFontStyling:
+    """Test font styling in TikZ output."""
+
+    def test_generate_tikz_font_styles(self):
+        """Test that font styles are correctly injected into TikZ output."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1\nlevel 0 node root player 1\n")
+            ef_file_path = f.name
+
+        try:
+            # Test sans-serif bold italic
+            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f2:
+                f2.write("player 1\n")
+                f2.write("level 0 node root player 1\n")
+                f2.write("level 1 node child from 0,root player 2 move Move payoffs 1 2\n")
+                ef2_path = f2.name
+
+            result = draw_tree.generate_tikz(
+                ef2_path, font_family="sffamily", font_bold=True, font_italic=True
+            )
+            assert "every node/.append style={font=\\sffamily\\bfseries\\itshape, execute at begin node=\\boldmath}" in result
+            
+            # Action labels should also be present
+            assert "Move" in result
+
+            # Test font size
+            result_size = draw_tree.generate_tikz(ef2_path, font_size="large")
+            assert "every node/.append style={font=\\rmfamily\\large}" in result_size
+            
+            os.unlink(ef2_path)
+        finally:
+            os.unlink(ef_file_path)
+
+
+class TestCustomColors:
+    """Test custom color scheme functionality."""
+
+    def test_count_players(self):
+        """Test player counting utility."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1 name Alice\n")
+            f.write("player 2 name Bob\n")
+            f.write("level 0 node root player 1\n")
+            ef_file_path = f.name
+        
+        try:
+            assert draw_tree.count_players(ef_file_path) == 2
+            # Chance player name should be capitalized
+            assert draw_tree.playername[0] == "Chance"
+        finally:
+            os.unlink(ef_file_path)
+
+    def test_custom_color_definitions(self):
+        """Test custom color LaTeX definitions."""
+        custom_colors = {0: "#759138", 1: "#FF0000", 2: "#0000FF"}
+        
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1\nlevel 0 node root player 1\n")
+            ef_file_path = f.name
+
+        try:
+            result = draw_tree.generate_tikz(
+                ef_file_path, color_scheme="custom", custom_colors=custom_colors
+            )
+            assert "\\definecolor{customchancecolor}{HTML}{759138}" in result
+            assert "\\definecolor{customp1color}{HTML}{FF0000}" in result
+            assert "\\definecolor{customp2color}{HTML}{0000FF}" in result
+        finally:
+            os.unlink(ef_file_path)
+
+    def test_iset_edge_thickness(self):
+        """Test that edge thickness applies to info sets."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1\n")
+            f.write("level 0 node n1 player 1\n")
+            f.write("level 0 node n2 player 1\n")
+            f.write("iset 0,n1 0,n2 player 1\n")
+            ef_file_path = f.name
+        
+        try:
+            result = draw_tree.generate_tikz(ef_file_path, edge_thickness=2.5)
+            # The iset draw command should contain the line width/thickn
+            assert "line width=\\treethickn" in result
+            assert "\\treethickn2.5pt" in result
+        finally:
+            os.unlink(ef_file_path)
+
+
+def test_commandline_font_options():
+    """Test font-related argument parsing."""
+    # Test font family
+    result = draw_tree.commandline(["draw_tree.py", "test.ef", "--font=sans-serif"])
+    assert result[7] == "sffamily"
+    
+    result = draw_tree.commandline(["draw_tree.py", "test.ef", "--font=monospace"])
+    assert result[7] == "ttfamily"
+
+    # Test bold/italic flags
+    result = draw_tree.commandline(["draw_tree.py", "test.ef", "--bold", "--italic"])
+    assert result[8] is True  # bold
+    assert result[9] is True  # italic
+
+    # Test font size
+    result = draw_tree.commandline(["draw_tree.py", "test.ef", "--font-size=large"])
+    assert result[10] == "large"
+
+
+def test_commandline_horizontal_flag():
+    """Test --horizontal flag parsing."""
+    result = draw_tree.commandline(["draw_tree.py", "test.ef", "--horizontal"])
+    assert result[12] is True
+
+
+class TestHorizontalLayout:
+    """Test horizontal layout specific features."""
+
+    def test_horizontal_tikz_output(self):
+        """Test that horizontal layout injects correct TikZ rotation."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1\nlevel 0 node root player 1\n")
+            ef_file_path = f.name
+
+        try:
+            result = draw_tree.generate_tikz(ef_file_path, horizontal=True)
+            
+            # Check for picture rotation
+            assert "rotate=90" in result
+            
+            # Labels should NOT be rotated back anymore
+            assert "rotate=-90" not in result
+            
+            # Action labels should NOT have redundant rotatebox anymore
+            # (Adding a child to check action labels)
+            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f2:
+                f2.write("player 1\n")
+                f2.write("level 0 node root player 1\n")
+                f2.write("level 1 node child from 0,root player 2 move Move payoffs 1 2\n")
+                ef2_path = f2.name
+                
+            result2 = draw_tree.generate_tikz(ef2_path, horizontal=True)
+            # Should NOT contain \rotatebox{-90} in Move label
+            assert "\\rotatebox{-90}" not in result2
+            # But Move label should be present
+            assert "Move" in result2
+            
+            os.unlink(ef2_path)
+        finally:
+            os.unlink(ef_file_path)
+
+    def test_horizontal_legend_position(self):
+        """Test that legend is repositioned in horizontal mode."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1\n")
+            f.write("level 0 node n1 player 1\n")
+            ef_file_path = f.name
+
+        try:
+            # Vertical legend (default)
+            res_v = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit")
+            # Horizontal legend
+            res_h = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", horizontal=True)
+            
+            assert "Player color legend" in res_v
+            assert "Player color legend" in res_h
+            assert res_v != res_h
+            
+            # In horizontal mode, it should use a positive x_offset (right side in original coords)
+            # which becomes top side in final rotated coords.
+            # Look for shift={(X,Y)} and rotate=-90
+            import re
+            shift_h = re.search(r"\\begin{scope}\[scale=1,shift={\(([\d.-]+),([\d.-]+)\)}, rotate=-90\]", res_h)
+            shift_v = re.search(r"\\begin{scope}\[scale=1,shift={\(([\d.-]+),([\d.-]+)\)}\]", res_v)
+            
+            assert shift_h and shift_v
+            # X coordinate in horizontal mode should be larger (max_x based)
+            assert float(shift_h.group(1)) > float(shift_v.group(1))
+
+        finally:
+            os.unlink(ef_file_path)
+
+
+    def test_horizontal_payoff_position(self):
+        """Test that payoffs are positioned to the right in horizontal mode."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1\n")
+            f.write("level 0 node n1 player 1 payoffs 1 2\n")
+            ef_file_path = f.name
+
+        try:
+            result = draw_tree.generate_tikz(ef_file_path, horizontal=True)
+            # Payoffs should use node[xshift=0.6cm,...] (centered) instead of node[right,...]
+            assert "node[xshift=0.6cm,yshift=" in result
+            assert "node[right,yshift=" not in result
+        finally:
+            os.unlink(ef_file_path)
+
+
+def test_commandline_custom_colors():
+    """Test custom color argument parsing."""
+    result = draw_tree.commandline(
+        ["draw_tree.py", "test.ef", '--custom-colors="0:#FF0000,1:#0000FF"']
+    )
+    custom_colors = result[11]
+    assert custom_colors == {0: "#FF0000", 1: "#0000FF"}
+
+
+def test_action_label_dist():
+    """Test that action_label_dist correctly scales the TikZ macro definitions."""
+    ef_file_path = "games/example.ef"
+    if not os.path.exists(ef_file_path):
+        # Fallback for CI or different working directory
+        ef_file_path = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+        if not os.path.exists(ef_file_path):
+             return # Skip if file not found
+
+    try:
+        # Default dist=1.0 -> 0.5mm
+        res1 = draw_tree.generate_tikz(ef_file_path, action_label_dist=1.0)
+        if not ("xshift=0.5mm" in res1 or "xshift=-0.5mm" in res1):
+            print(f"DEBUG: res1=\n{res1}")
+        assert "xshift=0.5mm" in res1 or "xshift=-0.5mm" in res1
+        
+        # Custom dist=2.0 -> 1.0mm
+        res2 = draw_tree.generate_tikz(ef_file_path, action_label_dist=2.0)
+        assert "xshift=1mm" in res2 or "xshift=-1mm" in res2
+
+        # Horizontal dist=2.0 -> yshift 1mm
+        res3 = draw_tree.generate_tikz(ef_file_path, action_label_dist=2.0, horizontal=True)
+        assert "yshift=1mm" in res3 or "yshift=-1mm" in res3
+    except Exception as e:
+        raise e
+
+
+
+def test_commandline_iset_options():
+    """Test parsing of information set styling flags."""
+    # Test all flags together
+    result = draw_tree.commandline([
+        "draw_tree.py", "test.ef", 
+        "--iset-fill", 
+        "--iset-fill-opacity=0.5", 
+        "--iset-boundary=dotted",
+        "--node-size=2.0"
+    ])
+    assert result[14] is True      # iset_fill
+    assert result[15] == 0.5       # iset_fill_opacity
+    assert result[16] == "dotted"  # iset_boundary
+    assert result[17] == 2.0       # node_size
+
+    # Test individual flags
+    result_fill = draw_tree.commandline(["draw_tree.py", "test.ef", "--iset-fill"])
+    assert result_fill[14] is True
+    assert result_fill[15] == 0.2  # Default
+    assert result_fill[16] == "solid"
+
+    result_dotted = draw_tree.commandline(["draw_tree.py", "test.ef", "--iset-dotted"])
+    assert result_dotted[16] == "dotted"
+
+    result_none = draw_tree.commandline(["draw_tree.py", "test.ef", "--iset-boundary=none"])
+    assert result_none[16] == "none"
+
+
+class TestIsetStylingIntegration:
+    """Test information set styling in generated TikZ."""
+
+    def test_iset_styling_in_tikz(self, tmp_path):
+        """Verify that iset styling options correctly affect TikZ output."""
+        ef_file = tmp_path / "iset_test.ef"
+        ef_file.write_text(
+            "player 1\n"
+            "player 2\n"
+            "level 0 node 1 player 1\n"
+            "level 1 node 1 from 0,1 player 2 move L\n"
+            "level 1 node 2 from 0,1 player 2 move R\n"
+            "iset 1,1 1,2 player 2\n"
+        )
+        ef_file_path = str(ef_file)
+
+        # 1. Default (no fill, not dotted)
+        res_default = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit")
+        # Check for iset draw command (not the node definition)
+        iset_draw_lines = [line for line in res_default.split("\n") if "\\draw [" in line and "playertwocolor" in line]
+        assert len(iset_draw_lines) > 0
+        assert "fill=playertwocolor" not in iset_draw_lines[0]
+        assert "dotted" not in iset_draw_lines[0]
+        assert "draw=none" not in iset_draw_lines[0]
+
+        # 2. Filled
+        res_fill = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", iset_fill=True, iset_fill_opacity=0.4)
+        iset_draw_fill = [line for line in res_fill.split("\n") if "\\draw [" in line and "playertwocolor" in line]
+        assert "fill=playertwocolor" in iset_draw_fill[0]
+        assert "fill opacity=0.4" in iset_draw_fill[0]
+
+        # 3. Dotted
+        res_dotted = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", iset_boundary="dotted")
+        iset_draw_dotted = [line for line in res_dotted.split("\n") if "\\draw [" in line and "playertwocolor" in line]
+        assert "dotted" in iset_draw_dotted[0]
+
+        # 4. None (invisible)
+        res_none = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", iset_boundary="none")
+        iset_draw_none = [line for line in res_none.split("\n") if "\\draw [" in line and "playertwocolor" in line]
+        assert "draw=none" in iset_draw_none[0]
+
+
+def test_node_size_macro():
+    """Test that node_size correctly scales the TikZ macro definitions."""
+    ef_file_path = "games/example.ef"
+    if not os.path.exists(ef_file_path):
+        ef_file_path = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+        if not os.path.exists(ef_file_path):
+             return 
+
+    # Default size=1.5mm
+    res1 = draw_tree.generate_tikz(ef_file_path, node_size=1.5)
+    assert "\\ndiam1.5mm" in res1
+    assert "\\sqwidth1.6mm" in res1
+    
+    # Custom size=2.0mm
+    res2 = draw_tree.generate_tikz(ef_file_path, node_size=2.0)
+    assert "\\ndiam2.0mm" in res2
+    assert "\\sqwidth2.1mm" in res2
+
+
+def test_payoff_font_family():
+    """Test that payoffs pick up the sans-serif font family via \mathsf."""
+    ef_file_path = "games/example.ef"
+    if not os.path.exists(ef_file_path):
+        ef_file_path = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+        if not os.path.exists(ef_file_path):
+             return
+
+    # Serif (default)
+    res_serif = draw_tree.generate_tikz(ef_file_path, font_family="rmfamily")
+    assert "$\\mathsf{" not in res_serif
+    
+    # Sans-serif
+    res_sans = draw_tree.generate_tikz(ef_file_path, font_family="sffamily")
+    assert "$\\mathsf{" in res_sans
 
 
 if __name__ == "__main__":
