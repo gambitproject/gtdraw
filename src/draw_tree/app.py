@@ -23,10 +23,30 @@ from draw_tree import (
 
 
 def run_app():
-    st.set_page_config(page_title="DrawTree GUI", layout="wide", page_icon="🎨")
+    # Use the project favicon if available
+    icon_path = (
+        Path(__file__).parent.parent.parent
+        / "img"
+        / "favicon_48x48_light green background.png"
+    )
+    icon = "🎨"
+    if icon_path.exists():
+        icon = str(icon_path)
+
+    st.set_page_config(page_title="DrawTree", layout="wide", page_icon=icon)
 
     # Sidebar: Title and Input
-    st.sidebar.title("🎨 DrawTree")
+    if icon_path.exists():
+        col1, col2 = st.sidebar.columns([0.25, 0.75])
+        with col1:
+            st.image(str(icon_path), width=50)
+        with col2:
+            st.title("DrawTree")
+    else:
+        st.sidebar.title("🎨 DrawTree")
+    st.sidebar.markdown(
+        "##### Part of the [Gambit project](https://www.gambit-project.org/)."
+    )
     st.sidebar.markdown(
         "Welcome to DrawTree! Load a Game in EFG or EF format, then adjust the layout and download your publication-ready image."
     )
@@ -210,7 +230,20 @@ def run_app():
 
     # Main Area: Display
     if not game_source:
-        st.title("🎨 DrawTree")
+        if icon_path.exists():
+            c1, c2 = st.columns([0.1, 0.9])
+            with c1:
+                st.image(str(icon_path), width=80)
+            with c2:
+                st.title("DrawTree")
+            st.markdown(
+                "### Part of the [Gambit project](https://www.gambit-project.org/)"
+            )
+        else:
+            st.title("🎨 DrawTree")
+            st.markdown(
+                "### Part of the [Gambit project](https://www.gambit-project.org/)"
+            )
         st.info("Select a game from the sidebar to begin.")
         return
 
