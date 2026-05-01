@@ -281,6 +281,10 @@ def run_app():
                 custom_colors=custom_colors,
                 horizontal=horizontal,
                 action_label_dist=action_label_dist,
+                iset_fill=iset_fill,
+                iset_fill_opacity=iset_fill_opacity,
+                iset_boundary=iset_boundary,
+                node_size=node_size,
             )
 
             tex_path = generate_tex(
@@ -302,6 +306,10 @@ def run_app():
                 custom_colors=custom_colors,
                 horizontal=horizontal,
                 action_label_dist=action_label_dist,
+                iset_fill=iset_fill,
+                iset_fill_opacity=iset_fill_opacity,
+                iset_boundary=iset_boundary,
+                node_size=node_size,
             )
             with open(tex_path, "r") as f:
                 tex_data = f.read()
@@ -325,6 +333,10 @@ def run_app():
                 custom_colors=custom_colors,
                 horizontal=horizontal,
                 action_label_dist=action_label_dist,
+                iset_fill=iset_fill,
+                iset_fill_opacity=iset_fill_opacity,
+                iset_boundary=iset_boundary,
+                node_size=node_size,
             )
             with open(pdf_path, "rb") as f:
                 pdf_data = f.read()
@@ -349,6 +361,10 @@ def run_app():
                 custom_colors=custom_colors,
                 horizontal=horizontal,
                 action_label_dist=action_label_dist,
+                iset_fill=iset_fill,
+                iset_fill_opacity=iset_fill_opacity,
+                iset_boundary=iset_boundary,
+                node_size=node_size,
             )
             with open(png_path, "rb") as f:
                 png_data = f.read()
