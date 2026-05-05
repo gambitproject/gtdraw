@@ -697,7 +697,9 @@ def player(words: List[str]) -> tuple[int, int]:
         else:
             advance = 2  # only "player p" parsed
     if not playerdefined[p]:
-        defout(playertexname[p], playername[p])
+        # Escape underscores in player names to prevent LaTeX errors
+        safe_playername = playername[p].replace("_", "\\_")
+        defout(playertexname[p], safe_playername)
         playerdefined[p] = True
     return p, advance
 
@@ -1174,6 +1176,7 @@ def generate_legend(
 
         player_color = get_player_color(player, color_scheme)
         player_name = playername[player] if player < len(playername) else str(player)
+        safe_player_name = player_name.replace("_", "\\_")
 
         # Draw colored circle/square
         if player == 0:
@@ -1184,7 +1187,7 @@ def generate_legend(
             legend_code += f"\\node[inner sep=0pt,minimum size=\\ndiam,draw={player_color},fill={player_color},shape=circle] at (0,{y_offset}) {{}};\n"
 
         # Add player label
-        legend_code += f"\\node[anchor=west] at (0.3,{y_offset}) {{{player_name}}};\n"
+        legend_code += f"\\node[anchor=west] at (0.3,{y_offset}) {{{safe_player_name}}};\n"
 
         y_offset -= y_spacing
 
