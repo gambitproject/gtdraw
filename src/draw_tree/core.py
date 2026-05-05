@@ -1318,6 +1318,8 @@ def level(
         parent_color = get_player_color(parent_player, color_scheme)
         edge_color_style = f"color={parent_color}"
 
+
+
     # tikz code - add color to the draw command for edges based on parent
     s = "\\draw [" + thickn
     if edge_color_style:
@@ -1404,6 +1406,27 @@ def level(
             s += "," + edge_color_style
 
         mov_display = mov
+        
+        if color_scheme != "default":
+            # Color actions like "P1:K" with Player 1's color and remove "P1:"
+            # Supports both P1:K and P 1 : K formats
+            def replace_action(match):
+                try:
+                    p_num = int(match.group(1))
+                    # Removed playerdefined check to ensure coloring works even if
+                    # level commands precede player commands in the file.
+                    if 1 <= p_num <= 100:
+                        col = get_player_color(p_num, color_scheme)
+                        action = match.group(2)
+                        return f"\\textcolor{{{col}}}{{{action}}}"
+                except (ValueError, IndexError):
+                    pass
+                return match.group(0)
+            
+            # Match P followed by number, colon, and then the action text
+            # Stops at space or ~ to preserve multiple actions in one label
+            mov_display = re.sub(r"[Pp]\s*(\d+)\s*:\s*([^\s~]+)", replace_action, mov_display)
+
         if "$" not in mov_display:
             mov_display = re.sub(
                 r"(\\frac\s*\{[^}]*\}\s*\{[^}]*\})", r"$\1$", mov_display
