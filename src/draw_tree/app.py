@@ -60,6 +60,7 @@ def run_app():
 
     with st.sidebar.expander("📂 Input Game", expanded=True):
         import pygambit as gbt
+
         try:
             catalog_games_df = gbt.catalog.games()
             catalog_games = catalog_games_df["Game"].tolist()
@@ -67,20 +68,20 @@ def run_app():
             catalog_games = []
 
         options = [("None", "None", "None")]
-        
+
+        for g in catalog_games:
+            options.append(("Catalog", g, g))
+
         if example_dir.exists():
             ef_examples = sorted(list(example_dir.glob("*.ef")))
             for e in ef_examples:
                 rel_path = str(e.relative_to(base_path))
-                options.append(("DrawTree EF examples", e.name, rel_path))
-                
+                options.append(("EF", e.name, rel_path))
+
             efg_examples = sorted(list((example_dir / "efg").glob("*.efg")))
             for e in efg_examples:
                 rel_path = str(e.relative_to(base_path))
-                options.append(("DrawTree EFG examples", e.name, rel_path))
-
-        for g in catalog_games:
-            options.append(("Gambit Catalog", g, g))
+                options.append(("EFG", e.name, rel_path))
 
         def format_option(opt):
             cat, name, val = opt
@@ -96,12 +97,22 @@ def run_app():
                 default_idx = i
                 break
 
+        help_text = (
+            "**Catalog**: Games Gambit's catalog.\n\n"
+            "**EF**: DrawTree .ef format games.\n\n"
+            "**EFG**: Gambit .efg files."
+        )
+
         example_selection = st.selectbox(
-            "Select an example", options, index=default_idx, format_func=format_option
+            "Select an example",
+            options,
+            index=default_idx,
+            format_func=format_option,
+            help=help_text,
         )
         if example_selection[0] != "None":
             cat, name, val = example_selection
-            if cat == "Gambit Catalog":
+            if cat == "Catalog":
                 game_source = gbt.catalog.load(val)
                 is_efg = True
             else:
@@ -126,7 +137,11 @@ def run_app():
         if isinstance(game_source, str):
             base_filename = Path(game_source).stem
         else:
-            base_filename = getattr(game_source, "title", "catalog_game").replace(" ", "_").replace("/", "_")
+            base_filename = (
+                getattr(game_source, "title", "catalog_game")
+                .replace(" ", "_")
+                .replace("/", "_")
+            )
             if not base_filename:
                 base_filename = "catalog_game"
 
