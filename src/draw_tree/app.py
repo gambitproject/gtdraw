@@ -59,25 +59,53 @@ def run_app():
     is_efg = False
 
     with st.sidebar.expander("📂 Input Game", expanded=True):
+        import pygambit as gbt
+        try:
+            catalog_games_df = gbt.catalog.games()
+            catalog_games = catalog_games_df["Game"].tolist()
+        except Exception:
+            catalog_games = []
+
+        options = [("None", "None", "None")]
+        
         if example_dir.exists():
-            ef_examples = list(example_dir.glob("*.ef"))
-            efg_examples = list((example_dir / "efg").glob("*.efg"))
-            all_examples = sorted(
-                [f.relative_to(base_path) for f in ef_examples + efg_examples]
-            )
+            ef_examples = sorted(list(example_dir.glob("*.ef")))
+            for e in ef_examples:
+                rel_path = str(e.relative_to(base_path))
+                options.append(("DrawTree EF examples", e.name, rel_path))
+                
+            efg_examples = sorted(list((example_dir / "efg").glob("*.efg")))
+            for e in efg_examples:
+                rel_path = str(e.relative_to(base_path))
+                options.append(("DrawTree EFG examples", e.name, rel_path))
 
-            # Default selection
-            default_idx = 0
-            target_example = "games/efg/one_card_poker.efg"
-            example_list = ["None"] + [str(e) for e in all_examples]
-            if target_example in example_list:
-                default_idx = example_list.index(target_example)
+        for g in catalog_games:
+            options.append(("Gambit Catalog", g, g))
 
-            example_selection = st.selectbox(
-                "Select an example", example_list, index=default_idx
-            )
-            if example_selection != "None":
-                game_source = str(base_path / example_selection)
+        def format_option(opt):
+            cat, name, val = opt
+            if cat == "None":
+                return "None"
+            return f"[{cat}] {name}"
+
+        # Default selection
+        default_idx = 0
+        target_example_path = "games/efg/one_card_poker.efg"
+        for i, opt in enumerate(options):
+            if opt[2] == target_example_path:
+                default_idx = i
+                break
+
+        example_selection = st.selectbox(
+            "Select an example", options, index=default_idx, format_func=format_option
+        )
+        if example_selection[0] != "None":
+            cat, name, val = example_selection
+            if cat == "Gambit Catalog":
+                game_source = gbt.catalog.load(val)
+                is_efg = True
+            else:
+                game_source = str(base_path / val)
                 if game_source.lower().endswith(".efg"):
                     is_efg = True
 
@@ -95,7 +123,12 @@ def run_app():
             tmp.write(uploaded_file.getvalue())
             game_source = tmp.name
     elif game_source:
-        base_filename = Path(game_source).stem
+        if isinstance(game_source, str):
+            base_filename = Path(game_source).stem
+        else:
+            base_filename = getattr(game_source, "title", "catalog_game").replace(" ", "_").replace("/", "_")
+            if not base_filename:
+                base_filename = "catalog_game"
 
     # Sidebar: Configuration
     with st.sidebar.expander("📐 Layout", expanded=False):
