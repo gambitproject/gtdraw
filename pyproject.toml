@@ -28,7 +28,7 @@ keywords = ["game theory", "tikz", "visualization", "trees", "economics"]
 dependencies = ["jupyter-tikz", "ipykernel", "distinctipy", "streamlit", "pygambit"]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0.0", "pytest-cov"]
+dev = ["pytest>=7.0.0", "pytest-cov", "jupyter-book<2.0.0"]
 
 [project.scripts]
 draw_tree = "draw_tree.cli:main"

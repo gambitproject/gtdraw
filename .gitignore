@@ -161,3 +161,7 @@ tutorial/*.ef
 
 # macOS files
 .DS_Store
+
+# Jupyter Book
+.jupyter_book/
+docs/_build
