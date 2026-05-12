@@ -1,4 +1,4 @@
-# The `.ef` Format Specification
+# The EF Format Specification
 
 The `.ef` (extensive form) file format describes a game tree layout textually. You can write these files by hand or generate them using [Game Theory Explorer](https://gametheoryexplorer-a68c7.web.app/).
 

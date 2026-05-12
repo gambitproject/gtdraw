@@ -1,14 +1,14 @@
-# draw_tree
+# DrawTree
 
 [![PyPI version](https://badge.fury.io/py/draw-tree.svg)](https://badge.fury.io/py/draw-tree)
 [![Tests](https://github.com/gambitproject/draw_tree/actions/workflows/test.yml/badge.svg)](https://github.com/gambitproject/draw_tree/actions/workflows/test.yml)
 
-`draw_tree` is a game tree drawing tool for publication-ready extensive form games in Game Theory.
+DrawTree is a game tree drawing tool for publication-ready extensive form games in Game Theory.
 It can generate TikZ code, LaTeX documents, PDFs, PNGs, and SVGs from game specifications.
 
 <img src="img/Stripped-down_poker_(Reiley_et_al_2008).svg" alt="Poker example" />
 
-> `draw_tree` was originally developed by [Bernhard von Stengel](https://www.lse.ac.uk/people/bernhard-von-stengel) at the London School of Economics. It is being developed further as part of the [Gambit project](https://www.gambit-project.org) out of The Alan Turing Institute.
+> DrawTree was originally developed by [Bernhard von Stengel](https://www.lse.ac.uk/people/bernhard-von-stengel) at the London School of Economics. It is being developed further as part of the [Gambit project](https://www.gambit-project.org) out of The Alan Turing Institute.
 
 ## Documentation
 
