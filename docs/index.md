@@ -10,7 +10,9 @@ Games can alternatively be specified via `pygambit` game objects; see the [Pytho
 
 > `draw_tree` was originally developed by [Bernhard von Stengel](https://www.lse.ac.uk/people/bernhard-von-stengel) at the London School of Economics. It is being developed further as part of the [Gambit project](https://www.gambit-project.org) out of The Alan Turing Institute.
 
-<img src="../img/one_card_poker.png" alt="Poker example" />
+```{image} ../img/Stripped-down_poker_(Reiley_et_al_2008).svg
+:alt: Poker example
+```
 
 ```{tableofcontents}
 ```
