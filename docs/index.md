@@ -1,5 +1,7 @@
 # Welcome to DrawTree
 
+*Part of the [Gambit project](https://www.gambit-project.org/).*
+
 DrawTree is a game tree drawing tool for publication-ready extensive form games in Game Theory.
 It can generate TikZ code, LaTeX documents, PDFs, PNGs, and SVGs from game specifications.
 
