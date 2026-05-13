@@ -6,7 +6,7 @@ The file consists of lines starting with keywords: `player`, `level`, or `iset`.
 
 An example EF file:
 ```
-% player 0 name chance
+% Example game
 player 1 name I
 player 2 name II
 level 0 node 1 player 1
@@ -14,7 +14,6 @@ level 2 node 1 player 0 xshift a=1.5 from 0,1 move R
 level 4 node 1 xshift -2a from 0,1 move::0.25 L 
 level 2 node x xshift -.5 from 0,1 move:r: M payoffs 3 3
 level 4 node 2 xshift -b=1.2 from 2,1 move \frac{1}{3}
-% level 4 node 2 xshift -b=1.2 from 2,1 move ^{1/3}
 level 4 node 3 xshift b from 2,1 move \frac{2}{3} payoffs 1 -1
 level 6 node 1 xshift -c=.8 from 4,1 move a payoffs 5 1
 level 6 node 2 xshift c from 4,1 move b payoffs 2 0
