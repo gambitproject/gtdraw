@@ -4,8 +4,12 @@ The `.ef` (extensive form) file format describes a game tree layout textually. Y
 
 The file consists of lines starting with keywords: `player`, `level`, or `iset`. Additional information follows on the same line, separated by whitespace (spaces or tabs). You can add comments by prefixing a line with `%`.
 
+::::{grid}
+
+:::{grid-item}
+:columns: 12 12 7 7
 An example EF file:
-```
+```text
 % Example game
 player 1 name I
 player 2 name II
@@ -21,11 +25,17 @@ level 6 node 3 xshift -c from 4,2 move a payoffs 6 0
 level 6 node 4 xshift c from 4,2 move b payoffs 0 2
 iset 4,1 4,2 player 2 
 ```
+:::
 
+:::{grid-item}
+:columns: 12 12 5 5
 The game it generates:
 ```{image} ../../img/example.svg
 :alt: Poker example
 ```
+:::
+
+::::
 
 ## Players
 Use the `player` keyword to define player names. By default, player 0 is "chance", and other players are just their numbers.
