@@ -2,7 +2,9 @@
 
 The `.ef` (extensive form) file format describes a game tree layout textually. You can write these files by hand or generate them using [Game Theory Explorer](https://gametheoryexplorer-a68c7.web.app/).
 
-The file consists of lines starting with keywords: `player`, `level`, or `iset`. Additional information follows on the same line, separated by whitespace (spaces or tabs). You can add comments by prefixing a line with `%`.
+The file consists of lines starting with keywords: `player`, `level`, or `iset`. Additional information follows on the same line, separated by whitespace (spaces or tabs).
+No spaces are allowed in move names, player names, or payoffs (use `~` instead).
+You can add comments by prefixing a line with `%`.
 
 ::::{grid}
 
@@ -80,7 +82,6 @@ The move label is specified with `move`:
 move L
 move \frac{1}{3}
 ```
-*No spaces are allowed in move names, player names, or payoffs. Use `~` instead.*
 
 **Modifiers:**
 - `move:l` or `move:r`: Force the move label to the left or right of the connecting line. The default is right for a line going down-right, and left otherwise.
@@ -101,5 +102,5 @@ The `iset` keyword defines an information set connecting multiple nodes. Provide
 iset 4,1 4,2 player 2
 ```
 
-The player name will be placed between the two middle nodes for an even number of nodes, or before the middle node for an odd number. You can place the player specifier between the respective nodes in the list to position the label differently.
+When using the `default` color scheme (which lacks the legend used by other color schemes), the player name will be placed between the two middle nodes for an even number of nodes, or before the middle node for an odd number. You can place the player specifier between the respective nodes in the list to position the label differently.
 
