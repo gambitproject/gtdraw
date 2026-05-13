@@ -4,6 +4,30 @@ The `.ef` (extensive form) file format describes a game tree layout textually. Y
 
 The file consists of lines starting with keywords: `player`, `level`, or `iset`. Additional information follows on the same line, separated by whitespace (spaces or tabs). You can add comments by prefixing a line with `%`.
 
+An example EF file:
+```
+% player 0 name chance
+player 1 name I
+player 2 name II
+level 0 node 1 player 1
+level 2 node 1 player 0 xshift a=1.5 from 0,1 move R
+level 4 node 1 xshift -2a from 0,1 move::0.25 L 
+level 2 node x xshift -.5 from 0,1 move:r: M payoffs 3 3
+level 4 node 2 xshift -b=1.2 from 2,1 move \frac{1}{3}
+% level 4 node 2 xshift -b=1.2 from 2,1 move ^{1/3}
+level 4 node 3 xshift b from 2,1 move \frac{2}{3} payoffs 1 -1
+level 6 node 1 xshift -c=.8 from 4,1 move a payoffs 5 1
+level 6 node 2 xshift c from 4,1 move b payoffs 2 0
+level 6 node 3 xshift -c from 4,2 move a payoffs 6 0
+level 6 node 4 xshift c from 4,2 move b payoffs 0 2
+iset 4,1 4,2 player 2 
+```
+
+The game it generates:
+```{image} ../../img/example.svg
+:alt: Poker example
+```
+
 ## Players
 Use the `player` keyword to define player names. By default, player 0 is "chance", and other players are just their numbers.
 
@@ -32,7 +56,7 @@ Specify the parent of a node using `from`, followed by the parent's `level,nodei
 level 2 node 1 from 0,1
 ```
 
-## Positioning (`xshift`)
+## Positioning (xshift)
 The `xshift` keyword specifies the horizontal offset in centimeters relative to the parent node. For example, `xshift -1.2` means 1.2 cm to the left.
 
 You can assign and reuse variables:
