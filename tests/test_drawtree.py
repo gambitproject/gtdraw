@@ -1757,7 +1757,7 @@ def test_node_size_macro():
 
 
 def test_payoff_font_family():
-    """Test that payoffs pick up the sans-serif font family via \mathsf."""
+    r"""Test that payoffs pick up the sans-serif font family via \mathsf."""
     ef_file_path = "games/example.ef"
     if not os.path.exists(ef_file_path):
         ef_file_path = os.path.join(
