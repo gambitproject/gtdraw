@@ -5,7 +5,7 @@ This package provides functionality to generate TikZ code for game trees
 from extensive form (.ef) files, with support for Jupyter notebooks.
 """
 
-__version__ = "0.6.1"
+__version__ = "0.7.0"
 
 from .core import (
     draw_tree,
