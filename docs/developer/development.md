@@ -30,12 +30,19 @@ To release a new version of `draw_tree`:
 
 1. Update the version number in `pyproject.toml`.
 2. Update the version number in `src/draw_tree/__init__.py`.
-3. Push the changes to the `main` branch.
-4. Push a new tag corresponding to the version:
+3. Create a pull request targeting the `main` branch with the changes.
+4. Once the pull request is approved and merged, update your local `main` branch:
 
-```bash
-git tag vX.X.X
-git push origin tag vX.X.X
-```
+    ```bash
+    git checkout main
+    git pull origin main
+    ```
 
-5. Finally, create a new Release on GitHub based on the pushed tag.
+5. Create and push a new tag corresponding to the version:
+
+    ```bash
+    git tag vX.X.X
+    git push origin tag vX.X.X
+    ```
+
+6. Finally, create a new Release on GitHub based on the pushed tag.
