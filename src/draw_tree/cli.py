@@ -55,11 +55,14 @@ def main():
         print("  --bold       Use bold text")
         print("  --italic     Use italic text")
         print("  --font-size=X Set font size (small, normalsize, large, Large)")
+        print("  --color-scheme=X Set color scheme (default, gambit, distinctipy, colorblind, custom)")
         print('  --custom-colors=X Set custom colors (e.g. "0:#FF0000,1:#0000FF")')
         print("  --horizontal Use horizontal layout (growing left-to-right)")
         print(
             "  --action-label-dist=X Set distance of action labels from edges (default: 1.0)"
         )
+        print("  --action-label-position=X Set position of action labels along the edge (0.0 to 1.0, default: 0.5)")
+        print("  --edge-thickness=X Set thickness of edges (default: 1.0)")
         print("  --iset-fill  Fill information sets with player colors")
         print(
             "  --iset-fill-opacity=X Set opacity of information set fill (0.0-1.0, default: 0.2)"
@@ -68,6 +71,10 @@ def main():
             "  --iset-boundary=X Set information set boundary style (solid, dotted, none, default: solid)"
         )
         print("  --node-size=X Set size of player nodes in mm (default: 1.5)")
+        print("  --level-scaling=X Set level spacing multiplier for .efg files (default: 1.0)")
+        print("  --sublevel-scaling=X Set sublevel spacing multiplier for .efg files (default: 1.0)")
+        print("  --width-scaling=X Set width spacing multiplier for .efg files (default: 1.0)")
+        print("  --shared-terminal-depth Enforce shared terminal node depth for .efg files")
         print()
         print("Examples:")
         print("  draw_tree games/example.ef --pdf")
@@ -118,6 +125,13 @@ def main():
         iset_fill_opacity,
         iset_boundary,
         node_size,
+        color_scheme,
+        edge_thickness,
+        action_label_position,
+        level_scaling,
+        sublevel_scaling,
+        width_scaling,
+        shared_terminal_depth,
     ) = commandline(sys.argv)
 
     # Import the core module to access global variables after commandline() has set them
@@ -152,6 +166,13 @@ def main():
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                color_scheme=color_scheme,
+                edge_thickness=edge_thickness,
+                action_label_position=action_label_position,
+                level_scaling=level_scaling,
+                sublevel_scaling=sublevel_scaling,
+                width_scaling=width_scaling,
+                shared_terminal_depth=shared_terminal_depth,
             )
             print(f"PDF generated successfully: {pdf_path}")
 
@@ -177,6 +198,13 @@ def main():
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                color_scheme=color_scheme,
+                edge_thickness=edge_thickness,
+                action_label_position=action_label_position,
+                level_scaling=level_scaling,
+                sublevel_scaling=sublevel_scaling,
+                width_scaling=width_scaling,
+                shared_terminal_depth=shared_terminal_depth,
             )
             print(f"PNG generated successfully: {png_path}")
 
@@ -201,6 +229,13 @@ def main():
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                color_scheme=color_scheme,
+                edge_thickness=edge_thickness,
+                action_label_position=action_label_position,
+                level_scaling=level_scaling,
+                sublevel_scaling=sublevel_scaling,
+                width_scaling=width_scaling,
+                shared_terminal_depth=shared_terminal_depth,
             )
             print(f"SVG generated successfully: {svg_path}")
 
@@ -225,6 +260,13 @@ def main():
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                color_scheme=color_scheme,
+                edge_thickness=edge_thickness,
+                action_label_position=action_label_position,
+                level_scaling=level_scaling,
+                sublevel_scaling=sublevel_scaling,
+                width_scaling=width_scaling,
+                shared_terminal_depth=shared_terminal_depth,
             )
             print(f"LaTeX generated successfully: {tex_path}")
 
@@ -245,6 +287,13 @@ def main():
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                color_scheme=color_scheme,
+                edge_thickness=edge_thickness,
+                action_label_position=action_label_position,
+                level_scaling=level_scaling,
+                sublevel_scaling=sublevel_scaling,
+                width_scaling=width_scaling,
+                shared_terminal_depth=shared_terminal_depth,
             )
 
             # Output the complete TikZ code

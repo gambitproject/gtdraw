@@ -1,0 +1,18 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: index
+parts:
+  - caption: User Guide
+    chapters:
+      - file: user/installation
+      - file: user/ef_format
+      - file: user/cli
+      - file: user/python_api
+      - file: user/gui
+  - caption: Developer Guide
+    chapters:
+      - file: developer/development
+      - file: developer/documentation
+      - file: developer/contributing

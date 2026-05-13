@@ -1596,6 +1596,13 @@ def commandline(
     iset_fill_opacity = 0.2
     iset_boundary = "solid"
     node_size = 1.5
+    color_scheme = "default"
+    edge_thickness = 1.0
+    action_label_position = 0.5
+    level_scaling = 1.0
+    sublevel_scaling = 1.0
+    width_scaling = 1.0
+    shared_terminal_depth = False
 
     for arg in argv[1:]:
         if arg[:5] == "scale":
@@ -1693,6 +1700,35 @@ def commandline(
                 node_size = float(arg[12:])
             except ValueError:
                 print("Warning: Invalid node-size value, using default 1.5", file=sys.stderr)
+        elif arg.startswith("--color-scheme="):
+            color_scheme = arg[15:]
+        elif arg.startswith("--edge-thickness="):
+            try:
+                edge_thickness = float(arg[17:])
+            except ValueError:
+                pass
+        elif arg.startswith("--action-label-position="):
+            try:
+                action_label_position = float(arg[24:])
+            except ValueError:
+                pass
+        elif arg.startswith("--level-scaling="):
+            try:
+                level_scaling = float(arg[16:])
+            except ValueError:
+                pass
+        elif arg.startswith("--sublevel-scaling="):
+            try:
+                sublevel_scaling = float(arg[19:])
+            except ValueError:
+                pass
+        elif arg.startswith("--width-scaling="):
+            try:
+                width_scaling = float(arg[16:])
+            except ValueError:
+                pass
+        elif arg == "--shared-terminal-depth":
+            shared_terminal_depth = True
         elif arg.endswith(".ef"):
             ef_file = arg
         else:
@@ -1730,6 +1766,13 @@ def commandline(
         iset_fill_opacity,
         iset_boundary,
         node_size,
+        color_scheme,
+        edge_thickness,
+        action_label_position,
+        level_scaling,
+        sublevel_scaling,
+        width_scaling,
+        shared_terminal_depth,
     )
 
 
