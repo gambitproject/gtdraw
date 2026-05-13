@@ -10,7 +10,7 @@ pip install .
 
 ## Requirements
 
-- Python 3.10+ (tested on 3.13)
+- Python 3.10+
 - LaTeX with TikZ (for PDF/PNG/SVG generation)
 - (optional) ImageMagick or Ghostscript or Poppler (for PNG generation)
 - (optional) `pdf2svg` (for SVG generation)
