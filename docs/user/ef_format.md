@@ -33,7 +33,7 @@ iset 4,1 4,2 player 2
 :columns: 12 12 5 5
 The game it generates:
 ```{image} ../../img/example.svg
-:alt: Poker example
+:alt: EF file format example game tree
 ```
 :::
 
