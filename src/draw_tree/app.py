@@ -50,6 +50,9 @@ def run_app():
         "##### Part of the [Gambit project](https://www.gambit-project.org/)."
     )
     st.sidebar.markdown(
+        "📖 **[Documentation](https://www.gambit-project.org/draw_tree/)**"
+    )
+    st.sidebar.markdown(
         "Welcome to DrawTree! Load a Game in EFG or EF format, then adjust the layout and download your publication-ready image."
     )
 
