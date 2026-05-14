@@ -1300,6 +1300,15 @@ def level(
     # effective_xs = -xs if _horizontal else xs  # REMOVED: using explicit _horizontal checks for clarity
     # direction down (for later expansion)
     yy = -lev
+    if nodeid in nodes:
+        # The TikZ output for the previous definition has already been
+        # emitted (drawtree streams as it parses), so we don't try to
+        # undo it.  Just warn -- this is almost always a copy-paste bug
+        # in the .ef file (e.g. two "level 4 node 1" lines under
+        # different parents instead of "node 1" and "node 2").
+        error("duplicate node identifier '" + nodeid +
+              "'; node identifiers must be unique within a level "
+              "(this entry overwrites the earlier one in the node table)")
     nodes[nodeid] = {"x": xx, "y": yy, "player": p}
     nodes[nodeid]["xshift"] = xs
     nodes[nodeid]["move"] = mov
