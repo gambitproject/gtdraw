@@ -166,3 +166,5 @@ tutorial/*.ef
 # Jupyter Book
 .jupyter_book/
 docs/_build
+# MyST build outputs
+_build
