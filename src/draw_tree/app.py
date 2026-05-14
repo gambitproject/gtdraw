@@ -19,6 +19,8 @@ from draw_tree import (
     generate_pdf,
     generate_png,
     count_players,
+    ef_to_efg,
+    efg_to_ef,
 )
 
 
@@ -490,6 +492,67 @@ def run_app():
                         "text/x-tex",
                         use_container_width=True,
                     )
+
+                # Generate EF and EFG downloads
+                # The EF file is always available (either the original or
+                # generated from EFG via gambit_layout_to_ef)
+                try:
+                    if is_efg:
+                        # Input was EFG/catalog: generate the EF file
+                        ef_download_path = efg_to_ef(
+                            game_source,
+                            save_to=output_base + ".ef",
+                            level_scaling=level_scaling,
+                            sublevel_scaling=sublevel_scaling,
+                            width_scaling=width_scaling,
+                            shared_terminal_depth=shared_terminal_depth,
+                        )
+                        with open(ef_download_path, "r") as f:
+                            ef_data = f.read()
+                        # For EFG, read the original or generate from game
+                        if isinstance(game_source, str) and os.path.exists(game_source):
+                            with open(game_source, "r") as f:
+                                efg_data = f.read()
+                        else:
+                            # Catalog game: convert EF back to EFG
+                            efg_download_path = ef_to_efg(
+                                ef_download_path,
+                                save_to=output_base + ".efg",
+                            )
+                            with open(efg_download_path, "r") as f:
+                                efg_data = f.read()
+                    else:
+                        # Input was EF: read the original file
+                        with open(game_source, "r") as f:
+                            ef_data = f.read()
+                        # Convert to EFG
+                        efg_download_path = ef_to_efg(
+                            game_source,
+                            save_to=output_base + ".efg",
+                        )
+                        with open(efg_download_path, "r") as f:
+                            efg_data = f.read()
+
+                    st.markdown("---")
+                    c3, c4 = st.columns(2)
+                    with c3:
+                        st.download_button(
+                            "EF",
+                            ef_data,
+                            f"{base_filename}.ef",
+                            "text/plain",
+                            use_container_width=True,
+                        )
+                    with c4:
+                        st.download_button(
+                            "EFG",
+                            efg_data,
+                            f"{base_filename}.efg",
+                            "text/plain",
+                            use_container_width=True,
+                        )
+                except Exception as conv_err:
+                    st.caption(f"⚠️ Format conversion unavailable: {conv_err}")
 
     except Exception as e:
         st.error(f"Error: {e}")
