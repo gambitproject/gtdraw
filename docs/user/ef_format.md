@@ -9,7 +9,7 @@ You can add comments by prefixing a line with `%`.
 ::::{grid}
 
 :::{grid-item}
-:columns: 12 12 7 7
+:columns: 7
 An example EF file:
 ```text
 % Example game
@@ -30,7 +30,7 @@ iset 4,1 4,2 player 2
 :::
 
 :::{grid-item}
-:columns: 12 12 5 5
+:columns: 5
 The game it generates:
 ```{image} ../../img/example.svg
 :alt: EF file format example game tree

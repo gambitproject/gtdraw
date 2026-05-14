@@ -39,7 +39,7 @@ jobs:
 
       - name: Build Jupyter Book
         run: |
-          jupyter-book build docs/
+          cd docs && jupyter-book build
 
       - name: Upload HTML Artifact
         uses: actions/upload-artifact@v4

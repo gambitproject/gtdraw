@@ -7,7 +7,7 @@ If you would like to contribute to the documentation, follow the instructions be
 ## Local Build Instructions
 
 ::: {important}
-To build the documentation locally you'll need to use a Python 3.13+ before performing a developer install.
+To build the documentation locally, you **must use Python 3.13 or higher**. This project uses Jupyter Book 2.0+, which is optimized for modern Python environments.
 :::
 
 1. Ensure you have installed the project with its `dev` dependencies (which includes `jupyter-book`). If you haven't yet, run:
@@ -18,23 +18,12 @@ To build the documentation locally you'll need to use a Python 3.13+ before perf
 2. Make your edits to the `.md` or `.ipynb` files within the `docs/` directory.
    - User documentation goes in `docs/user/`.
    - Developer documentation goes in `docs/developer/`.
-   - Be sure to update `docs/_toc.yml` if you add or remove files.
+   - Be sure to update `docs/myst.yml` if you add or remove files.
 
-3. Build the book by running the following command from the root of the repository:
+3. Preview the documentation in your browser at `http://localhost:3000/`:
    ```bash
-   jupyter-book build docs/
-   ```
-
-4. If the build succeeds, you can preview the documentation by opening the generated HTML file in your browser:
-   ```bash
-   # On macOS:
-   open docs/_build/html/index.html
-   
-   # On Linux:
-   xdg-open docs/_build/html/index.html
-   
-   # On Windows:
-   start docs/_build/html/index.html
+   cd docs
+   jupyter-book start
    ```
 
 ## Deployment
