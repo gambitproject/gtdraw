@@ -454,48 +454,9 @@ def run_app():
 
             # Sidebar: Download Buttons
             with st.sidebar.expander("📥 Downloads", expanded=False):
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.download_button(
-                        "SVG",
-                        svg_content,
-                        f"{base_filename}.svg",
-                        "image/svg+xml",
-                        use_container_width=True,
-                    )
-                    st.download_button(
-                        "PDF",
-                        pdf_data,
-                        f"{base_filename}.pdf",
-                        "application/pdf",
-                        use_container_width=True,
-                    )
-                    st.download_button(
-                        "PNG",
-                        png_data,
-                        f"{base_filename}.png",
-                        "image/png",
-                        use_container_width=True,
-                    )
-                with c2:
-                    st.download_button(
-                        "TikZ",
-                        tikz_code,
-                        f"{base_filename}.tikz",
-                        "text/plain",
-                        use_container_width=True,
-                    )
-                    st.download_button(
-                        "LaTeX",
-                        tex_data,
-                        f"{base_filename}.tex",
-                        "text/x-tex",
-                        use_container_width=True,
-                    )
-
-                # Generate EF and EFG downloads
-                # The EF file is always available (either the original or
-                # generated from EFG via gambit_layout_to_ef)
+                # Pre-generate EF and EFG data for download
+                ef_data = None
+                efg_data = None
                 try:
                     if is_efg:
                         # Input was EFG/catalog: generate the EF file
@@ -532,10 +493,12 @@ def run_app():
                         )
                         with open(efg_download_path, "r") as f:
                             efg_data = f.read()
+                except Exception as conv_err:
+                    st.caption(f"⚠️ Format conversion unavailable: {conv_err}")
 
-                    st.markdown("---")
-                    c3, c4 = st.columns(2)
-                    with c3:
+                c1, c2 = st.columns(2)
+                with c1:
+                    if ef_data is not None:
                         st.download_button(
                             "EF",
                             ef_data,
@@ -543,7 +506,29 @@ def run_app():
                             "text/plain",
                             use_container_width=True,
                         )
-                    with c4:
+                    st.download_button(
+                        "TikZ",
+                        tikz_code,
+                        f"{base_filename}.tikz",
+                        "text/plain",
+                        use_container_width=True,
+                    )
+                    st.download_button(
+                        "SVG",
+                        svg_content,
+                        f"{base_filename}.svg",
+                        "image/svg+xml",
+                        use_container_width=True,
+                    )
+                    st.download_button(
+                        "PDF",
+                        pdf_data,
+                        f"{base_filename}.pdf",
+                        "application/pdf",
+                        use_container_width=True,
+                    )
+                with c2:
+                    if efg_data is not None:
                         st.download_button(
                             "EFG",
                             efg_data,
@@ -551,8 +536,20 @@ def run_app():
                             "text/plain",
                             use_container_width=True,
                         )
-                except Exception as conv_err:
-                    st.caption(f"⚠️ Format conversion unavailable: {conv_err}")
+                    st.download_button(
+                        "LaTeX",
+                        tex_data,
+                        f"{base_filename}.tex",
+                        "text/x-tex",
+                        use_container_width=True,
+                    )
+                    st.download_button(
+                        "PNG",
+                        png_data,
+                        f"{base_filename}.png",
+                        "image/png",
+                        use_container_width=True,
+                    )
 
     except Exception as e:
         st.error(f"Error: {e}")
