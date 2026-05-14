@@ -1,0 +1,7 @@
+# This is required for the streamlit build
+jupyter-tikz
+ipykernel
+distinctipy
+streamlit
+pygambit
+-e .
