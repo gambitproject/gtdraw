@@ -1,7 +1,3 @@
-# This is required for the streamlit build
-jupyter-tikz
-ipykernel
-distinctipy
-streamlit
-pygambit
+# This file is used by Streamlit Cloud to trigger dependency installation
+# from pyproject.toml. De-duplicated to avoid manual sync.
 -e .
