@@ -1,0 +1,7 @@
+texlive-latex-base
+texlive-latex-extra
+texlive-pictures
+pdf2svg
+imagemagick
+ghostscript
+poppler-utils
