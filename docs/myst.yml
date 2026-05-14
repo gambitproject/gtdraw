@@ -2,8 +2,6 @@ version: 1
 project:
   title: DrawTree
   description: Game tree drawing tool for extensive form games
-  authors:
-    - name: The Gambit Project
   github: https://github.com/gambitproject/draw_tree
   toc:
     - file: index.md
