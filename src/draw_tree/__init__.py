@@ -21,6 +21,8 @@ from .core import (
 
 from .gambit_layout import gambit_layout_to_ef
 
+from .converter import ef_to_efg, efg_to_ef
+
 __all__ = [
     "draw_tree",
     "generate_tikz",
@@ -32,4 +34,7 @@ __all__ = [
     "latex_wrapper",
     "gambit_layout_to_ef",
     "count_players",
+    "ef_to_efg",
+    "efg_to_ef",
 ]
+

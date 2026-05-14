@@ -17,6 +17,7 @@ import pygambit
 
 # Import the module under test
 import draw_tree.core as draw_tree
+from draw_tree.converter import ef_to_efg, efg_to_ef
 
 
 class TestUtilityFunctions:
@@ -653,6 +654,8 @@ class TestCommandlineArguments:
             sublevel_scaling,
             width_scaling,
             shared_terminal_depth,
+            to_efg,
+            to_ef,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -693,6 +696,8 @@ class TestCommandlineArguments:
             sublevel_scaling,
             width_scaling,
             shared_terminal_depth,
+            to_efg,
+            to_ef,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -733,6 +738,8 @@ class TestCommandlineArguments:
             sublevel_scaling,
             width_scaling,
             shared_terminal_depth,
+            to_efg,
+            to_ef,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -773,6 +780,8 @@ class TestCommandlineArguments:
             sublevel_scaling,
             width_scaling,
             shared_terminal_depth,
+            to_efg,
+            to_ef,
         ) = result
         assert output_mode == "pdf"
         assert pdf_requested
@@ -811,6 +820,8 @@ class TestCommandlineArguments:
             sublevel_scaling,
             width_scaling,
             shared_terminal_depth,
+            to_efg,
+            to_ef,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -851,6 +862,8 @@ class TestCommandlineArguments:
             sublevel_scaling,
             width_scaling,
             shared_terminal_depth,
+            to_efg,
+            to_ef,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -890,6 +903,8 @@ class TestCommandlineArguments:
             sublevel_scaling,
             width_scaling,
             shared_terminal_depth,
+            to_efg,
+            to_ef,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -923,6 +938,8 @@ class TestCommandlineArguments:
             sublevel_scaling,
             width_scaling,
             shared_terminal_depth,
+            to_efg,
+            to_ef,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -957,6 +974,8 @@ class TestCommandlineArguments:
             sublevel_scaling,
             width_scaling,
             shared_terminal_depth,
+            to_efg,
+            to_ef,
         ) = result
         assert dpi == 300  # Should default to 300 for invalid values
 
@@ -989,6 +1008,8 @@ class TestCommandlineArguments:
             sublevel_scaling,
             width_scaling,
             shared_terminal_depth,
+            to_efg,
+            to_ef,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -1029,6 +1050,8 @@ class TestCommandlineArguments:
             sublevel_scaling,
             width_scaling,
             shared_terminal_depth,
+            to_efg,
+            to_ef,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -1775,5 +1798,240 @@ def test_payoff_font_family():
     assert "$\\mathsf{" in res_sans
 
 
+class TestConverter:
+    """Tests for ef_to_efg and efg_to_ef converter functions."""
+
+    def test_ef_to_efg_basic(self, tmp_path):
+        """Test basic EF to EFG conversion produces valid EFG output."""
+        ef_file = "games/example.ef"
+        if not os.path.exists(ef_file):
+            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+        if not os.path.exists(ef_file):
+            pytest.skip("example.ef not found")
+
+        out_path = str(tmp_path / "example.efg")
+        result = ef_to_efg(ef_file, save_to=out_path)
+
+        assert os.path.exists(result)
+        with open(result) as f:
+            content = f.read()
+        assert content.startswith("EFG 2 R")
+        assert '"I"' in content
+        assert '"II"' in content
+        # Should contain terminal nodes
+        assert content.count("\nt ") >= 1
+
+    def test_ef_to_efg_save_to(self, tmp_path):
+        """Test that save_to controls the output filename."""
+        ef_file = "games/example.ef"
+        if not os.path.exists(ef_file):
+            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+        if not os.path.exists(ef_file):
+            pytest.skip("example.ef not found")
+
+        custom_path = str(tmp_path / "my_custom_game.efg")
+        result = ef_to_efg(ef_file, save_to=custom_path)
+        assert result == custom_path
+        assert os.path.exists(custom_path)
+
+    def test_ef_to_efg_auto_extension(self, tmp_path):
+        """Test that .efg extension is added automatically if missing."""
+        ef_file = "games/example.ef"
+        if not os.path.exists(ef_file):
+            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+        if not os.path.exists(ef_file):
+            pytest.skip("example.ef not found")
+
+        base_path = str(tmp_path / "my_game")
+        result = ef_to_efg(ef_file, save_to=base_path)
+        assert result.endswith(".efg")
+        assert os.path.exists(result)
+
+    def test_ef_to_efg_title(self, tmp_path):
+        """Test that custom title is used in the EFG prologue."""
+        ef_file = "games/example.ef"
+        if not os.path.exists(ef_file):
+            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+        if not os.path.exists(ef_file):
+            pytest.skip("example.ef not found")
+
+        out_path = str(tmp_path / "titled.efg")
+        ef_to_efg(ef_file, save_to=out_path, title="My Game")
+        with open(out_path) as f:
+            content = f.read()
+        assert '"My Game"' in content
+
+    def test_ef_to_efg_payoff_preservation(self, tmp_path):
+        """Test that payoff values survive EF to EFG conversion."""
+        ef_file = "games/example.ef"
+        if not os.path.exists(ef_file):
+            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+        if not os.path.exists(ef_file):
+            pytest.skip("example.ef not found")
+
+        out_path = str(tmp_path / "payoffs.efg")
+        ef_to_efg(ef_file, save_to=out_path)
+        with open(out_path) as f:
+            content = f.read()
+
+        # The example.ef has payoffs like "3 3", "1 -1", "5 1", etc.
+        assert "3 3" in content
+        assert "5 1" in content
+        assert "2 0" in content
+
+    def test_ef_to_efg_pygambit_loadable(self, tmp_path):
+        """Test that the generated EFG file can be loaded by pygambit."""
+        ef_file = "games/example.ef"
+        if not os.path.exists(ef_file):
+            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+        if not os.path.exists(ef_file):
+            pytest.skip("example.ef not found")
+
+        import pygambit
+
+        out_path = str(tmp_path / "loadable.efg")
+        ef_to_efg(ef_file, save_to=out_path)
+        game = pygambit.read_efg(out_path)
+        assert game.title == "example"
+        assert len(game.players) == 2
+
+    def test_ef_to_efg_file_not_found(self):
+        """Test that FileNotFoundError is raised for missing file."""
+        with pytest.raises(FileNotFoundError):
+            ef_to_efg("nonexistent.ef")
+
+    def test_efg_to_ef_basic(self, tmp_path):
+        """Test basic EFG to EF conversion."""
+        efg_file = "games/efg/2s2x2x2.efg"
+        if not os.path.exists(efg_file):
+            efg_file = os.path.join(
+                os.path.dirname(__file__), "..", "games", "efg", "2s2x2x2.efg"
+            )
+        if not os.path.exists(efg_file):
+            pytest.skip("2s2x2x2.efg not found")
+
+        out_path = str(tmp_path / "converted.ef")
+        result = efg_to_ef(efg_file, save_to=out_path)
+        assert os.path.exists(result)
+        with open(result) as f:
+            content = f.read()
+        assert "player" in content
+        assert "level" in content
+
+    def test_efg_to_ef_save_to(self, tmp_path):
+        """Test that save_to controls the output filename."""
+        efg_file = "games/efg/2s2x2x2.efg"
+        if not os.path.exists(efg_file):
+            efg_file = os.path.join(
+                os.path.dirname(__file__), "..", "games", "efg", "2s2x2x2.efg"
+            )
+        if not os.path.exists(efg_file):
+            pytest.skip("2s2x2x2.efg not found")
+
+        custom_path = str(tmp_path / "my_custom.ef")
+        result = efg_to_ef(efg_file, save_to=custom_path)
+        assert os.path.exists(result)
+
+    def test_efg_to_ef_pygambit_game(self, tmp_path):
+        """Test that a pygambit Game object can be passed directly."""
+        import pygambit
+
+        efg_file = "games/efg/2s2x2x2.efg"
+        if not os.path.exists(efg_file):
+            efg_file = os.path.join(
+                os.path.dirname(__file__), "..", "games", "efg", "2s2x2x2.efg"
+            )
+        if not os.path.exists(efg_file):
+            pytest.skip("2s2x2x2.efg not found")
+
+        game = pygambit.read_efg(efg_file)
+        result = efg_to_ef(game, save_to=str(tmp_path / "from_game.ef"))
+        assert os.path.exists(result)
+        with open(result) as f:
+            content = f.read()
+        assert "player" in content
+
+    def test_efg_to_ef_file_not_found(self):
+        """Test that FileNotFoundError is raised for missing file."""
+        with pytest.raises(FileNotFoundError):
+            efg_to_ef("nonexistent.efg")
+
+    def test_round_trip_efg_ef_efg(self, tmp_path):
+        """Test EFG -> EF -> EFG round-trip produces a loadable game."""
+        import pygambit
+
+        efg_file = "games/efg/2s2x2x2.efg"
+        if not os.path.exists(efg_file):
+            efg_file = os.path.join(
+                os.path.dirname(__file__), "..", "games", "efg", "2s2x2x2.efg"
+            )
+        if not os.path.exists(efg_file):
+            pytest.skip("2s2x2x2.efg not found")
+
+        # EFG -> EF
+        ef_path = str(tmp_path / "roundtrip.ef")
+        efg_to_ef(efg_file, save_to=ef_path)
+        assert os.path.exists(ef_path)
+
+        # EF -> EFG
+        efg_path = str(tmp_path / "roundtrip.efg")
+        ef_to_efg(ef_path, save_to=efg_path)
+        assert os.path.exists(efg_path)
+
+        # Verify the result is loadable
+        game = pygambit.read_efg(efg_path)
+        assert len(game.players) >= 2
+
+    def test_commandline_to_efg_flag(self):
+        """Test that --to-efg flag is parsed correctly."""
+        from draw_tree.core import commandline
+
+        result = commandline(["draw_tree", "games/example.ef", "--to-efg"])
+        (
+            output_mode, pdf_requested, png_requested, svg_requested,
+            tex_requested, output_file, dpi, font_family, font_bold,
+            font_italic, font_size, custom_colors, horizontal,
+            action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
+            node_size, color_scheme, edge_thickness, action_label_position,
+            level_scaling, sublevel_scaling, width_scaling,
+            shared_terminal_depth, to_efg, to_ef,
+        ) = result
+        assert to_efg is True
+        assert to_ef is False
+
+    def test_commandline_to_ef_flag(self):
+        """Test that --to-ef flag is parsed correctly."""
+        from draw_tree.core import commandline
+
+        result = commandline(["draw_tree", "games/efg/test.efg", "--to-ef"])
+        (
+            output_mode, pdf_requested, png_requested, svg_requested,
+            tex_requested, output_file, dpi, font_family, font_bold,
+            font_italic, font_size, custom_colors, horizontal,
+            action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
+            node_size, color_scheme, edge_thickness, action_label_position,
+            level_scaling, sublevel_scaling, width_scaling,
+            shared_terminal_depth, to_efg, to_ef,
+        ) = result
+        assert to_efg is False
+        assert to_ef is True
+
+    def test_ef_to_efg_2smp(self, tmp_path):
+        """Test conversion of a game with information sets."""
+        ef_file = "games/2smp.ef"
+        if not os.path.exists(ef_file):
+            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "2smp.ef")
+        if not os.path.exists(ef_file):
+            pytest.skip("2smp.ef not found")
+
+        import pygambit
+
+        out_path = str(tmp_path / "2smp.efg")
+        ef_to_efg(ef_file, save_to=out_path)
+        game = pygambit.read_efg(out_path)
+        assert len(game.players) == 2
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
+

@@ -13,6 +13,7 @@ from .core import (
     generate_svg,
     generate_tex,
 )
+from .converter import ef_to_efg, efg_to_ef
 
 
 def main():
@@ -76,6 +77,10 @@ def main():
         print("  --width-scaling=X Set width spacing multiplier for .efg files (default: 1.0)")
         print("  --shared-terminal-depth Enforce shared terminal node depth for .efg files")
         print()
+        print("Format conversion:")
+        print("  --to-efg     Convert .ef file to Gambit .efg format")
+        print("  --to-ef      Convert .efg file to .ef format (requires pygambit)")
+        print()
         print("Examples:")
         print("  draw_tree games/example.ef --pdf")
         print("  draw_tree games/example.ef --png --dpi=600")
@@ -85,6 +90,8 @@ def main():
         print(
             '  draw_tree games/example.ef --png --custom-colors="0:#FF0000,1:#0000FF"'
         )
+        print("  draw_tree games/example.ef --to-efg")
+        print("  draw_tree games/efg/2s2x2x2.efg --to-ef")
         print()
         print(
             "Note: PDF/PNG/SVG generation requires pdflatex. PNG also needs ImageMagick or Ghostscript. SVG needs pdf2svg."
@@ -132,6 +139,8 @@ def main():
         sublevel_scaling,
         width_scaling,
         shared_terminal_depth,
+        to_efg_requested,
+        to_ef_requested,
     ) = commandline(sys.argv)
 
     # Import the core module to access global variables after commandline() has set them
@@ -142,7 +151,27 @@ def main():
     current_grid = core.grid
 
     try:
-        # Use default PDF filename if none specified
+        # Handle format conversion requests first
+        if to_efg_requested:
+            save_to = output_file
+            result = ef_to_efg(current_ef_file, save_to=save_to)
+            print(f"EFG file generated: {result}")
+            return
+
+        if to_ef_requested:
+            save_to = output_file
+            result = efg_to_ef(
+                current_ef_file,
+                save_to=save_to,
+                level_scaling=level_scaling,
+                sublevel_scaling=sublevel_scaling,
+                width_scaling=width_scaling,
+                shared_terminal_depth=shared_terminal_depth,
+            )
+            print(f"EF file generated: {result}")
+            return
+
+        # Use default filename if none specified
         if output_file is None:
             output_file = Path(current_ef_file).stem
         if output_mode == "pdf":

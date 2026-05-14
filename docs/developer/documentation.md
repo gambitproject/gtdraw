@@ -6,6 +6,10 @@ If you would like to contribute to the documentation, follow the instructions be
 
 ## Local Build Instructions
 
+::: {important}
+To build the documentation locally you'll need to use a Python 3.13+ before performing a developer install.
+:::
+
 1. Ensure you have installed the project with its `dev` dependencies (which includes `jupyter-book`). If you haven't yet, run:
    ```bash
    pip install -e ".[dev]"
