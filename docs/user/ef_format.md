@@ -6,10 +6,11 @@ The file consists of lines starting with keywords: `player`, `level`, or `iset`.
 No spaces are allowed in move names, player names, or payoffs (use `~` instead).
 You can add comments by prefixing a line with `%`.
 
-::::{grid}
+::::{grid} 1 1 12 12
 
 :::{grid-item}
 :columns: 7
+
 An example EF file:
 ```text
 % Example game
@@ -31,6 +32,7 @@ iset 4,1 4,2 player 2
 
 :::{grid-item}
 :columns: 5
+
 The game it generates:
 ```{image} ../../img/example.svg
 :alt: EF file format example game tree
