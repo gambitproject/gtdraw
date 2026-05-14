@@ -1603,6 +1603,8 @@ def commandline(
     sublevel_scaling = 1.0
     width_scaling = 1.0
     shared_terminal_depth = False
+    to_efg = False
+    to_ef = False
 
     for arg in argv[1:]:
         if arg[:5] == "scale":
@@ -1729,6 +1731,10 @@ def commandline(
                 pass
         elif arg == "--shared-terminal-depth":
             shared_terminal_depth = True
+        elif arg == "--to-efg":
+            to_efg = True
+        elif arg == "--to-ef":
+            to_ef = True
         elif arg.endswith(".ef"):
             ef_file = arg
         else:
@@ -1773,6 +1779,8 @@ def commandline(
         sublevel_scaling,
         width_scaling,
         shared_terminal_depth,
+        to_efg,
+        to_ef,
     )
 
 

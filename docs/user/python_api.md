@@ -98,3 +98,40 @@ generate_pdf('somegame.efg')
 ::: {note}
 Without setting the `save_to` parameter, the saved file will be based on the title field of the `pygambit` game object.
 :::
+
+## Format Conversion
+
+`draw_tree` provides two functions for converting between `.ef` and `.efg` file formats:
+
+```python
+from draw_tree import ef_to_efg, efg_to_ef
+
+# Convert EF to Gambit EFG
+ef_to_efg("game.ef")
+ef_to_efg("game.ef", save_to="output.efg", title="My Game")
+
+# Convert EFG to EF (requires pygambit)
+efg_to_ef("game.efg")
+efg_to_ef("game.efg", save_to="output.ef", level_scaling=1.5)
+
+# You can also pass a pygambit Game object
+import pygambit as gbt
+g = gbt.read_efg("game.efg")
+efg_to_ef(g, save_to="output.ef")
+```
+
+### Conversion Arguments
+
+| Function | Argument | Description |
+| :--- | :--- | :--- |
+| **`ef_to_efg`** | `game` | Path to the `.ef` file (required). |
+| | `save_to="filename"` | Output filename. Defaults to the input filename with `.efg` extension. |
+| | `title="My Game"` | Title string for the EFG prologue. Defaults to the input filename stem. |
+| **`efg_to_ef`** | `game` | Path to the `.efg` file, or a `pygambit.gambit.Game` object (required). |
+| | `save_to="filename"` | Output filename. Defaults to the game title with `.ef` extension. |
+| | `level_scaling=X.X` | Level spacing multiplier (default: 1.0). |
+| | `sublevel_scaling=X.X` | Sublevel spacing multiplier (default: 1.0). |
+| | `width_scaling=X.X` | Width spacing multiplier (default: 1.0). |
+| | `shared_terminal_depth=True/False` | Enforce shared terminal node depth (default: False). |
+
+Both functions return the path to the generated output file.
