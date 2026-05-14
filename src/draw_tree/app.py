@@ -50,6 +50,10 @@ def run_app():
         "##### Part of the [Gambit project](https://www.gambit-project.org/)."
     )
     st.sidebar.markdown(
+        "📖 **[Documentation](https://www.gambit-project.org/draw_tree/)**"
+    )
+    st.sidebar.divider()
+    st.sidebar.markdown(
         "Welcome to DrawTree! Load a Game in EFG or EF format, then adjust the layout and download your publication-ready image."
     )
 
@@ -296,6 +300,7 @@ def run_app():
             )
         st.info("Select a game from the sidebar to begin.")
         return
+
 
     try:
         # Use a temporary directory for all GUI-generated files to ensure cleanup
