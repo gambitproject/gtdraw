@@ -4,9 +4,6 @@
 
 :::{card} 🚀 Try DrawTree Online!
 :link: https://drawtree.streamlit.app/
-:text-align: center
-:shadow: md
-:class-title: font-weight-bold
 
 **Visualize your game trees instantly.** No installation required.
 
