@@ -14,6 +14,7 @@ project:
         - file: user/gui.md
     - title: Developer Guide
       children:
+        - file: architecture.md
         - file: developer/development.md
         - file: developer/documentation.md
         - file: developer/contributing.md
