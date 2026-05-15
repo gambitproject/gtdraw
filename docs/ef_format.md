@@ -34,7 +34,7 @@ iset 4,1 4,2 player 2
 :columns: 5
 
 The game it generates:
-```{image} ../../img/example.svg
+```{image} ../img/example.svg
 :alt: EF file format example game tree
 ```
 :::
