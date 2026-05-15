@@ -6,7 +6,7 @@ project:
   toc:
     - file: index.md
     - file: installation.md
-    - file: architecture.md
+    - file: creating_games.md
     - file: ef_format.md
     - file: cli.md
     - file: python_api.md
