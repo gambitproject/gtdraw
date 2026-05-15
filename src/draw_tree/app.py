@@ -96,7 +96,7 @@ def run_app():
 
         # Default selection
         default_idx = 0
-        target_example_path = "games/efg/one_card_poker.efg"
+        target_example_path = "games/example.ef"
         for i, opt in enumerate(options):
             if opt[2] == target_example_path:
                 default_idx = i
