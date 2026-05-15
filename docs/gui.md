@@ -1,18 +1,20 @@
 # Interactive GUI
 
-`draw_tree` includes a lightweight, interactive GUI built with Streamlit. It allows you to upload `.ef` or `.efg` files and adjust drawing parameters in real-time, previewing changes visually.
+`draw_tree` includes a lightweight, interactive GUI built with Streamlit. It allows you to upload `.ef` or `.efg` files and adjust drawing parameters in real-time, previewing changes visually. You can run the GUI locally or used our hosted version on the Streamlit Community Cloud:
 
 :::{card} 🚀 Try DrawTree Online!
 :link: https://drawtree.streamlit.app/
 
 **Visualize your game trees instantly.** No installation required.
 
-[![Launch GUI](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://drawtree.streamlit.app/)
-
-+++
-[Launch interactive tool →](https://drawtree.streamlit.app/)
+```{image} ../img/example.svg
+:alt: Example
+:width: 300px
+:align: center
+```
 :::
 
+## Running the GUI locally
 
 To launch the GUI from your terminal, simply run:
 
@@ -25,6 +27,6 @@ This will start a local Streamlit server and automatically open the application 
 - Tinker with formatting options (e.g., node size, layouts, colors)
 - Download the resulting Tex, SVG, PDF, or PNG images.
 
-```{image} ../../img/gui_screenshot.png
+```{image} ../img/gui_screenshot.png
 :alt: GUI screenshot
 ```
