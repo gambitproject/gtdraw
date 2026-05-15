@@ -1,0 +1,18 @@
+player 1 name I
+player 2 name II
+level 0 node 1 player 1 
+level 2 node 1 player 2 xshift -a=3.5 from 0,1 move A\,
+level 2 node 2 player 2 xshift -b=1.75 from 0,1 move B\!
+level 2 node 3 player 2 xshift -0.001 from 0,1 move C 
+level 2 node 4 player 2 xshift b from 0,1 move:left D~ 
+level 2 node 5 player 2 xshift a from 0,1 move \,E 
+level 4 node 1 xshift -c=.43 from 2,1 move a payoffs ~
+level 4 node 2 xshift c from 2,1 move b payoffs ~
+level 4 node 3 xshift -c from 2,2 move c payoffs ~
+level 4 node 4 xshift c from 2,2 move d payoffs ~
+level 4 node 5 xshift -c from 2,3 move e payoffs ~
+level 4 node 6 xshift c from 2,3 move f payoffs ~
+level 4 node 7 xshift -c from 2,4 move g payoffs ~
+level 4 node 8 xshift c from 2,4 move h payoffs ~
+level 4 node 9 xshift -c from 2,5 move i payoffs ~
+level 4 node 10 xshift c from 2,5 move k payoffs ~

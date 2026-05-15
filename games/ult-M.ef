@@ -1,0 +1,15 @@
+player 1 name \,I
+player 2 name II
+level 0 node 1 player 1 
+level 2 node 0 player 2 xshift -f=3 from 0,1 move::.6 0~
+level 2 node 1 player 2 xshift -a=1 from 0,1 move::.6 1
+level 2 node 2 player 2 xshift a from 0,1 arrow:white 0.6 move::.6 2
+level 2 node 3 player 2 xshift f from 0,1 arrow:black 0.6 move::.6 ~3
+level 4 node 0 xshift -b=.5 from 2,0 move A arrow:white 0.6 payoffs 0 3
+level 4 node 1 xshift b from 2,0 move R payoffs 0 0 
+level 4 node 2 xshift -b=.5 from 2,1 move A arrow:white 0.6 payoffs 1 2
+level 4 node 3 xshift b from 2,1 move R payoffs 0 0
+level 4 node 4 xshift -b=.5 from 2,2 move A arrow:white 0.6 payoffs 2 1
+level 4 node 5 xshift b from 2,2 move R payoffs 0 0
+level 4 node 6 xshift -b from 2,3 move A arrow:white 0.6 payoffs 3 0
+level 4 node 7 xshift b from 2,3 move R arrow:black 0.6 payoffs 0 0

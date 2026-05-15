@@ -1,0 +1,12 @@
+player 0 name ~
+level 0 node 1 player 0 
+level 2 node 1 player 0 xshift -a=2.5 from 0,1 move p_1\,
+level 2 node 2 player 0 xshift -0.5 from 0,1 move p_2
+level 2 node 3 player 0 xshift a from 0,1 move \,\,p_n
+level 4 node 1 xshift -b=0.5 from 2,1 move 1{-}\alpha_1 payoffs x_0
+level 4 node 2 xshift b from 2,1 move \alpha_1 payoffs x_1
+level 4 node 3 xshift -b from 2,2 move::0.3 1{-}\alpha_2 payoffs x_0
+level 4 node 4 xshift b from 2,2 move::0.3 \alpha_2 payoffs x_1
+level 4 node 5 xshift -b from 2,3 move 1{-}\alpha_n payoffs x_0
+level 4 node 6 xshift b from 2,3 move \alpha_n payoffs x_1
+level 1.5 node 3 xshift 1 payoffs \ldots 

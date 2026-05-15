@@ -1,0 +1,13 @@
+player 1 name I
+level 0 node 1 player 0 
+level 2 node 1 player 1 xshift -a=2 from 0,1 move \frac{1}{2}~
+level 2 node 2 player 1 xshift a from 0,1 move ~\frac{1}{2} 
+level 4 node 1 xshift -b=1 from 2,1 move T payoffs 20
+level 6 node 1 xshift 2b from 2,1 move B 
+level 4 node 2 xshift -b from 2,2 move T payoffs 0
+level 6 node 2 xshift 2b from 2,2 move B 
+level 8 node 1 xshift -d=1 from 6,1 move L payoffs 12
+level 8 node 2 xshift d from 6,1 move R payoffs -4
+level 8 node 3 xshift -d from 6,2 move L payoffs 12
+level 8 node 4 xshift d from 6,2 move R payoffs 20
+iset 6,1 6,2 player 1

@@ -1,0 +1,13 @@
+player 1 name I
+player 2 name II
+level 0 node 1 player 1 
+level 2 node 1 player 2 xshift -a=3 from 0,1 move C_1~
+level 2 node 2 player 2 xshift -1 from 0,1 move C_2 
+level 4 node 1 xshift -b=.5 from 2,1 move l_1 payoffs ~
+level 4 node 2 xshift b from 2,1 move r_1 payoffs ~
+level 4 node 3 xshift -b from 2,2 move l_2 payoffs ~
+level 4 node 4 xshift b from 2,2 move r_2 payoffs ~
+level 1.5 node 3  xshift 1 payoffs \ldots
+level 2 node 4 player 2 xshift a from 0,1 move \,C_m 
+level 4 node 7 xshift -b from 2,4 move l_m payoffs ~
+level 4 node 8 xshift b from 2,4 move r_m payoffs ~

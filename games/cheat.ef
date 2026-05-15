@@ -1,0 +1,6 @@
+player 0 name ~
+level 0 node 1 
+level 2 node 1 xshift -b=1.2 from 0,1 move \textit{comply} payoffs 0
+level 2 node 2 xshift b player 0 from 0,1 move \textit{cheat} 
+level 4 node 1 xshift -c=.8 from 2,2 move 0.9 payoffs 10
+level 4 node 2 xshift c from 2,2 move 0.1 payoffs -90 

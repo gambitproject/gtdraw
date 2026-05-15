@@ -1,0 +1,25 @@
+player 0 name ~
+level 0 node 1 player 0 
+level 2 node 1 xshift -b=.9 from 0,1 move 0.9 payoffs \hbox{\$1m}
+level 2 node 2 xshift b player 0 from 0,1 move 0.1
+level 4 node 1 xshift c=.7 from 2,2 move 0.1 payoffs \hbox{\$0}
+level 4 node 2 xshift -c from 2,2 move 0.9 payoffs \hbox{\$5m}
+
+level 1 node 0 xshift 2 payoffs \prec
+
+level 0 node 5 player 0  xshift 4
+level 2 node 5 xshift -b from 0,5 move 0.9 payoffs \hbox{\$1m}
+level 2 node 6 xshift b from 0,5 move 0.1 payoffs \hbox{\$1m}
+
+level 0 node x player 0  xshift 9
+level 2 node y xshift -b from 0,x move 0.9 payoffs \hbox{\$0}
+level 2 node z xshift b from 0,x move 0.1 payoffs \hbox{\$1m}
+
+level 1 node 0 xshift 11 payoffs \prec
+
+level 0 node 8 player 0  xshift 13
+level 2 node 8 xshift -b from 0,8 move 0.9 payoffs \hbox{\$0}
+level 2 node 9 xshift b player 0 from 0,8 move 0.1
+level 4 node 8 xshift c from 2,9 move 0.1 payoffs \hbox{\$0}
+level 4 node 9 xshift -c from 2,9 move 0.9 payoffs \hbox{\$5m}
+
