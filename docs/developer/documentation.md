@@ -16,7 +16,7 @@ To build the documentation locally, you **must use Python 3.13 or higher**. This
    ```
 
 2. Make your edits to the `.md` or `.ipynb` files within the `docs/` directory.
-   - User documentation goes in `docs/user/`.
+   - User documentation goes in `docs/`.
    - Developer documentation goes in `docs/developer/`.
    - Be sure to update `docs/myst.yml` if you add or remove files.
 
