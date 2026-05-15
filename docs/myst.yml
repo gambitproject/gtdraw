@@ -5,13 +5,12 @@ project:
   github: https://github.com/gambitproject/draw_tree
   toc:
     - file: index.md
-    - title: User Guide
-      children:
-        - file: user/installation.md
-        - file: user/ef_format.md
-        - file: user/cli.md
-        - file: user/python_api.md
-        - file: user/gui.md
+    - file: installation.md
+    - file: creating_games.md
+    - file: ef_format.md
+    - file: cli.md
+    - file: python_api.md
+    - file: gui.md
     - title: Developer Guide
       children:
         - file: developer/development.md
