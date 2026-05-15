@@ -5,8 +5,8 @@ DrawTree serves as a bridge between game theory file formats and high-quality vi
 ```{mermaid}
 flowchart TD
     %% Source Inputs
-    GTE["GTE <br/> (Game Theory Explorer)"] -->|File Upload / Path| EF((EF))
-    Gambit["Gambit <br/> (PyGambit, GUI, CLI)"] -->|File Upload / Path| EFG((EFG))
+    GTE["GTE <br/> (Game Theory Explorer)"] --> EF((EF))
+    Gambit["Gambit <br/> (PyGambit, GUI, CLI)"] --> EFG((EFG))
 
     subgraph DrawTree
         direction TB
