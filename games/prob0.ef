@@ -1,0 +1,6 @@
+level 0 node 1 player 0 name ~
+level 2 node 1 xshift -a=2.5 from 0,1 move p_1\, payoffs z_1
+level 2 node 2 xshift -0.5 from 0,1 move p_2 payoffs z_2
+level 2 node 3 xshift a from 0,1 move \,\,p_n payoffs z_n
+level .5 node 3  xshift .5 payoffs \ldots
+level 4 node 4 xshift 0 payoffs ~ 

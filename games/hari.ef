@@ -1,0 +1,6 @@
+player 0 name ~
+level 0 node 1 player 1 
+level -2 node 1 xshift -b=1.2 from 0,1 move T payoffs 2,2
+level -2 node 2 xshift b player 2 from 0,1 move B
+level -4 node 1 xshift -c=.8 from -2,2 move L payoffs x,3
+level -4 node 2 xshift c from -2,2 move R payoffs y,1

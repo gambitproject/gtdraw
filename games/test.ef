@@ -1,0 +1,15 @@
+player 1 name 1
+player 2 name 2
+level 0 node 1 player 1 
+level 2 node 1 xshift -a=2.5 from 0,1 move A 
+level 2 node 2 xshift a from 0,1 move B 
+level 4 node 1 xshift -b=0.8 from 2,1 move a payoffs 13 12
+level 4 node 2 xshift b from 2,1 move b payoffs 16 19
+level 4 node 3 xshift -c=1.5 from 2,2 move a 
+level 4 node 4 xshift c from 2,2 move b 
+level 6 node 1 xshift -b from 4,3 move C payoffs 17 11
+level 6 node 2 xshift b from 4,3 move D payoffs 6 8
+level 6 node 3 xshift -b from 4,4 move C payoffs 10 1
+level 6 node 4 xshift b from 4,4 move D payoffs 15 4
+iset 2,1 2,2 player 2
+iset 4,3 4,4 player 1

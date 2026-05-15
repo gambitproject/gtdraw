@@ -1,0 +1,6 @@
+player 0 name ~
+level 0 node 1 player 0 
+level 2 node 1 xshift -b=.8 from 0,1 move 1{-}\beta payoffs P
+level 2 node 2 xshift b player 0 from 0,1 move \beta 
+level 4 node 1 xshift -c=.8 from 2,2 move \frac{\alpha}{\beta} payoffs Q
+level 4 node 1 xshift c from 2,2 move 1{-}\frac{\alpha}{\beta} payoffs Q

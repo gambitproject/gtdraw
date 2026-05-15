@@ -1,0 +1,5 @@
+player 1 name I
+player 2 name II
+level 0 node 1 player 2 
+level 2 node 1 xshift -a=2 from 0,1 move l arrow .5 payoffs 4 2
+level 2 node 2 xshift a from 0,1 move r payoffs 3 3
