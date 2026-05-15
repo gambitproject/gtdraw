@@ -2,9 +2,42 @@
 
 DrawTree serves as a bridge between game theory file formats and high-quality visualizations. The diagram below illustrates how data flows from various sources through DrawTree to produce publication-ready graphics.
 
-```{image} ../img/architecture_diagram.png
-:alt: DrawTree Architecture Diagram
-:align: center
+```{mermaid}
+flowchart TD
+    %% Source Inputs
+    GTE["GTE <br/> (Game Theory Explorer)"] -->|File Upload / Path| EF((EF))
+    Gambit["Gambit <br/> (PyGambit, GUI, CLI)"] -->|File Upload / Path| EFG((EFG))
+
+    subgraph DrawTree
+        direction TB
+        
+        %% Conversion Layer
+        EF <--> |"converter.py <br/> (ef_to_efg / efg_to_ef)"| EFG
+        
+        %% Processing Layer
+        EF --> |"core.py"| Gen[Generate]
+        EFG --> |"gambit_layout.py <br/> (to EF)"| Gen
+        
+        %% Output Layer
+        Gen --> |"generate_tikz()"| TikZ[TikZ Code]
+        Gen --> |"generate_tex()"| TeX[LaTeX Doc]
+        Gen --> |"generate_svg()"| SVG[SVG Image]
+        Gen --> |"generate_png()"| PNG[PNG Image]
+        Gen --> |"generate_pdf()"| PDF[PDF Document]
+    end
+
+    %% Styling
+    style GTE fill:#f9f,stroke:#333,stroke-width:2px
+    style Gambit fill:#f9f,stroke:#333,stroke-width:2px
+    style EF fill:#bbf,stroke:#333,stroke-width:2px
+    style EFG fill:#bfb,stroke:#333,stroke-width:2px
+    style Gen fill:#f96,stroke:#333,stroke-width:2px
+    style DrawTree fill:#fff,stroke:#333,stroke-dasharray: 5 5
+    style TikZ fill:#eee,stroke:#333
+    style TeX fill:#eee,stroke:#333
+    style SVG fill:#eee,stroke:#333
+    style PNG fill:#eee,stroke:#333
+    style PDF fill:#eee,stroke:#333
 ```
 
 ## Data Flow
@@ -12,5 +45,7 @@ DrawTree serves as a bridge between game theory file formats and high-quality vi
 2. **Formats**: 
    - **EF**: The native DrawTree format, optimized for manual layout and TikZ rendering.
    - **EFG**: The standard Gambit format.
-3. **Conversion**: The `converter.py` module provides robust two-way conversion (`ef_to_efg` and `efg_to_ef`) to ensure compatibility between different tools.
-4. **Generation**: Once a game is loaded, the generation engine produces multiple output formats including **TikZ**, **TeX**, **SVG**, **PNG**, and **PDF**.
+3. **Conversion**: The `converter.py` module provides robust two-way conversion between EF and EFG formats to ensure compatibility between different tools.
+4. **Generation**: DrawTree can natively ingest **either EF or EFG** files to generate output. 
+   - **EFG files** are internally converted to an EF representation via `gambit_layout.py`.
+   - **Generation functions** in `core.py` then process the EF data to produce multiple formats including **TikZ**, **TeX**, **SVG**, **PNG**, and **PDF**.
