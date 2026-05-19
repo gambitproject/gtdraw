@@ -31,7 +31,7 @@ jobs:
     - name: Install LaTeX and pdf2svg
       run: |
         sudo apt-get update
-        sudo apt-get install -y texlive-pictures texlive-latex-extra ghostscript pdf2svg
+        sudo apt-get install -y texlive-pictures texlive-latex-extra texlive-games ghostscript pdf2svg
         
     - name: Install dependencies
       run: |

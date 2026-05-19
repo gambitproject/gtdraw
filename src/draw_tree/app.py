@@ -53,7 +53,7 @@ def run_app():
         "📖 **[Documentation](https://www.gambit-project.org/draw_tree/)**"
     )
     st.sidebar.markdown(
-        "Welcome to DrawTree! Load a Game in EFG or EF format, then adjust the layout and download your publication-ready image."
+        "Welcome to DrawTree! Load a game in EF, EFG, or NFG format, then download your publication-ready image."
     )
 
     # Try to find games directory
@@ -62,6 +62,7 @@ def run_app():
 
     game_source = None
     is_efg = False
+    is_nfg = False
 
     with st.sidebar.expander("📂 Input Game", expanded=True):
         import pygambit as gbt
@@ -88,6 +89,11 @@ def run_app():
                 rel_path = str(e.relative_to(base_path))
                 options.append(("EFG", e.name, rel_path))
 
+            nfg_examples = sorted(list((example_dir / "nfg").glob("*.nfg")))
+            for e in nfg_examples:
+                rel_path = str(e.relative_to(base_path))
+                options.append(("NFG", e.name, rel_path))
+
         def format_option(i):
             cat, name, _ = options[i]
             if cat == "None":
@@ -103,9 +109,10 @@ def run_app():
                 break
 
         help_text = (
-            "**Catalog**: Games Gambit's catalog.\n\n"
+            "**Catalog**: Games from Gambit's catalog.\n\n"
             "**EF**: DrawTree .ef format games.\n\n"
-            "**EFG**: Gambit .efg files."
+            "**EFG**: Gambit .efg files.\n\n"
+            "**NFG**: Gambit .nfg normal form (strategic form) games."
         )
 
         selected_idx = st.selectbox(
@@ -125,9 +132,11 @@ def run_app():
                 game_source = str(base_path / val)
                 if game_source.lower().endswith(".efg"):
                     is_efg = True
+                elif game_source.lower().endswith(".nfg"):
+                    is_nfg = True
 
         uploaded_file = st.file_uploader(
-            "Or upload your own .ef or .efg file", type=["ef", "efg"]
+            "Or upload your own .ef, .efg, or .nfg file", type=["ef", "efg", "nfg"]
         )
 
     base_filename = "game_tree"
@@ -136,6 +145,8 @@ def run_app():
         suffix = f".{uploaded_file.name.split('.')[-1]}"
         if suffix.lower() == ".efg":
             is_efg = True
+        elif suffix.lower() == ".nfg":
+            is_nfg = True
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             tmp.write(uploaded_file.getvalue())
             game_source = tmp.name
@@ -152,73 +163,82 @@ def run_app():
                 base_filename = "catalog_game"
 
     # Sidebar: Configuration
-    with st.sidebar.expander("📐 Layout", expanded=False):
-        horizontal = st.checkbox(
-            "Horizontal Layout",
-            value=False,
-            help="Switch between vertical (top-down) and horizontal (left-right) layout.",
-        )
-        mirror = st.checkbox(
-            "Mirror Layout",
-            value=False,
-            help="Mirror the tree left-to-right by flipping xshift values.",
-        )
+    # Tree-specific layout options (not applicable to NFG)
+    horizontal = False
+    mirror = False
+    scale_factor = 1.0
+    level_scaling = 1.0
+    sublevel_scaling = 1.0
+    width_scaling = 1.0
+    hide_action_labels = False
+    shared_terminal_depth = False
+    edge_thickness = 1.0
+    node_size = 1.5
+    action_label_position = 0.5
+    action_label_dist = 1.0
+    iset_fill = False
+    iset_fill_opacity = 0.2
+    iset_boundary = "solid"
 
-        if is_efg:
-            shared_terminal_depth = st.checkbox("Shared Terminal Node Depth", False)
+    if not is_nfg:
+        with st.sidebar.expander("📐 Layout", expanded=False):
+            horizontal = st.checkbox(
+                "Horizontal Layout",
+                value=False,
+                help="Switch between vertical (top-down) and horizontal (left-right) layout.",
+            )
+            mirror = st.checkbox(
+                "Mirror Layout",
+                value=False,
+                help="Mirror the tree left-to-right by flipping xshift values.",
+            )
 
-        scale_factor = st.slider(
-            "Scale factor",
-            0.5,
-            2.0,
-            1.0,
-            0.05,
-            help="Scale factor for the entire TikZ diagram.",
-        )
+            if is_efg:
+                shared_terminal_depth = st.checkbox("Shared Terminal Node Depth", False)
 
-        # Conditional Layout Scaling
-        if is_efg:
-            level_scaling = st.slider("Level Spacing", 0.0, 5.0, 1.0, 0.05)
-            sublevel_scaling = st.slider("Sublevel Spacing", 0.0, 5.0, 1.0, 0.05)
-            width_scaling = st.slider("Width Spacing", 0.0, 5.0, 1.0, 0.05)
-            hide_action_labels = False
-        else:
-            # Defaults for .ef files
-            level_scaling = 1.0
-            sublevel_scaling = 1.0
-            width_scaling = 1.0
-            hide_action_labels = False
-            shared_terminal_depth = False
+            scale_factor = st.slider(
+                "Scale factor",
+                0.5,
+                2.0,
+                1.0,
+                0.05,
+                help="Scale factor for the entire TikZ diagram.",
+            )
 
-        edge_thickness = st.slider("Edge Thickness", 0.1, 5.0, 1.0, 0.1)
-        node_size = st.slider(
-            "Node Size", 0.5, 5.0, 1.5, 0.1, help="Size of player nodes in mm."
-        )
-        action_label_position = st.slider(
-            "Action Label Position",
-            0.0,
-            1.0,
-            0.5,
-            0.05,
-            help="Position of action labels along the edge (0=start, 1=end).",
-        )
-        action_label_dist = st.slider(
-            "Action Label Distance",
-            1.0,
-            5.0,
-            1.0,
-            0.1,
-            help="Distance of action labels from the edge.",
-        )
+            if is_efg:
+                level_scaling = st.slider("Level Spacing", 0.0, 5.0, 1.0, 0.05)
+                sublevel_scaling = st.slider("Sublevel Spacing", 0.0, 5.0, 1.0, 0.05)
+                width_scaling = st.slider("Width Spacing", 0.0, 5.0, 1.0, 0.05)
 
-    with st.sidebar.expander("🔵 Information Sets", expanded=False):
-        iset_fill = st.checkbox("Fill Information Sets", value=False)
-        iset_fill_opacity = st.slider(
-            "Fill Opacity", 0.0, 1.0, 0.2, 0.05, disabled=not iset_fill
-        )
-        iset_boundary = st.selectbox(
-            "Boundary Style", ["solid", "dotted", "none"], index=0
-        )
+            edge_thickness = st.slider("Edge Thickness", 0.1, 5.0, 1.0, 0.1)
+            node_size = st.slider(
+                "Node Size", 0.5, 5.0, 1.5, 0.1, help="Size of player nodes in mm."
+            )
+            action_label_position = st.slider(
+                "Action Label Position",
+                0.0,
+                1.0,
+                0.5,
+                0.05,
+                help="Position of action labels along the edge (0=start, 1=end).",
+            )
+            action_label_dist = st.slider(
+                "Action Label Distance",
+                1.0,
+                5.0,
+                1.0,
+                0.1,
+                help="Distance of action labels from the edge.",
+            )
+
+        with st.sidebar.expander("🔵 Information Sets", expanded=False):
+            iset_fill = st.checkbox("Fill Information Sets", value=False)
+            iset_fill_opacity = st.slider(
+                "Fill Opacity", 0.0, 1.0, 0.2, 0.05, disabled=not iset_fill
+            )
+            iset_boundary = st.selectbox(
+                "Boundary Style", ["solid", "dotted", "none"], index=0
+            )
 
     with st.sidebar.expander("🎨 Aesthetics", expanded=False):
         color_scheme = st.selectbox(
@@ -319,8 +339,63 @@ def run_app():
             work_dir = Path(work_dir_str)
 
             base_name = f"gui_temp_{os.getpid()}"
-            svg_path = str(work_dir / f"{base_name}.svg")
             output_base = str(work_dir / base_name)
+
+            if is_nfg:
+                # NFG: render payoff table as PNG and display it
+                png_path = str(work_dir / f"{base_name}.png")
+                generate_png(game=game_source, save_to=png_path)
+                if not os.path.exists(png_path):
+                    st.error("NFG rendering failed.")
+                    return
+                with open(png_path, "rb") as f:
+                    png_data = f.read()
+                st.image(png_data, use_container_width=True)
+
+                tikz_code = generate_tikz(game=game_source)
+                tex_path = generate_tex(game=game_source, save_to=output_base + ".tex")
+                with open(tex_path, "r") as f:
+                    tex_data = f.read()
+                pdf_path = generate_pdf(game=game_source, save_to=output_base + ".pdf")
+                with open(pdf_path, "rb") as f:
+                    pdf_data = f.read()
+
+                with st.sidebar.expander("📥 Downloads", expanded=False):
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        st.download_button(
+                            "LaTeX",
+                            tex_data,
+                            f"{base_filename}.tex",
+                            "text/x-tex",
+                            use_container_width=True,
+                        )
+                        st.download_button(
+                            "PDF",
+                            pdf_data,
+                            f"{base_filename}.pdf",
+                            "application/pdf",
+                            use_container_width=True,
+                        )
+                    with c2:
+                        st.download_button(
+                            "Game Env",
+                            tikz_code,
+                            f"{base_filename}.tex",
+                            "text/plain",
+                            use_container_width=True,
+                            help="Raw \\begin{game}...\\end{game} LaTeX body.",
+                        )
+                        st.download_button(
+                            "PNG",
+                            png_data,
+                            f"{base_filename}.png",
+                            "image/png",
+                            use_container_width=True,
+                        )
+                return
+
+            svg_path = str(work_dir / f"{base_name}.svg")
 
             svg_code = generate_svg(
                 game=game_source,

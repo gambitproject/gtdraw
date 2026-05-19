@@ -1388,6 +1388,82 @@ def test_pygambit_generate_pdf_smoke(efg_path, tmp_path):
         assert f.read(4) == b"%PDF"
 
 
+# ---------------------------------------------------------------------------
+# NFG (Normal Form Game) rendering tests
+# ---------------------------------------------------------------------------
+
+def _find_nfg_files():
+    """Return list of .nfg paths under games/nfg/."""
+    nfg_dir = GAMES_DIR / "nfg"
+    if not nfg_dir.exists():
+        return []
+    return sorted(nfg_dir.glob("*.nfg"))
+
+
+_NFG_FILES = _find_nfg_files()
+_NFG_PATH = str(GAMES_DIR / "nfg" / "nau2004_sec3.nfg")
+
+
+class TestNFGRendering:
+    """Tests for Normal Form Game (NFG) rendering support."""
+
+    def _skip_if_no_nfg(self):
+        if not os.path.exists(_NFG_PATH):
+            pytest.skip("NFG test file not found")
+
+    def test_generate_tikz_from_nfg_file(self):
+        """generate_tikz on an NFG file path returns the LaTeX game environment."""
+        self._skip_if_no_nfg()
+        result = draw_tree.generate_tikz(_NFG_PATH)
+        assert "\\begin{game}" in result
+        assert "\\end{game}" in result
+
+    def test_generate_tikz_from_pygambit_nfg_object(self):
+        """generate_tikz on a pygambit NFG Game object returns the LaTeX game environment."""
+        self._skip_if_no_nfg()
+        g = pygambit.read_nfg(_NFG_PATH)
+        result = draw_tree.generate_tikz(g)
+        assert "\\begin{game}" in result
+        assert "\\end{game}" in result
+
+    def test_generate_tikz_nfg_does_not_contain_tikzpicture(self):
+        """NFG output must not contain TikZ markup — it is a payoff table, not a tree."""
+        self._skip_if_no_nfg()
+        result = draw_tree.generate_tikz(_NFG_PATH)
+        assert "\\begin{tikzpicture}" not in result
+
+    def test_generate_tex_from_nfg(self, tmp_path):
+        """generate_tex for NFG produces a .tex file with the sgame package."""
+        self._skip_if_no_nfg()
+        out = draw_tree.generate_tex(_NFG_PATH, save_to=str(tmp_path / "out"))
+        assert out.endswith(".tex")
+        content = Path(out).read_text()
+        assert "\\usepackage{sgame}" in content
+        assert "\\begin{game}" in content
+
+    def test_draw_tree_nfg_returns_latex_body(self):
+        """draw_tree() on an NFG outside Jupyter returns the LaTeX body string."""
+        self._skip_if_no_nfg()
+        result = draw_tree.draw_tree(_NFG_PATH)
+        assert result is not None
+        assert "\\begin{game}" in result
+
+    @pytest.mark.parametrize("nfg_path", _NFG_FILES, ids=[p.name for p in _NFG_FILES])
+    def test_nfg_generate_tikz_smoke(self, nfg_path):
+        """generate_tikz succeeds on all .nfg files in games/nfg/."""
+        result = draw_tree.generate_tikz(str(nfg_path))
+        assert "\\begin{game}" in result, f"No game env in output for {nfg_path}"
+
+    @pytest.mark.parametrize("nfg_path", _NFG_FILES, ids=[p.name for p in _NFG_FILES])
+    @requires_pdflatex
+    def test_nfg_generate_pdf_smoke(self, nfg_path, tmp_path):
+        """generate_pdf compiles each NFG to a valid PDF."""
+        pdf_path = draw_tree.generate_pdf(str(nfg_path), save_to=str(tmp_path / "out.pdf"))
+        assert os.path.isfile(pdf_path)
+        with open(pdf_path, "rb") as f:
+            assert f.read(4) == b"%PDF"
+
+
 class TestFontStyling:
     """Test font styling in TikZ output."""
 

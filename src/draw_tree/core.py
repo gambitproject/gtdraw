@@ -2025,6 +2025,11 @@ def generate_tikz(
     Returns:
         Complete TikZ code ready for use in Jupyter notebooks or LaTeX documents.
     """
+    # NFG (strategic/normal form) games are rendered via pygambit's to_latex() — not TikZ.
+    nfg_game = _prepare_nfg(game)
+    if nfg_game is not None:
+        return nfg_game.to_latex()
+
     # If user supplied an EFG file, read it with pygambit to get the pygambit.gambit.Game object.
     if isinstance(game, str) and game.lower().endswith(".efg"):
         import pygambit
@@ -2251,6 +2256,20 @@ def draw_tree(
         The result of the Jupyter cell magic execution, or the TikZ code string
         if cell magic fails.
     """
+    # NFG (strategic/normal form): display compiled image in Jupyter or return LaTeX body.
+    nfg_game = _prepare_nfg(game)
+    if nfg_game is not None:
+        latex_body = nfg_game.to_latex()
+        ip = get_ipython()
+        if ip is not None:
+            try:
+                from IPython.display import Image, display
+                png_path = generate_png(game, save_to=save_to)
+                display(Image(png_path))
+                return None
+            except Exception:
+                pass
+        return latex_body
 
     # Generate TikZ code
     tikz_code = generate_tikz(
@@ -2295,6 +2314,35 @@ def draw_tree(
         return ip.run_cell_magic("tikz", "", tikz_code)
     else:
         return tikz_code
+
+
+def _prepare_nfg(game) -> Optional["pygambit.gambit.Game"]:
+    """Return a pygambit NFG game object if the input is an NFG, else None.
+
+    Accepts either a .nfg file path string or a pygambit Game object whose
+    is_tree attribute is falsy (i.e. a strategic-form game).
+    """
+    if isinstance(game, str) and game.lower().endswith(".nfg"):
+        import pygambit
+        return pygambit.read_nfg(game)
+    if not isinstance(game, str):
+        try:
+            if not game.is_tree:
+                return game
+        except AttributeError:
+            pass
+    return None
+
+
+def nfg_latex_wrapper(latex_body: str) -> str:
+    """Wrap NFG LaTeX body in a standalone document using the sgame package."""
+    return (
+        "\\documentclass{standalone}\n"
+        "\\usepackage{sgame}\n"
+        "\\begin{document}\n"
+        f"{latex_body}\n"
+        "\\end{document}\n"
+    )
 
 
 def latex_wrapper(tikz_code: str) -> str:
@@ -2380,6 +2428,18 @@ def generate_tex(
     Raises:
         FileNotFoundError: If the .ef file doesn't exist.
     """
+    # NFG (strategic/normal form) games: wrap to_latex() output with sgame preamble.
+    nfg_game = _prepare_nfg(game)
+    if nfg_game is not None:
+        stem = Path(game).stem if isinstance(game, str) else (nfg_game.title or "game")
+        if save_to and save_to.endswith(".tex"):
+            output_tex = save_to
+        else:
+            output_tex = (save_to or stem) + ".tex"
+        with open(output_tex, "w", encoding="utf-8") as f:
+            f.write(nfg_latex_wrapper(nfg_game.to_latex()))
+        return str(Path(output_tex).absolute())
+
     # Determine output filename
     if save_to is None:
         if isinstance(game, str):
@@ -2491,6 +2551,37 @@ def generate_pdf(
         FileNotFoundError: If the .ef file doesn't exist.
         subprocess.CalledProcessError: If LaTeX compilation fails.
     """
+    # NFG (strategic/normal form) games: compile sgame table directly to PDF.
+    nfg_game = _prepare_nfg(game)
+    if nfg_game is not None:
+        stem = Path(game).stem if isinstance(game, str) else (nfg_game.title or "game")
+        if save_to and save_to.endswith(".pdf"):
+            output_pdf = save_to
+        else:
+            output_pdf = (save_to or stem) + ".pdf"
+        latex_doc = nfg_latex_wrapper(nfg_game.to_latex())
+        with tempfile.TemporaryDirectory() as temp_dir:
+            tex_file = Path(temp_dir) / "output.tex"
+            tex_file.write_text(latex_doc, encoding="utf-8")
+            try:
+                subprocess.run(
+                    [
+                        "pdflatex",
+                        "-interaction=nonstopmode",
+                        "-output-directory", temp_dir,
+                        str(tex_file),
+                    ],
+                    capture_output=True, text=True, check=True,
+                )
+            except subprocess.CalledProcessError as e:
+                raise RuntimeError(
+                    f"LaTeX compilation failed for NFG.\n{e.stderr}\n"
+                    "Ensure pdflatex and the sgame LaTeX package (texlive-games) are installed."
+                )
+            import shutil
+            shutil.copy(Path(temp_dir) / "output.pdf", output_pdf)
+        return str(Path(output_pdf).absolute())
+
     # Determine output filename
     if save_to is None:
         if isinstance(game, str):
