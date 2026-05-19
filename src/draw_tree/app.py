@@ -342,23 +342,39 @@ def run_app():
             output_base = str(work_dir / base_name)
 
             if is_nfg:
-                # NFG: render payoff table as PNG and display it
-                png_path = str(work_dir / f"{base_name}.png")
-                generate_png(game=game_source, save_to=png_path)
-                if not os.path.exists(png_path):
-                    st.error("NFG rendering failed.")
-                    return
-                with open(png_path, "rb") as f:
-                    png_data = f.read()
-                st.image(png_data, use_container_width=True)
-
+                # NFG: get the LaTeX body (always available, no pdflatex needed)
                 tikz_code = generate_tikz(game=game_source)
                 tex_path = generate_tex(game=game_source, save_to=output_base + ".tex")
                 with open(tex_path, "r") as f:
                     tex_data = f.read()
-                pdf_path = generate_pdf(game=game_source, save_to=output_base + ".pdf")
-                with open(pdf_path, "rb") as f:
-                    pdf_data = f.read()
+
+                # Try to render as PNG; fall back gracefully if pdflatex/sgame unavailable
+                png_data = None
+                pdf_data = None
+                nfg_render_error = None
+                try:
+                    png_path = str(work_dir / f"{base_name}.png")
+                    generate_png(game=game_source, save_to=png_path)
+                    with open(png_path, "rb") as f:
+                        png_data = f.read()
+                    st.image(png_data, use_container_width=True)
+                    pdf_path = generate_pdf(game=game_source, save_to=output_base + ".pdf")
+                    with open(pdf_path, "rb") as f:
+                        pdf_data = f.read()
+                except RuntimeError as e:
+                    nfg_render_error = str(e)
+
+                if nfg_render_error:
+                    st.warning(
+                        "⚠️ Could not compile payoff table to image — pdflatex or the "
+                        "`sgame` LaTeX package may not be installed.\n\n"
+                        "Install with: `sudo apt-get install texlive-games` (Ubuntu) or "
+                        "use a full TeX distribution."
+                    )
+                    with st.expander("Show pdflatex error details"):
+                        st.code(nfg_render_error)
+                    st.markdown("**LaTeX source** (copy into a `.tex` file to compile locally):")
+                    st.code(tex_data, language="latex")
 
                 with st.sidebar.expander("📥 Downloads", expanded=False):
                     c1, c2 = st.columns(2)
@@ -370,13 +386,14 @@ def run_app():
                             "text/x-tex",
                             use_container_width=True,
                         )
-                        st.download_button(
-                            "PDF",
-                            pdf_data,
-                            f"{base_filename}.pdf",
-                            "application/pdf",
-                            use_container_width=True,
-                        )
+                        if pdf_data is not None:
+                            st.download_button(
+                                "PDF",
+                                pdf_data,
+                                f"{base_filename}.pdf",
+                                "application/pdf",
+                                use_container_width=True,
+                            )
                     with c2:
                         st.download_button(
                             "Game Env",
@@ -386,13 +403,14 @@ def run_app():
                             use_container_width=True,
                             help="Raw \\begin{game}...\\end{game} LaTeX body.",
                         )
-                        st.download_button(
-                            "PNG",
-                            png_data,
-                            f"{base_filename}.png",
-                            "image/png",
-                            use_container_width=True,
-                        )
+                        if png_data is not None:
+                                st.download_button(
+                                    "PNG",
+                                    png_data,
+                                    f"{base_filename}.png",
+                                    "image/png",
+                                    use_container_width=True,
+                                )
                 return
 
             svg_path = str(work_dir / f"{base_name}.svg")

@@ -2574,9 +2574,17 @@ def generate_pdf(
                     capture_output=True, text=True, check=True,
                 )
             except subprocess.CalledProcessError as e:
+                # pdflatex writes errors to stdout, not stderr
+                detail = (e.stdout or "") + (e.stderr or "")
                 raise RuntimeError(
-                    f"LaTeX compilation failed for NFG.\n{e.stderr}\n"
-                    "Ensure pdflatex and the sgame LaTeX package (texlive-games) are installed."
+                    "LaTeX compilation failed for NFG.\n"
+                    "Ensure pdflatex and the sgame LaTeX package (texlive-games) are installed.\n\n"
+                    f"pdflatex output:\n{detail}"
+                )
+            except FileNotFoundError:
+                raise RuntimeError(
+                    "pdflatex not found. Please install a LaTeX distribution "
+                    "(e.g., TeX Live with texlive-games, MiKTeX)."
                 )
             import shutil
             shutil.copy(Path(temp_dir) / "output.pdf", output_pdf)
