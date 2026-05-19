@@ -367,7 +367,14 @@ def run_app():
                     generate_png(game=game_source, save_to=png_path)
                     with open(png_path, "rb") as f:
                         png_data = f.read()
-                    st.image(png_data, width="stretch")
+                    import base64
+                    b64 = base64.b64encode(png_data).decode()
+                    st.markdown(
+                        f'<img src="data:image/png;base64,{b64}" '
+                        f'style="max-width:100%;max-height:85vh;'
+                        f'object-fit:contain;display:block;margin:auto;" />',
+                        unsafe_allow_html=True,
+                    )
                     pdf_path = generate_pdf(game=game_source, save_to=output_base + ".pdf")
                     with open(pdf_path, "rb") as f:
                         pdf_data = f.read()
