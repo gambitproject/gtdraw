@@ -240,7 +240,17 @@ def run_app():
                 "Boundary Style", ["solid", "dotted", "none"], index=0
             )
 
-    with st.sidebar.expander("🎨 Aesthetics", expanded=False):
+    # Defaults used when aesthetics expander is hidden (NFG path)
+    color_scheme = "custom"
+    legend_position = "top-left"
+    custom_colors = None
+    font_family = "rmfamily"
+    font_bold = False
+    font_italic = False
+    font_size = "normalsize"
+
+    if not is_nfg:
+     with st.sidebar.expander("🎨 Aesthetics", expanded=False):
         color_scheme = st.selectbox(
             "Color Scheme",
             ["default", "gambit", "distinctipy", "colorblind", "custom"],
@@ -357,7 +367,7 @@ def run_app():
                     generate_png(game=game_source, save_to=png_path)
                     with open(png_path, "rb") as f:
                         png_data = f.read()
-                    st.image(png_data, use_container_width=True)
+                    st.image(png_data, width="stretch")
                     pdf_path = generate_pdf(game=game_source, save_to=output_base + ".pdf")
                     with open(pdf_path, "rb") as f:
                         pdf_data = f.read()
@@ -384,7 +394,7 @@ def run_app():
                             tex_data,
                             f"{base_filename}.tex",
                             "text/x-tex",
-                            use_container_width=True,
+                            width="stretch",
                         )
                         if pdf_data is not None:
                             st.download_button(
@@ -392,7 +402,7 @@ def run_app():
                                 pdf_data,
                                 f"{base_filename}.pdf",
                                 "application/pdf",
-                                use_container_width=True,
+                                width="stretch",
                             )
                     with c2:
                         st.download_button(
@@ -400,7 +410,7 @@ def run_app():
                             tikz_code,
                             f"{base_filename}.tex",
                             "text/plain",
-                            use_container_width=True,
+                            width="stretch",
                             help="Raw \\begin{game}...\\end{game} LaTeX body.",
                         )
                         if png_data is not None:
@@ -409,7 +419,7 @@ def run_app():
                                     png_data,
                                     f"{base_filename}.png",
                                     "image/png",
-                                    use_container_width=True,
+                                    width="stretch",
                                 )
                 return
 
@@ -623,28 +633,28 @@ def run_app():
                             ef_data,
                             f"{base_filename}.ef",
                             "text/plain",
-                            use_container_width=True,
+                            width="stretch",
                         )
                     st.download_button(
                         "TikZ",
                         tikz_code,
                         f"{base_filename}.tikz",
                         "text/plain",
-                        use_container_width=True,
+                        width="stretch",
                     )
                     st.download_button(
                         "SVG",
                         svg_content,
                         f"{base_filename}.svg",
                         "image/svg+xml",
-                        use_container_width=True,
+                        width="stretch",
                     )
                     st.download_button(
                         "PDF",
                         pdf_data,
                         f"{base_filename}.pdf",
                         "application/pdf",
-                        use_container_width=True,
+                        width="stretch",
                     )
                 with c2:
                     if efg_data is not None:
@@ -653,21 +663,21 @@ def run_app():
                             efg_data,
                             f"{base_filename}.efg",
                             "text/plain",
-                            use_container_width=True,
+                            width="stretch",
                         )
                     st.download_button(
                         "LaTeX",
                         tex_data,
                         f"{base_filename}.tex",
                         "text/x-tex",
-                        use_container_width=True,
+                        width="stretch",
                     )
                     st.download_button(
                         "PNG",
                         png_data,
                         f"{base_filename}.png",
                         "image/png",
-                        use_container_width=True,
+                        width="stretch",
                     )
 
     except Exception as e:
