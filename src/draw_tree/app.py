@@ -88,8 +88,8 @@ def run_app():
                 rel_path = str(e.relative_to(base_path))
                 options.append(("EFG", e.name, rel_path))
 
-        def format_option(opt):
-            cat, name, val = opt
+        def format_option(i):
+            cat, name, _ = options[i]
             if cat == "None":
                 return "None"
             return f"[{cat}] {name}"
@@ -108,13 +108,14 @@ def run_app():
             "**EFG**: Gambit .efg files."
         )
 
-        example_selection = st.selectbox(
+        selected_idx = st.selectbox(
             "Select an example",
-            options,
+            range(len(options)),
             index=default_idx,
             format_func=format_option,
             help=help_text,
         )
+        example_selection = options[selected_idx]
         if example_selection[0] != "None":
             cat, name, val = example_selection
             if cat == "Catalog":
@@ -156,6 +157,11 @@ def run_app():
             "Horizontal Layout",
             value=False,
             help="Switch between vertical (top-down) and horizontal (left-right) layout.",
+        )
+        mirror = st.checkbox(
+            "Mirror Layout",
+            value=False,
+            help="Mirror the tree left-to-right by flipping xshift values.",
         )
 
         if is_efg:
@@ -219,6 +225,13 @@ def run_app():
             "Color Scheme",
             ["default", "gambit", "distinctipy", "colorblind", "custom"],
             index=4,  # custom
+        )
+        legend_position = st.selectbox(
+            "Legend Position",
+            ["top-left", "top-right", "bottom-left", "bottom-right"],
+            index=0,
+            help="Corner of the diagram where the player colour legend appears.",
+            disabled=(color_scheme == "default"),
         )
 
         custom_colors = None
@@ -329,6 +342,8 @@ def run_app():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal,
+                mirror=mirror,
+                legend_position=legend_position,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -366,6 +381,8 @@ def run_app():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal,
+                mirror=mirror,
+                legend_position=legend_position,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -391,6 +408,8 @@ def run_app():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal,
+                mirror=mirror,
+                legend_position=legend_position,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -418,6 +437,8 @@ def run_app():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal,
+                mirror=mirror,
+                legend_position=legend_position,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -446,6 +467,8 @@ def run_app():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal,
+                mirror=mirror,
+                legend_position=legend_position,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,

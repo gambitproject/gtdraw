@@ -59,6 +59,8 @@ def main():
         print("  --color-scheme=X Set color scheme (default, gambit, distinctipy, colorblind, custom)")
         print('  --custom-colors=X Set custom colors (e.g. "0:#FF0000,1:#0000FF")')
         print("  --horizontal Use horizontal layout (growing left-to-right)")
+        print("  --mirror     Mirror the layout left-to-right (flip xshift values)")
+        print("  --legend-position=X Set legend corner (top-left, top-right, bottom-left, bottom-right; default: top-left)")
         print(
             "  --action-label-dist=X Set distance of action labels from edges (default: 1.0)"
         )
@@ -127,6 +129,8 @@ def main():
         font_size,
         custom_colors,
         horizontal,
+        mirror,
+        legend_position,
         action_label_dist,
         iset_fill,
         iset_fill_opacity,
@@ -190,6 +194,8 @@ def main():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal,
+                mirror=mirror,
+                legend_position=legend_position,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -222,6 +228,8 @@ def main():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal,
+                mirror=mirror,
+                legend_position=legend_position,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -253,6 +261,8 @@ def main():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal,
+                mirror=mirror,
+                legend_position=legend_position,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -284,6 +294,8 @@ def main():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal,
+                mirror=mirror,
+                legend_position=legend_position,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -311,6 +323,8 @@ def main():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal,
+                mirror=mirror,
+                legend_position=legend_position,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,

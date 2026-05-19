@@ -642,6 +642,8 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
+            legend_position,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -684,6 +686,8 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
+            legend_position,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -726,6 +730,8 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
+            legend_position,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -768,6 +774,8 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
+            legend_position,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -808,6 +816,8 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
+            legend_position,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -850,6 +860,8 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
+            legend_position,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -891,6 +903,8 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
+            legend_position,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -926,6 +940,8 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
+            legend_position,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -962,6 +978,8 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
+            legend_position,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -996,6 +1014,8 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
+            legend_position,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -1038,6 +1058,8 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
+            legend_position,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -1066,7 +1088,7 @@ class TestCommandlineArguments:
 def test_commandline_action_label_dist():
     """Test parsing of action label distance flag."""
     result = draw_tree.commandline(["draw_tree", "game.ef", "--action-label-dist=2.5"])
-    assert result[13] == 2.5
+    assert result[15] == 2.5
 
 
 # ---------------------------------------------------------------------------
@@ -1491,7 +1513,7 @@ def test_commandline_color_scheme():
     result = draw_tree.commandline(
         ["draw_tree.py", "test.ef", "--color-scheme=distinctipy"]
     )
-    assert result[18] == "distinctipy"
+    assert result[20] == "distinctipy"
 
 
 def test_commandline_edge_and_label_options():
@@ -1504,8 +1526,8 @@ def test_commandline_edge_and_label_options():
             "--action-label-position=0.7",
         ]
     )
-    assert result[19] == 2.0
-    assert result[20] == 0.7
+    assert result[21] == 2.0
+    assert result[22] == 0.7
 
 
 def test_commandline_efg_scaling_options():
@@ -1520,10 +1542,10 @@ def test_commandline_efg_scaling_options():
             "--shared-terminal-depth",
         ]
     )
-    assert result[21] == 1.5
-    assert result[22] == 0.8
-    assert result[23] == 1.2
-    assert result[24] is True
+    assert result[23] == 1.5
+    assert result[24] == 0.8
+    assert result[25] == 1.2
+    assert result[26] is True
 
 
 class TestHorizontalLayout:
@@ -1605,6 +1627,126 @@ class TestHorizontalLayout:
         finally:
             os.unlink(ef_file_path)
 
+    def test_legend_position_vertical(self):
+        """Test that legend_position shifts scope correctly in vertical mode."""
+        import re
+
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1 2\n")
+            f.write("level 0 node n1 player 1\n")
+            f.write("level 1 node n2 player 2 parent n1\n")
+            f.write("level 1 node n3 player 2 parent n1\n")
+            ef_file_path = f.name
+
+        try:
+            def get_scope_xy(tikz):
+                m = re.search(
+                    r"\\begin{scope}\[scale=1,shift={\(([\d.-]+),([\d.-]+)\)}\]",
+                    tikz,
+                )
+                assert m, f"No scope shift found in: {tikz}"
+                return float(m.group(1)), float(m.group(2))
+
+            res_tl = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", legend_position="top-left")
+            res_tr = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", legend_position="top-right")
+            res_bl = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", legend_position="bottom-left")
+            res_br = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", legend_position="bottom-right")
+
+            x_tl, y_tl = get_scope_xy(res_tl)
+            x_tr, y_tr = get_scope_xy(res_tr)
+            x_bl, y_bl = get_scope_xy(res_bl)
+            x_br, y_br = get_scope_xy(res_br)
+
+            # Left corners should have smaller x than right corners
+            assert x_tl < x_tr
+            assert x_bl < x_br
+
+            # Top corners should have y = max_y (= 0 for root)
+            assert y_tl == 0.0
+            assert y_tr == 0.0
+
+            # Bottom corners should have y < 0 (deeper level)
+            assert y_bl < 0.0
+            assert y_br < 0.0
+
+            # Same side should have matching x
+            assert x_tl == x_bl
+            assert x_tr == x_br
+
+            # Same vertical level should have matching y
+            assert y_tl == y_tr
+            assert y_bl == y_br
+
+        finally:
+            os.unlink(ef_file_path)
+
+    def test_legend_position_horizontal(self):
+        """Test that legend_position shifts scope correctly in horizontal mode."""
+        import re
+
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1 2\n")
+            f.write("level 0 node n1 player 1\n")
+            f.write("level 1 node n2 player 2 parent n1\n")
+            f.write("level 1 node n3 player 2 parent n1\n")
+            ef_file_path = f.name
+
+        try:
+            def get_scope_xy(tikz):
+                m = re.search(
+                    r"\\begin{scope}\[scale=1,shift={\(([\d.-]+),([\d.-]+)\)}, rotate=-90\]",
+                    tikz,
+                )
+                assert m, f"No horizontal scope shift found in: {tikz}"
+                return float(m.group(1)), float(m.group(2))
+
+            res_tl = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", horizontal=True, legend_position="top-left")
+            res_tr = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", horizontal=True, legend_position="top-right")
+            res_bl = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", horizontal=True, legend_position="bottom-left")
+            res_br = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", horizontal=True, legend_position="bottom-right")
+
+            x_tl, y_tl = get_scope_xy(res_tl)
+            x_tr, y_tr = get_scope_xy(res_tr)
+            x_bl, y_bl = get_scope_xy(res_bl)
+            x_br, y_br = get_scope_xy(res_br)
+
+            # Top corners (top in final view) should have larger x (max_x based)
+            assert x_tl > x_bl
+            assert x_tr > x_br
+
+            # Left corners (left in final view) should have larger y (max_y + 0.5)
+            assert y_tl > y_tr
+            assert y_bl > y_br
+
+        finally:
+            os.unlink(ef_file_path)
+
+    def test_legend_position_commandline(self):
+        """Test that --legend-position is correctly parsed by commandline()."""
+        result_default = draw_tree.commandline(["draw_tree.py", "test.ef"])
+        assert result_default[14] == "top-left"
+
+        result_tr = draw_tree.commandline(
+            ["draw_tree.py", "test.ef", "--legend-position=top-right"]
+        )
+        assert result_tr[14] == "top-right"
+
+        result_bl = draw_tree.commandline(
+            ["draw_tree.py", "test.ef", "--legend-position=bottom-left"]
+        )
+        assert result_bl[14] == "bottom-left"
+
+        result_br = draw_tree.commandline(
+            ["draw_tree.py", "test.ef", "--legend-position=bottom-right"]
+        )
+        assert result_br[14] == "bottom-right"
+
+        # Invalid value should leave default unchanged
+        result_invalid = draw_tree.commandline(
+            ["draw_tree.py", "test.ef", "--legend-position=invalid"]
+        )
+        assert result_invalid[14] == "top-left"
+
     def test_horizontal_payoff_position(self):
         """Test that payoffs are positioned to the right in horizontal mode."""
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
@@ -1619,6 +1761,24 @@ class TestHorizontalLayout:
             assert "node[right,yshift=" not in result
         finally:
             os.unlink(ef_file_path)
+
+
+def test_chance_node_probability_with_long_label():
+    """Chance node probabilities must not be dropped when action label contains a number."""
+    ef_content = (
+        "player 1\n"
+        "level 0 node n1 chance\n"
+        "level 1 node n2 player 1 parent n1 move Chamber~1~(\\frac{1}{6})\n"
+        "level 1 node n3 player 1 parent n1 move Chamber~2~(\\frac{1}{6})\n"
+    )
+    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+        f.write(ef_content)
+        path = f.name
+    try:
+        result = draw_tree.generate_tikz(path)
+        assert "\\frac{1}{6}" in result, "Probability fraction must appear in TikZ output"
+    finally:
+        os.unlink(path)
 
 
 def test_commandline_custom_colors():
@@ -1674,24 +1834,24 @@ def test_commandline_iset_options():
             "--node-size=2.0",
         ]
     )
-    assert result[14] is True  # iset_fill
-    assert result[15] == 0.5  # iset_fill_opacity
-    assert result[16] == "dotted"  # iset_boundary
-    assert result[17] == 2.0  # node_size
+    assert result[16] is True  # iset_fill
+    assert result[17] == 0.5  # iset_fill_opacity
+    assert result[18] == "dotted"  # iset_boundary
+    assert result[19] == 2.0  # node_size
 
     # Test individual flags
     result_fill = draw_tree.commandline(["draw_tree.py", "test.ef", "--iset-fill"])
-    assert result_fill[14] is True
-    assert result_fill[15] == 0.2  # Default
-    assert result_fill[16] == "solid"
+    assert result_fill[16] is True
+    assert result_fill[17] == 0.2  # Default
+    assert result_fill[18] == "solid"
 
     result_dotted = draw_tree.commandline(["draw_tree.py", "test.ef", "--iset-dotted"])
-    assert result_dotted[16] == "dotted"
+    assert result_dotted[18] == "dotted"
 
     result_none = draw_tree.commandline(
         ["draw_tree.py", "test.ef", "--iset-boundary=none"]
     )
-    assert result_none[16] == "none"
+    assert result_none[18] == "none"
 
 
 class TestIsetStylingIntegration:
@@ -1991,7 +2151,7 @@ class TestConverter:
             output_mode, pdf_requested, png_requested, svg_requested,
             tex_requested, output_file, dpi, font_family, font_bold,
             font_italic, font_size, custom_colors, horizontal,
-            action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
+            mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
             node_size, color_scheme, edge_thickness, action_label_position,
             level_scaling, sublevel_scaling, width_scaling,
             shared_terminal_depth, to_efg, to_ef,
@@ -2008,7 +2168,7 @@ class TestConverter:
             output_mode, pdf_requested, png_requested, svg_requested,
             tex_requested, output_file, dpi, font_family, font_bold,
             font_italic, font_size, custom_colors, horizontal,
-            action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
+            mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
             node_size, color_scheme, edge_thickness, action_label_position,
             level_scaling, sublevel_scaling, width_scaling,
             shared_terminal_depth, to_efg, to_ef,

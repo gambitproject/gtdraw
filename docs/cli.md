@@ -20,6 +20,8 @@ You can also use `.efg` files from Gambit instead of `.ef` files.
 | | `--dpi=X` | Set PNG resolution in DPI (72-2400, default: 300). |
 | **Layout** | `scale=X.X` | Set scale factor (0.01 to 100). |
 | | `--horizontal` | Switch from vertical to horizontal layout (left-to-right). |
+| | `--mirror` | Mirror the tree left-to-right (flip xshift values). |
+| | `--legend-position=X` | Corner for the colour legend: `top-left` (default), `top-right`, `bottom-left`, `bottom-right`. |
 | | `--action-label-dist=X.X` | Distance of action labels from the edge (default: 1.0). |
 | | `--action-label-position=X.X` | Position of action labels along the edge (0.0 to 1.0, default: 0.5). |
 | | `--level-scaling=X.X` | Level spacing multiplier (for `.efg` files, default: 1.0). |

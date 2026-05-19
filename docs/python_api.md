@@ -51,6 +51,8 @@ All `generate_*` functions and the main `draw_tree` function accept a variety of
 | | `responsive_sizing=True/False` | Make SVG output responsive for `generate_svg` (default: False). |
 | **Layout** | `scale_factor=X.X` | Set scale factor (0.01 to 100, default: 1.0). |
 | | `horizontal=True/False` | Switch from vertical to horizontal layout (default: False). |
+| | `mirror=True/False` | Mirror the tree left-to-right by flipping xshift values (default: False). |
+| | `legend_position="X"` | Corner for the colour legend: `"top-left"` (default), `"top-right"`, `"bottom-left"`, `"bottom-right"`. |
 | | `action_label_dist=X.X` | Distance of action labels from the edge (default: 1.0). |
 | | `action_label_position=X.X` | Position of action labels along the edge (0.0 to 1.0, default: 0.5). |
 | | `level_scaling=X.X` | Level spacing multiplier (for pygambit, default: 1.0). |
