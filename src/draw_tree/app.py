@@ -88,8 +88,8 @@ def run_app():
                 rel_path = str(e.relative_to(base_path))
                 options.append(("EFG", e.name, rel_path))
 
-        def format_option(opt):
-            cat, name, val = opt
+        def format_option(i):
+            cat, name, _ = options[i]
             if cat == "None":
                 return "None"
             return f"[{cat}] {name}"
@@ -108,13 +108,14 @@ def run_app():
             "**EFG**: Gambit .efg files."
         )
 
-        example_selection = st.selectbox(
+        selected_idx = st.selectbox(
             "Select an example",
-            options,
+            range(len(options)),
             index=default_idx,
             format_func=format_option,
             help=help_text,
         )
+        example_selection = options[selected_idx]
         if example_selection[0] != "None":
             cat, name, val = example_selection
             if cat == "Catalog":
