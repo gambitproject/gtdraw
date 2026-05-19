@@ -226,6 +226,13 @@ def run_app():
             ["default", "gambit", "distinctipy", "colorblind", "custom"],
             index=4,  # custom
         )
+        legend_position = st.selectbox(
+            "Legend Position",
+            ["top-left", "top-right", "bottom-left", "bottom-right"],
+            index=0,
+            help="Corner of the diagram where the player colour legend appears.",
+            disabled=(color_scheme == "default"),
+        )
 
         custom_colors = None
         if color_scheme == "custom":
@@ -336,6 +343,7 @@ def run_app():
                 custom_colors=custom_colors,
                 horizontal=horizontal,
                 mirror=mirror,
+                legend_position=legend_position,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -374,6 +382,7 @@ def run_app():
                 custom_colors=custom_colors,
                 horizontal=horizontal,
                 mirror=mirror,
+                legend_position=legend_position,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -400,6 +409,7 @@ def run_app():
                 custom_colors=custom_colors,
                 horizontal=horizontal,
                 mirror=mirror,
+                legend_position=legend_position,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -428,6 +438,7 @@ def run_app():
                 custom_colors=custom_colors,
                 horizontal=horizontal,
                 mirror=mirror,
+                legend_position=legend_position,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -457,6 +468,7 @@ def run_app():
                 custom_colors=custom_colors,
                 horizontal=horizontal,
                 mirror=mirror,
+                legend_position=legend_position,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,

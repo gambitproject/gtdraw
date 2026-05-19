@@ -85,6 +85,7 @@ _font_italic: bool = False
 _font_size: str = "normalsize"
 _horizontal: bool = False
 _mirror: bool = False
+_legend_position: str = "top-left"
 _action_label_dist: float = 1.0
 _iset_boundary: str = "solid"
 _node_size: float = 1.5
@@ -1126,7 +1127,10 @@ def parse_isets_first(lines: List[str]) -> None:
 
 
 def generate_legend(
-    player_list: List[int], color_scheme: str = "gambit", scale_factor: float = 1.0
+    player_list: List[int],
+    color_scheme: str = "gambit",
+    scale_factor: float = 1.0,
+    legend_position: str = "top-left",
 ) -> str:
     """
     Generate TikZ code for a color legend showing player colors.
@@ -1135,6 +1139,8 @@ def generate_legend(
         player_list: List of player numbers that appear in the game.
         color_scheme: Color scheme being used.
         scale_factor: The scale factor applied to the main tree (used to adjust spacing).
+        legend_position: Corner for the legend: "top-left", "top-right",
+            "bottom-left", or "bottom-right" (default: "top-left").
 
     Returns:
         TikZ code string for the legend.
@@ -1142,27 +1148,31 @@ def generate_legend(
     if not player_list or color_scheme == "default":
         return ""
 
-    # Calculate x and y coordinates for legend placement
+    # Calculate bounding box of the tree nodes
     min_x = 0
     max_x = 0
     max_y = 0
+    min_y = 0
     if nodes:
         min_x = min(nodes[nodeid]["x"] for nodeid in nodes)
         max_x = max(nodes[nodeid]["x"] for nodeid in nodes)
         max_y = max(nodes[nodeid]["y"] for nodeid in nodes)
+        min_y = min(nodes[nodeid]["y"] for nodeid in nodes)
 
-    # Position legend in top left corner
+    left = "left" in legend_position
+    top  = "top"  in legend_position
+
     legend_code = "\n% Player color legend\n"
     if _horizontal:
-        # In horizontal mode (rotated 90 CCW), original Max X becomes Final Top
-        # Original 0 (Root Y) becomes Final Left
-        x_offset = max_x + 0.5
-        y_loc = 0.5 # Near the root in final X
-        # Rotate the scope -90 to cancel the global rotation for the legend
+        # Global rotate=90 CCW: original +x → final top, original +y → final left.
+        # Rotate legend scope -90 to keep text upright.
+        x_offset = (max_x + 0.5) if top  else (min_x - 1.5)
+        y_loc    = (max_y + 0.5) if left else (min_y - 0.5)
         legend_code += f"\\begin{{scope}}[scale=1,shift={{({x_offset},{y_loc})}}, rotate=-90]\n"
     else:
-        x_offset = min_x - 1.5
-        legend_code += f"\\begin{{scope}}[scale=1,shift={{({x_offset},{max_y})}}]\n"
+        x_offset = (min_x - 1.5) if left else (max_x + 0.5)
+        y_loc    = max_y          if top  else min_y
+        legend_code += f"\\begin{{scope}}[scale=1,shift={{({x_offset},{y_loc})}}]\n"
 
     # Add each player with their color (no title)
     # Adjust vertical spacing to compensate for the tree's scale factor
@@ -1602,6 +1612,7 @@ def commandline(
     custom_colors = None
     horizontal = False
     mirror = False
+    legend_position = "top-left"
     action_label_dist = 1.0
     iset_fill = False
     iset_fill_opacity = 0.2
@@ -1692,6 +1703,10 @@ def commandline(
             horizontal = True
         elif arg == "--mirror":
             mirror = True
+        elif arg.startswith("--legend-position="):
+            val = arg[18:].lower()
+            if val in ["top-left", "top-right", "bottom-left", "bottom-right"]:
+                legend_position = val
         elif arg.startswith("--action-label-dist="):
             try:
                 action_label_dist = float(arg[20:])
@@ -1781,6 +1796,7 @@ def commandline(
         custom_colors,
         horizontal,
         mirror,
+        legend_position,
         action_label_dist,
         iset_fill,
         iset_fill_opacity,
@@ -1810,6 +1826,7 @@ def ef_to_tex(
     font_size: str = "normalsize",
     horizontal: bool = False,
     mirror: bool = False,
+    legend_position: str = "top-left",
     action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
@@ -1879,9 +1896,11 @@ def ef_to_tex(
         _node_size = node_size
         global _horizontal
         global _mirror
+        global _legend_position
         global _action_label_dist
         _horizontal = horizontal
         _mirror = mirror
+        _legend_position = legend_position
         _action_label_dist = action_label_dist
 
         # Process the .ef file
@@ -1923,7 +1942,7 @@ def ef_to_tex(
                 if p >= 0:
                     player_set.add(p)
 
-            legend_code = generate_legend(list(player_set), color_scheme, scale_factor)
+            legend_code = generate_legend(list(player_set), color_scheme, scale_factor, legend_position)
             if legend_code:
                 outs(legend_code, outstream)
 
@@ -1972,6 +1991,7 @@ def generate_tikz(
     custom_colors: Optional[dict[int, str]] = None,
     horizontal: bool = False,
     mirror: bool = False,
+    legend_position: str = "top-left",
     action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
@@ -2067,6 +2087,7 @@ def generate_tikz(
         font_size=font_size,
         horizontal=horizontal,
         mirror=mirror,
+        legend_position=legend_position,
         action_label_dist=action_label_dist,
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
@@ -2200,6 +2221,7 @@ def draw_tree(
     custom_colors: Optional[dict[int, str]] = None,
     horizontal: bool = False,
     mirror: bool = False,
+    legend_position: str = "top-left",
     action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
@@ -2249,6 +2271,7 @@ def draw_tree(
         custom_colors=custom_colors,
         horizontal=horizontal,
         mirror=mirror,
+        legend_position=legend_position,
         action_label_dist=action_label_dist,
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
@@ -2317,6 +2340,7 @@ def generate_tex(
     custom_colors: Optional[dict[int, str]] = None,
     horizontal: bool = False,
     mirror: bool = False,
+    legend_position: str = "top-left",
     action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
@@ -2388,6 +2412,7 @@ def generate_tex(
         custom_colors=custom_colors,
         horizontal=horizontal,
         mirror=mirror,
+        legend_position=legend_position,
         action_label_dist=action_label_dist,
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
@@ -2425,6 +2450,7 @@ def generate_pdf(
     custom_colors: Optional[dict[int, str]] = None,
     horizontal: bool = False,
     mirror: bool = False,
+    legend_position: str = "top-left",
     action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
@@ -2497,6 +2523,7 @@ def generate_pdf(
         custom_colors=custom_colors,
         horizontal=horizontal,
         mirror=mirror,
+        legend_position=legend_position,
         action_label_dist=action_label_dist,
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
@@ -2578,6 +2605,7 @@ def generate_png(
     custom_colors: Optional[dict[int, str]] = None,
     horizontal: bool = False,
     mirror: bool = False,
+    legend_position: str = "top-left",
     action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
@@ -2656,6 +2684,7 @@ def generate_png(
                 custom_colors=custom_colors,
                 horizontal=horizontal,
                 mirror=mirror,
+                legend_position=legend_position,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -2784,6 +2813,7 @@ def generate_svg(
     custom_colors: Optional[dict[int, str]] = None,
     horizontal: bool = False,
     mirror: bool = False,
+    legend_position: str = "top-left",
     action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
@@ -2855,6 +2885,7 @@ def generate_svg(
                 custom_colors=custom_colors,
                 horizontal=horizontal,
                 mirror=mirror,
+                legend_position=legend_position,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
