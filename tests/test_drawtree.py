@@ -1763,6 +1763,24 @@ class TestHorizontalLayout:
             os.unlink(ef_file_path)
 
 
+def test_chance_node_probability_with_long_label():
+    """Chance node probabilities must not be dropped when action label contains a number."""
+    ef_content = (
+        "player 1\n"
+        "level 0 node n1 chance\n"
+        "level 1 node n2 player 1 parent n1 move Chamber~1~(\\frac{1}{6})\n"
+        "level 1 node n3 player 1 parent n1 move Chamber~2~(\\frac{1}{6})\n"
+    )
+    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+        f.write(ef_content)
+        path = f.name
+    try:
+        result = draw_tree.generate_tikz(path)
+        assert "\\frac{1}{6}" in result, "Probability fraction must appear in TikZ output"
+    finally:
+        os.unlink(path)
+
+
 def test_commandline_custom_colors():
     """Test custom color argument parsing."""
     result = draw_tree.commandline(

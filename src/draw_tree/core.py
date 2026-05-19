@@ -1284,6 +1284,8 @@ def level(
         try:
             num = float(movlist[1])
             mov = movlist[0] + "~" + str(fformat(num))
+            if len(movlist) > 2:
+                mov += "~" + "~".join(movlist[2:])
         except ValueError:
             pass
 
