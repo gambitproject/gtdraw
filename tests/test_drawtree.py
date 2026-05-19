@@ -642,6 +642,7 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -684,6 +685,7 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -726,6 +728,7 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -768,6 +771,7 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -808,6 +812,7 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -850,6 +855,7 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -891,6 +897,7 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -926,6 +933,7 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -962,6 +970,7 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -996,6 +1005,7 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -1038,6 +1048,7 @@ class TestCommandlineArguments:
             font_size,
             custom_colors,
             horizontal,
+            mirror,
             action_label_dist,
             iset_fill,
             iset_fill_opacity,
@@ -1066,7 +1077,7 @@ class TestCommandlineArguments:
 def test_commandline_action_label_dist():
     """Test parsing of action label distance flag."""
     result = draw_tree.commandline(["draw_tree", "game.ef", "--action-label-dist=2.5"])
-    assert result[13] == 2.5
+    assert result[14] == 2.5
 
 
 # ---------------------------------------------------------------------------
@@ -1491,7 +1502,7 @@ def test_commandline_color_scheme():
     result = draw_tree.commandline(
         ["draw_tree.py", "test.ef", "--color-scheme=distinctipy"]
     )
-    assert result[18] == "distinctipy"
+    assert result[19] == "distinctipy"
 
 
 def test_commandline_edge_and_label_options():
@@ -1504,8 +1515,8 @@ def test_commandline_edge_and_label_options():
             "--action-label-position=0.7",
         ]
     )
-    assert result[19] == 2.0
-    assert result[20] == 0.7
+    assert result[20] == 2.0
+    assert result[21] == 0.7
 
 
 def test_commandline_efg_scaling_options():
@@ -1520,10 +1531,10 @@ def test_commandline_efg_scaling_options():
             "--shared-terminal-depth",
         ]
     )
-    assert result[21] == 1.5
-    assert result[22] == 0.8
-    assert result[23] == 1.2
-    assert result[24] is True
+    assert result[22] == 1.5
+    assert result[23] == 0.8
+    assert result[24] == 1.2
+    assert result[25] is True
 
 
 class TestHorizontalLayout:
@@ -1674,24 +1685,24 @@ def test_commandline_iset_options():
             "--node-size=2.0",
         ]
     )
-    assert result[14] is True  # iset_fill
-    assert result[15] == 0.5  # iset_fill_opacity
-    assert result[16] == "dotted"  # iset_boundary
-    assert result[17] == 2.0  # node_size
+    assert result[15] is True  # iset_fill
+    assert result[16] == 0.5  # iset_fill_opacity
+    assert result[17] == "dotted"  # iset_boundary
+    assert result[18] == 2.0  # node_size
 
     # Test individual flags
     result_fill = draw_tree.commandline(["draw_tree.py", "test.ef", "--iset-fill"])
-    assert result_fill[14] is True
-    assert result_fill[15] == 0.2  # Default
-    assert result_fill[16] == "solid"
+    assert result_fill[15] is True
+    assert result_fill[16] == 0.2  # Default
+    assert result_fill[17] == "solid"
 
     result_dotted = draw_tree.commandline(["draw_tree.py", "test.ef", "--iset-dotted"])
-    assert result_dotted[16] == "dotted"
+    assert result_dotted[17] == "dotted"
 
     result_none = draw_tree.commandline(
         ["draw_tree.py", "test.ef", "--iset-boundary=none"]
     )
-    assert result_none[16] == "none"
+    assert result_none[17] == "none"
 
 
 class TestIsetStylingIntegration:
@@ -1991,7 +2002,7 @@ class TestConverter:
             output_mode, pdf_requested, png_requested, svg_requested,
             tex_requested, output_file, dpi, font_family, font_bold,
             font_italic, font_size, custom_colors, horizontal,
-            action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
+            mirror, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
             node_size, color_scheme, edge_thickness, action_label_position,
             level_scaling, sublevel_scaling, width_scaling,
             shared_terminal_depth, to_efg, to_ef,
@@ -2008,7 +2019,7 @@ class TestConverter:
             output_mode, pdf_requested, png_requested, svg_requested,
             tex_requested, output_file, dpi, font_family, font_bold,
             font_italic, font_size, custom_colors, horizontal,
-            action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
+            mirror, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
             node_size, color_scheme, edge_thickness, action_label_position,
             level_scaling, sublevel_scaling, width_scaling,
             shared_terminal_depth, to_efg, to_ef,

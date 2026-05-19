@@ -157,6 +157,11 @@ def run_app():
             value=False,
             help="Switch between vertical (top-down) and horizontal (left-right) layout.",
         )
+        mirror = st.checkbox(
+            "Mirror Layout",
+            value=False,
+            help="Mirror the tree left-to-right by flipping xshift values.",
+        )
 
         if is_efg:
             shared_terminal_depth = st.checkbox("Shared Terminal Node Depth", False)
@@ -329,6 +334,7 @@ def run_app():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal,
+                mirror=mirror,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -366,6 +372,7 @@ def run_app():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal,
+                mirror=mirror,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -391,6 +398,7 @@ def run_app():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal,
+                mirror=mirror,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -418,6 +426,7 @@ def run_app():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal,
+                mirror=mirror,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -446,6 +455,7 @@ def run_app():
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal,
+                mirror=mirror,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,

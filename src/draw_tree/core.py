@@ -84,6 +84,7 @@ _font_bold: bool = False
 _font_italic: bool = False
 _font_size: str = "normalsize"
 _horizontal: bool = False
+_mirror: bool = False
 _action_label_dist: float = 1.0
 _iset_boundary: str = "solid"
 _node_size: float = 1.5
@@ -1290,9 +1291,9 @@ def level(
     if existsfrom:  # father exists
         xfrom = nodes[fromn]["x"]
         yfrom = nodes[fromn]["y"]
-        xx = xfrom + ((-xs) if _horizontal else xs)
+        xx = xfrom + ((-xs) if (_horizontal ^ _mirror) else xs)
     else:  # no father
-        xx = ((-xs) if _horizontal else xs)
+        xx = ((-xs) if (_horizontal ^ _mirror) else xs)
         if fromn:
             error("No 'from' node, move '" + mov + "' ignored")
 
@@ -1600,6 +1601,7 @@ def commandline(
     font_size = "normalsize"
     custom_colors = None
     horizontal = False
+    mirror = False
     action_label_dist = 1.0
     iset_fill = False
     iset_fill_opacity = 0.2
@@ -1688,6 +1690,8 @@ def commandline(
                 print("Warning: Invalid custom-colors format, expected '0:#hex,1:#hex'", file=sys.stderr)
         elif arg == "--horizontal":
             horizontal = True
+        elif arg == "--mirror":
+            mirror = True
         elif arg.startswith("--action-label-dist="):
             try:
                 action_label_dist = float(arg[20:])
@@ -1776,6 +1780,7 @@ def commandline(
         font_size,
         custom_colors,
         horizontal,
+        mirror,
         action_label_dist,
         iset_fill,
         iset_fill_opacity,
@@ -1804,6 +1809,7 @@ def ef_to_tex(
     font_italic: bool = False,
     font_size: str = "normalsize",
     horizontal: bool = False,
+    mirror: bool = False,
     action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
@@ -1826,6 +1832,8 @@ def ef_to_tex(
         font_bold: Whether to use bold text (default: False).
         font_italic: Whether to use italic text (default: False).
         font_size: LaTeX font size command (default: "normalsize").
+        horizontal: Whether to use horizontal layout (default: False).
+        mirror: Whether to mirror the layout left-to-right (default: False).
 
     Returns:
         Complete TikZ code as a string.
@@ -1870,8 +1878,10 @@ def ef_to_tex(
         _iset_boundary = iset_boundary
         _node_size = node_size
         global _horizontal
+        global _mirror
         global _action_label_dist
         _horizontal = horizontal
+        _mirror = mirror
         _action_label_dist = action_label_dist
 
         # Process the .ef file
@@ -1961,6 +1971,7 @@ def generate_tikz(
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
     horizontal: bool = False,
+    mirror: bool = False,
     action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
@@ -2055,6 +2066,7 @@ def generate_tikz(
         font_italic=font_italic,
         font_size=font_size,
         horizontal=horizontal,
+        mirror=mirror,
         action_label_dist=action_label_dist,
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
@@ -2187,6 +2199,7 @@ def draw_tree(
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
     horizontal: bool = False,
+    mirror: bool = False,
     action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
@@ -2235,6 +2248,7 @@ def draw_tree(
         font_size=font_size,
         custom_colors=custom_colors,
         horizontal=horizontal,
+        mirror=mirror,
         action_label_dist=action_label_dist,
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
@@ -2302,6 +2316,7 @@ def generate_tex(
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
     horizontal: bool = False,
+    mirror: bool = False,
     action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
@@ -2372,6 +2387,7 @@ def generate_tex(
         font_size=font_size,
         custom_colors=custom_colors,
         horizontal=horizontal,
+        mirror=mirror,
         action_label_dist=action_label_dist,
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
@@ -2408,6 +2424,7 @@ def generate_pdf(
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
     horizontal: bool = False,
+    mirror: bool = False,
     action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
@@ -2479,6 +2496,7 @@ def generate_pdf(
         font_size=font_size,
         custom_colors=custom_colors,
         horizontal=horizontal,
+        mirror=mirror,
         action_label_dist=action_label_dist,
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
@@ -2559,6 +2577,7 @@ def generate_png(
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
     horizontal: bool = False,
+    mirror: bool = False,
     action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
@@ -2636,6 +2655,7 @@ def generate_png(
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal,
+                mirror=mirror,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
@@ -2763,6 +2783,7 @@ def generate_svg(
     font_size: str = "normalsize",
     custom_colors: Optional[dict[int, str]] = None,
     horizontal: bool = False,
+    mirror: bool = False,
     action_label_dist: float = 1.0,
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
@@ -2833,6 +2854,7 @@ def generate_svg(
                 font_size=font_size,
                 custom_colors=custom_colors,
                 horizontal=horizontal,
+                mirror=mirror,
                 action_label_dist=action_label_dist,
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
