@@ -2382,10 +2382,14 @@ def _prepare_nfg(game) -> Optional["pygambit.gambit.Game"]:
 def nfg_latex_wrapper(latex_body: str) -> str:
     """Wrap NFG LaTeX body in a standalone document using the sgame package."""
     return (
-        "\\documentclass[varwidth]{standalone}\n"
+        "\\documentclass{article}\n"
+        "\\usepackage[active,tightpage]{preview}\n"
         "\\usepackage{sgame}\n"
+        "\\pagestyle{empty}\n"
         "\\begin{document}\n"
+        "\\begin{preview}\n"
         f"{latex_body}\n"
+        "\\end{preview}\n"
         "\\end{document}\n"
     )
 
