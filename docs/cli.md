@@ -42,23 +42,6 @@ You can also use `.efg` files from Gambit instead of `.ef` files.
 | **Conversion** | `--to-efg` | Convert `.ef` file to Gambit `.efg` format (no rendering). |
 | | `--to-ef` | Convert `.efg` file to `.ef` format (requires pygambit, no rendering). |
 
-## Normal Form Games (NFG)
-
-`.nfg` files are supported directly. The default output (no format flag) prints the raw `\begin{game}...\end{game}` LaTeX body; PDF/PNG/SVG compilation requires `pdflatex` and the `sgame` package (`texlive-games`).
-
-```bash
-# Print \begin{game}...\end{game} body to stdout
-draw_tree games/nfg/nau2004_sec3.nfg
-
-# Compile payoff table to PDF
-draw_tree games/nfg/nau2004_sec3.nfg --pdf
-
-# Compile payoff table to PNG
-draw_tree games/nfg/nau2004_sec3.nfg --png
-
-# Compile payoff table to SVG with custom output name
-draw_tree games/nfg/nau2004_sec3.nfg --svg --output=battle_of_sexes.svg
-```
 
 ## Format Conversion
 
@@ -69,9 +52,26 @@ The CLI also supports converting between `.ef` and `.efg` formats without render
 draw_tree games/example.ef --to-efg
 
 # Convert EFG to EF
-draw_tree games/efg/2s2x2x2.efg --to-ef
+draw_tree games/efg/example.efg --to-ef
 
 # Specify output filename
 draw_tree games/example.ef --to-efg --output=my_game.efg
 ```
 
+## Normal Form Games (NFG)
+
+`.nfg` files are supported directly. The default output (no format flag) prints the raw `\begin{game}...\end{game}` LaTeX body; PDF/PNG/SVG compilation requires `pdflatex` and the `sgame` package (`texlive-games`).
+
+```bash
+# Print \begin{game}...\end{game} body to stdout
+draw_tree games/nfg/example.nfg
+
+# Compile payoff table to PDF
+draw_tree games/nfg/example.nfg --pdf
+
+# Compile payoff table to PNG
+draw_tree games/nfg/example.nfg --png
+
+# Compile payoff table to SVG with custom output name
+draw_tree games/nfg/example.nfg --svg --output=battle_of_sexes.svg
+```
