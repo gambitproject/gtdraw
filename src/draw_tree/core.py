@@ -182,9 +182,13 @@ def color_definitions(color_scheme: str = "default", num_players: int = 6) -> li
             for player_num, hex_color in _custom_colors.items():
                 hex_val = hex_color.lstrip("#")
                 if player_num == 0:
-                    defs.append(f"\\definecolor{{customchancecolor}}{{HTML}}{{{hex_val}}}")
+                    defs.append(
+                        f"\\definecolor{{customchancecolor}}{{HTML}}{{{hex_val}}}"
+                    )
                 else:
-                    defs.append(f"\\definecolor{{customp{player_num}color}}{{HTML}}{{{hex_val}}}")
+                    defs.append(
+                        f"\\definecolor{{customp{player_num}color}}{{HTML}}{{{hex_val}}}"
+                    )
 
     elif color_scheme in ("distinctipy", "colorblind"):
         # Chance color in 0-1 float format for exclusion
@@ -632,14 +636,14 @@ def iset(nodes: List[List[float]], radius: float = isetradius) -> str:
         Complete TikZ draw command string with semicolon.
     """
     arcs = arcseq(nodes, radius)
-    
+
     # Build TikZ options
     options = [thickn]
     if _iset_boundary == "dotted":
         options.append("dotted")
     elif _iset_boundary == "none":
         options.append("draw=none")
-    
+
     if isetparams:
         # Extract color if present in isetparams (e.g., "color=red")
         color = None
@@ -647,13 +651,13 @@ def iset(nodes: List[List[float]], radius: float = isetradius) -> str:
             if opt.startswith("color="):
                 color = opt.split("=")[1]
                 break
-        
+
         options.append(isetparams)
-        
+
         if _iset_fill and color:
             options.append(f"fill={color}")
             options.append(f"fill opacity={fformat(_iset_fill_opacity)}")
-            
+
     # tikz code
     return "\\draw [" + ",".join(options) + "] " + "\n  -- ".join(arcs) + " -- cycle;"
 
@@ -995,7 +999,7 @@ def drawnode(v: List[float], player: int = 1, color_scheme: str = "default") -> 
         TikZ node command string.
     """
     fillcolor = get_player_color(player, color_scheme)
-    
+
     if player == 0:
         shape = "rectangle"
         size = sqwidth
@@ -1160,18 +1164,20 @@ def generate_legend(
         min_y = min(nodes[nodeid]["y"] for nodeid in nodes)
 
     left = "left" in legend_position
-    top  = "top"  in legend_position
+    top = "top" in legend_position
 
     legend_code = "\n% Player color legend\n"
     if _horizontal:
         # Global rotate=90 CCW: original +x → final top, original +y → final left.
         # Rotate legend scope -90 to keep text upright.
-        x_offset = (max_x + 0.5) if top  else (min_x - 1.5)
-        y_loc    = (max_y + 0.5) if left else (min_y - 0.5)
-        legend_code += f"\\begin{{scope}}[scale=1,shift={{({x_offset},{y_loc})}}, rotate=-90]\n"
+        x_offset = (max_x + 0.5) if top else (min_x - 1.5)
+        y_loc = (max_y + 0.5) if left else (min_y - 0.5)
+        legend_code += (
+            f"\\begin{{scope}}[scale=1,shift={{({x_offset},{y_loc})}}, rotate=-90]\n"
+        )
     else:
         x_offset = (min_x - 1.5) if left else (max_x + 0.5)
-        y_loc    = max_y          if top  else min_y
+        y_loc = max_y if top else min_y
         legend_code += f"\\begin{{scope}}[scale=1,shift={{({x_offset},{y_loc})}}]\n"
 
     # Add each player with their color (no title)
@@ -1198,7 +1204,9 @@ def generate_legend(
             legend_code += f"\\node[inner sep=0pt,minimum size=\\ndiam,draw={player_color},fill={player_color},shape=circle] at (0,{y_offset}) {{}};\n"
 
         # Add player label
-        legend_code += f"\\node[anchor=west] at (0.3,{y_offset}) {{{safe_player_name}}};\n"
+        legend_code += (
+            f"\\node[anchor=west] at (0.3,{y_offset}) {{{safe_player_name}}};\n"
+        )
 
         y_offset -= y_spacing
 
@@ -1305,7 +1313,7 @@ def level(
         yfrom = nodes[fromn]["y"]
         xx = xfrom + ((-xs) if (_horizontal ^ _mirror) else xs)
     else:  # no father
-        xx = ((-xs) if (_horizontal ^ _mirror) else xs)
+        xx = (-xs) if (_horizontal ^ _mirror) else xs
         if fromn:
             error("No 'from' node, move '" + mov + "' ignored")
 
@@ -1319,9 +1327,12 @@ def level(
         # undo it.  Just warn -- this is almost always a copy-paste bug
         # in the .ef file (e.g. two "level 4 node 1" lines under
         # different parents instead of "node 1" and "node 2").
-        error("duplicate node identifier '" + nodeid +
-              "'; node identifiers must be unique within a level "
-              "(this entry overwrites the earlier one in the node table)")
+        error(
+            "duplicate node identifier '"
+            + nodeid
+            + "'; node identifiers must be unique within a level "
+            "(this entry overwrites the earlier one in the node table)"
+        )
     nodes[nodeid] = {"x": xx, "y": yy, "player": p}
     nodes[nodeid]["xshift"] = xs
     nodes[nodeid]["move"] = mov
@@ -1340,8 +1351,6 @@ def level(
         parent_color = get_player_color(parent_player, color_scheme)
         edge_color_style = f"color={parent_color}"
 
-
-
     # tikz code - add color to the draw command for edges based on parent
     s = "\\draw [" + thickn
     if edge_color_style:
@@ -1358,9 +1367,9 @@ def level(
             # In horizontal mode, original X is Page-Vertical (UP/DOWN)
             # xs > 0 (original right) moves Page-DOWN (due to xx = xfrom - xs)
             # xs < 0 (original left) moves Page-UP
-            if existsfrom and xs < 0: # Original left is Page-UP
+            if existsfrom and xs < 0:  # Original left is Page-UP
                 side = "above"
-            else: # Original right is Page-DOWN
+            else:  # Original right is Page-DOWN
                 side = "below"
             s += f" node[{side},yshift=" + spy + ",xshift=" + spx
         else:
@@ -1372,7 +1381,7 @@ def level(
                 side = "right"
                 s += f" node[{side},xshift="
             s += spx + ",yshift=" + spy
-        
+
         if color_style:
             s += "," + color_style
         s += "] {\\"
@@ -1396,9 +1405,9 @@ def level(
                 side = "below"
             elif movpos == "l":
                 side = "above"
-            elif xs > 0: # Page-DOWN
+            elif xs > 0:  # Page-DOWN
                 side = "below"
-            else: # Page-UP
+            else:  # Page-UP
                 side = "above"
             shift_type = "yshift"
         else:
@@ -1418,17 +1427,17 @@ def level(
             dist = 1.0 * _action_label_dist
         else:
             dist = 0.5 * _action_label_dist
-            
+
         if side in ["left", "below"]:
             dist = -dist
-            
+
         s += f" node[{side},{shift_type}={fformat(dist)}mm"
         # Add edge color to action label
         if edge_color_style:
             s += "," + edge_color_style
 
         mov_display = mov
-        
+
         if color_scheme != "default":
             # Color actions like "P1:K" with Player 1's color and remove "P1:"
             # Supports both P1:K and P 1 : K formats
@@ -1444,10 +1453,12 @@ def level(
                 except (ValueError, IndexError):
                     pass
                 return match.group(0)
-            
+
             # Match P followed by number, colon, and then the action text
             # Stops at space or ~ to preserve multiple actions in one label
-            mov_display = re.sub(r"[Pp]\s*(\d+)\s*:\s*([^\s~]+)", replace_action, mov_display)
+            mov_display = re.sub(
+                r"[Pp]\s*(\d+)\s*:\s*([^\s~]+)", replace_action, mov_display
+            )
 
         if "$" not in mov_display:
             mov_display = re.sub(
@@ -1570,7 +1581,21 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
 
 def commandline(
     argv: List[str],
-) -> tuple[str, bool, bool, bool, bool, Optional[str], Optional[int], str, bool, bool, str, Optional[dict], bool]:
+) -> tuple[
+    str,
+    bool,
+    bool,
+    bool,
+    bool,
+    Optional[str],
+    Optional[int],
+    str,
+    bool,
+    bool,
+    str,
+    Optional[dict],
+    bool,
+]:
     """
     Process command-line arguments to set global configuration.
 
@@ -1700,7 +1725,10 @@ def commandline(
                     p, c = pair.split(":")
                     custom_colors[int(p)] = c
             except Exception:
-                print("Warning: Invalid custom-colors format, expected '0:#hex,1:#hex'", file=sys.stderr)
+                print(
+                    "Warning: Invalid custom-colors format, expected '0:#hex,1:#hex'",
+                    file=sys.stderr,
+                )
         elif arg == "--horizontal":
             horizontal = True
         elif arg == "--mirror":
@@ -1713,14 +1741,20 @@ def commandline(
             try:
                 action_label_dist = float(arg[20:])
             except ValueError:
-                print("Warning: Invalid action-label-dist value, using default 1.0", file=sys.stderr)
+                print(
+                    "Warning: Invalid action-label-dist value, using default 1.0",
+                    file=sys.stderr,
+                )
         elif arg == "--iset-fill":
             iset_fill = True
         elif arg.startswith("--iset-fill-opacity="):
             try:
                 iset_fill_opacity = float(arg[20:])
             except ValueError:
-                print("Warning: Invalid iset-fill-opacity value, using default 0.2", file=sys.stderr)
+                print(
+                    "Warning: Invalid iset-fill-opacity value, using default 0.2",
+                    file=sys.stderr,
+                )
         elif arg == "--iset-dotted":
             iset_boundary = "dotted"
         elif arg.startswith("--iset-boundary="):
@@ -1731,7 +1765,10 @@ def commandline(
             try:
                 node_size = float(arg[12:])
             except ValueError:
-                print("Warning: Invalid node-size value, using default 1.5", file=sys.stderr)
+                print(
+                    "Warning: Invalid node-size value, using default 1.5",
+                    file=sys.stderr,
+                )
         elif arg.startswith("--color-scheme="):
             color_scheme = arg[15:]
         elif arg.startswith("--edge-thickness="):
@@ -1885,7 +1922,7 @@ def ef_to_tex(
         # Set parameters
         scale = scale_factor
         grid = show_grid
-        
+
         global _font_family, _font_bold, _font_italic, _font_size
         global _iset_fill, _iset_fill_opacity, _iset_boundary, _node_size
         _font_family = font_family
@@ -1944,7 +1981,9 @@ def ef_to_tex(
                 if p >= 0:
                     player_set.add(p)
 
-            legend_code = generate_legend(list(player_set), color_scheme, scale_factor, legend_position)
+            legend_code = generate_legend(
+                list(player_set), color_scheme, scale_factor, legend_position
+            )
             if legend_code:
                 outs(legend_code, outstream)
 
@@ -2023,8 +2062,14 @@ def generate_tikz(
         custom_colors: Optional dictionary mapping player index to hex color string for the "custom" scheme.
 
     Returns:
-        Complete TikZ code ready for use in Jupyter notebooks or LaTeX documents.
+        For EF/EFG inputs, complete TikZ code ready for use in Jupyter notebooks or LaTeX documents.
+        For NFG inputs, returns the raw \begin{game}...\end{game} LaTeX body.
     """
+    # NFG (strategic/normal form) games are rendered via pygambit's to_latex() — not TikZ.
+    nfg_game = _prepare_nfg(game)
+    if nfg_game is not None:
+        return nfg_game.to_latex()
+
     # If user supplied an EFG file, read it with pygambit to get the pygambit.gambit.Game object.
     if isinstance(game, str) and game.lower().endswith(".efg"):
         import pygambit
@@ -2123,7 +2168,7 @@ def generate_tikz(
         font_style += "\\itshape"
     if font_size and font_size != "normalsize":
         font_style += f"\\{font_size}"
-    
+
     node_style = font_style
     if font_bold:
         node_style += ", execute at begin node=\\boldmath"
@@ -2151,7 +2196,9 @@ def generate_tikz(
 
     if horizontal:
         # Inject rotate=90 into the \begin{tikzpicture} line
-        tikz_picture_content = tikz_picture_content.replace("\\begin{tikzpicture}[", "\\begin{tikzpicture}[rotate=90, ")
+        tikz_picture_content = tikz_picture_content.replace(
+            "\\begin{tikzpicture}[", "\\begin{tikzpicture}[rotate=90, "
+        )
 
     tikz_code += f"\n% Game tree content from {ef_file}\n"
     tikz_code += tikz_picture_content
@@ -2177,10 +2224,11 @@ def count_players(game_source: str | "pygambit.gambit.Game") -> int:
             return len(game_source.players)
         except AttributeError:
             return 6
-    
+
     # If EFG file, read it
     if game_source.lower().endswith(".efg"):
         import pygambit
+
         try:
             g = pygambit.read_efg(game_source)
             return len(g.players)
@@ -2251,6 +2299,21 @@ def draw_tree(
         The result of the Jupyter cell magic execution, or the TikZ code string
         if cell magic fails.
     """
+    # NFG (strategic/normal form): display compiled image in Jupyter or return LaTeX body.
+    nfg_game = _prepare_nfg(game)
+    if nfg_game is not None:
+        latex_body = nfg_game.to_latex()
+        ip = get_ipython()
+        if ip is not None:
+            try:
+                from IPython.display import Image, display
+
+                png_path = generate_png(game, save_to=save_to)
+                display(Image(png_path))
+                return None
+            except Exception:
+                pass
+        return latex_body
 
     # Generate TikZ code
     tikz_code = generate_tikz(
@@ -2295,6 +2358,40 @@ def draw_tree(
         return ip.run_cell_magic("tikz", "", tikz_code)
     else:
         return tikz_code
+
+
+def _prepare_nfg(game) -> Optional["pygambit.gambit.Game"]:
+    """Return a pygambit NFG game object if the input is an NFG, else None.
+
+    Accepts either a .nfg file path string or a pygambit Game object whose
+    is_tree attribute is falsy (i.e. a strategic-form game).
+    """
+    if isinstance(game, str) and game.lower().endswith(".nfg"):
+        import pygambit
+
+        return pygambit.read_nfg(game)
+    if not isinstance(game, str):
+        try:
+            if not game.is_tree:
+                return game
+        except AttributeError:
+            pass
+    return None
+
+
+def nfg_latex_wrapper(latex_body: str) -> str:
+    """Wrap NFG LaTeX body in a standalone document using the sgame package."""
+    return (
+        "\\documentclass{article}\n"
+        "\\usepackage[active,tightpage]{preview}\n"
+        "\\usepackage{sgame}\n"
+        "\\pagestyle{empty}\n"
+        "\\begin{document}\n"
+        "\\begin{preview}\n"
+        f"{latex_body}\n"
+        "\\end{preview}\n"
+        "\\end{document}\n"
+    )
 
 
 def latex_wrapper(tikz_code: str) -> str:
@@ -2380,6 +2477,18 @@ def generate_tex(
     Raises:
         FileNotFoundError: If the .ef file doesn't exist.
     """
+    # NFG (strategic/normal form) games: wrap to_latex() output with sgame preamble.
+    nfg_game = _prepare_nfg(game)
+    if nfg_game is not None:
+        stem = Path(game).stem if isinstance(game, str) else (nfg_game.title or "game")
+        if save_to and save_to.endswith(".tex"):
+            output_tex = save_to
+        else:
+            output_tex = (save_to or stem) + ".tex"
+        with open(output_tex, "w", encoding="utf-8") as f:
+            f.write(nfg_latex_wrapper(nfg_game.to_latex()))
+        return str(Path(output_tex).absolute())
+
     # Determine output filename
     if save_to is None:
         if isinstance(game, str):
@@ -2491,6 +2600,49 @@ def generate_pdf(
         FileNotFoundError: If the .ef file doesn't exist.
         subprocess.CalledProcessError: If LaTeX compilation fails.
     """
+    # NFG (strategic/normal form) games: compile sgame table directly to PDF.
+    nfg_game = _prepare_nfg(game)
+    if nfg_game is not None:
+        stem = Path(game).stem if isinstance(game, str) else (nfg_game.title or "game")
+        if save_to and save_to.endswith(".pdf"):
+            output_pdf = save_to
+        else:
+            output_pdf = (save_to or stem) + ".pdf"
+        latex_doc = nfg_latex_wrapper(nfg_game.to_latex())
+        with tempfile.TemporaryDirectory() as temp_dir:
+            tex_file = Path(temp_dir) / "output.tex"
+            tex_file.write_text(latex_doc, encoding="utf-8")
+            try:
+                subprocess.run(
+                    [
+                        "pdflatex",
+                        "-interaction=nonstopmode",
+                        "-output-directory",
+                        temp_dir,
+                        str(tex_file),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+            except subprocess.CalledProcessError as e:
+                # pdflatex writes errors to stdout, not stderr
+                detail = (e.stdout or "") + (e.stderr or "")
+                raise RuntimeError(
+                    "LaTeX compilation failed for NFG.\n"
+                    "Ensure pdflatex and the sgame LaTeX package (texlive-games) are installed.\n\n"
+                    f"pdflatex output:\n{detail}"
+                )
+            except FileNotFoundError:
+                raise RuntimeError(
+                    "pdflatex not found. Please install a LaTeX distribution "
+                    "(e.g., TeX Live with texlive-games, MiKTeX)."
+                )
+            import shutil
+
+            shutil.copy(Path(temp_dir) / "output.pdf", output_pdf)
+        return str(Path(output_pdf).absolute())
+
     # Determine output filename
     if save_to is None:
         if isinstance(game, str):
@@ -2917,13 +3069,22 @@ def generate_svg(
             if final_svg_path.exists():
                 if responsive_sizing:
                     import re
+
                     with open(final_svg_path, "r") as f:
                         svg_content = f.read()
                     # Remove fixed width and height
-                    svg_content = re.sub(r'(<svg[^>]*?)\bwidth="[^"]*"', r'\1', svg_content)
-                    svg_content = re.sub(r'(<svg[^>]*?)\bheight="[^"]*"', r'\1', svg_content)
+                    svg_content = re.sub(
+                        r'(<svg[^>]*?)\bwidth="[^"]*"', r"\1", svg_content
+                    )
+                    svg_content = re.sub(
+                        r'(<svg[^>]*?)\bheight="[^"]*"', r"\1", svg_content
+                    )
                     # Add responsive attributes
-                    svg_content = re.sub(r'<svg', '<svg width="100%" height="auto" style="max-height: 80vh;"', svg_content)
+                    svg_content = re.sub(
+                        r"<svg",
+                        '<svg width="100%" height="auto" style="max-height: 80vh;"',
+                        svg_content,
+                    )
                     with open(final_svg_path, "w") as f:
                         f.write(svg_content)
                 return str(final_svg_path.absolute())

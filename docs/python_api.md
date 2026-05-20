@@ -137,3 +137,26 @@ efg_to_ef(g, save_to="output.ef")
 | | `shared_terminal_depth=True/False` | Enforce shared terminal node depth (default: False). |
 
 Both functions return the path to the generated output file.
+
+## Normal Form Games (NFG)
+
+`draw_tree` also supports normal form (strategic form) games via pygambit:
+
+```python
+import pygambit as gbt
+from draw_tree import draw_tree, generate_tex, generate_pdf, generate_png, generate_svg
+
+# From a pygambit NFG object
+g = gbt.read_nfg("games/nfg/example.nfg")
+draw_tree(g)       # returns \begin{game}...\end{game} body; displays image in Jupyter
+generate_pdf(g)    # compiles payoff table to PDF
+generate_png(g)    # compiles payoff table to PNG
+generate_svg(g)    # compiles payoff table to SVG
+
+# Or directly from the .nfg file path
+generate_pdf("games/nfg/example.nfg", save_to="battle_of_sexes.pdf")
+```
+
+`generate_tikz()` on an NFG returns the raw `\begin{game}...\end{game}` LaTeX body (not TikZ code). PDF/PNG/SVG compilation requires `pdflatex` and the `sgame` LaTeX package (`texlive-games` on Ubuntu).
+
+Tree-specific keyword arguments (`horizontal`, `mirror`, `iset_fill`, `scale_factor`, etc.) are accepted but silently ignored for NFG inputs.
