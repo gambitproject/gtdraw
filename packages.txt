@@ -1,6 +1,7 @@
 texlive-latex-base
 texlive-latex-extra
 texlive-pictures
+texlive-games
 pdf2svg
 imagemagick
 ghostscript
