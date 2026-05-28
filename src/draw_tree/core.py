@@ -996,18 +996,32 @@ def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
     if len(words) > maxplayer + 1:
         error("too many payoffs, discard " + str(words[maxplayer + 1 :]))
         maxp = maxplayer + 1
+    if _horizontal:
+        # Comma-separated single node to the right of the terminal node (page-rotated "below")
+        parts = []
+        for i in range(1, maxp):
+            payoff_player_color = get_player_color(i, color_scheme)
+            if _font_family == "sffamily":
+                v = f"\\mathsf{{{words[i]}}}"
+            else:
+                v = words[i]
+            if color_scheme != "default" and not _label_bg:
+                v = f"\\textcolor{{{payoff_player_color}}}{{{v}}}"
+            parts.append(v)
+        combined = ", ".join(parts)
+        first_color = get_player_color(1, color_scheme) if maxp > 1 else _label_bg_color_name()
+        t = f"   node[below,yshift=0.1{paydown}"
+        t += _label_bg_node_opts(first_color)
+        t += f"] {{${combined}\\strut$}}"
+        return [t]
+
     # When label backgrounds are active the filled boxes are ~1.7× taller than the
     # default step (1×paydown), so double the step to prevent boxes from overlapping.
     payoff_step = 2.0 if _label_bg else 1.0
     paylist = []
     for i in range(1, maxp):
         payoff_player_color = get_player_color(i, color_scheme)
-        # tikz code
-        if _horizontal:
-            # Use centered anchor with xshift to keep payoffs aligned horizontally
-            t = "   node[xshift=0.6cm,yshift="
-        else:
-            t = "   node[below,yshift="
+        t = "   node[below,yshift="
         t += fformat(payup - (i - 1) * payoff_step) + paydown
         if color_scheme != "default":
             t += f",color={payoff_player_color}"
