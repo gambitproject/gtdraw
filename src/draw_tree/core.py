@@ -980,7 +980,7 @@ def arrow(words: List[str]) -> tuple[float, str, int]:
     return arrowpos, arrowcolor, advance
 
 
-def payoffs(words: List[str], color_scheme: str = "default", bg_color: str = "") -> List[str]:
+def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
     """
     Parse 'payoffs' command to generate TikZ payoff display code.
 
@@ -996,19 +996,22 @@ def payoffs(words: List[str], color_scheme: str = "default", bg_color: str = "")
     if len(words) > maxplayer + 1:
         error("too many payoffs, discard " + str(words[maxplayer + 1 :]))
         maxp = maxplayer + 1
+    # When label backgrounds are active the filled boxes are ~1.7× taller than the
+    # default step (1×paydown), so double the step to prevent boxes from overlapping.
+    payoff_step = 2.0 if _label_bg else 1.0
     paylist = []
     for i in range(1, maxp):
+        payoff_player_color = get_player_color(i, color_scheme)
         # tikz code
         if _horizontal:
             # Use centered anchor with xshift to keep payoffs aligned horizontally
             t = "   node[xshift=0.6cm,yshift="
         else:
             t = "   node[below,yshift="
-        t += fformat(payup - (i - 1)) + paydown
+        t += fformat(payup - (i - 1) * payoff_step) + paydown
         if color_scheme != "default":
-            player_color = get_player_color(i, color_scheme)
-            t += f",color={player_color}"
-        t += _label_bg_node_opts(bg_color)
+            t += f",color={payoff_player_color}"
+        t += _label_bg_node_opts(payoff_player_color)
         if _font_family == "sffamily":
             t += "] {$\\mathsf{" + words[i]
             if words[i][0] == "-":  # negative payoff
@@ -1326,8 +1329,7 @@ def level(
             arrowcolorlist.append(arrowcolor)
             count += advance
         elif words[count] == "payoffs":  # automatically last
-            _payoff_bg = get_player_color(nodes[fromn]["player"], color_scheme) if fromn in nodes else ""
-            pay = payoffs(words[count:], color_scheme=color_scheme, bg_color=_payoff_bg)
+            pay = payoffs(words[count:], color_scheme=color_scheme)
             break
         else:  # unknown keyword
             error("unknown keyword " + words[count])
