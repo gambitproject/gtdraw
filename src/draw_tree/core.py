@@ -1014,12 +1014,12 @@ def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
         t += _label_bg_node_opts(payoff_player_color)
         if _font_family == "sffamily":
             t += "] {$\\mathsf{" + words[i]
-            if words[i][0] == "-":  # negative payoff
+            if words[i][0] == "-" and not _label_bg:
                 t += "{\\phantom-}"
             t += "}\\strut$}"
         else:
             t += "] {$" + words[i]
-            if words[i][0] == "-":  # negative payoff
+            if words[i][0] == "-" and not _label_bg:
                 t += "{\\phantom-}"
             t += "\\strut$}"
         paylist.append(t)
