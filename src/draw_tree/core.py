@@ -997,7 +997,25 @@ def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
         error("too many payoffs, discard " + str(words[maxplayer + 1 :]))
         maxp = maxplayer + 1
     if _horizontal:
-        # Comma-separated single node to the right of the terminal node (page-rotated "below")
+        # In horizontal mode, node[right] places content physically to the RIGHT of the anchor.
+        # node[right=X\paydown] controls the rightward distance without any vertical offset.
+        payoff_step = 2.0
+        if _label_bg:
+            # Separate nodes per payoff, each with its player's background color.
+            # Anchored at the same point with increasing right= values → side-by-side.
+            paylist = []
+            for i in range(1, maxp):
+                payoff_player_color = get_player_color(i, color_scheme)
+                factor = 0.5 + (i - 1) * payoff_step
+                t = f"   node[right={fformat(factor)}{paydown}"
+                t += _label_bg_node_opts(payoff_player_color)
+                if _font_family == "sffamily":
+                    t += "] {$\\mathsf{" + words[i] + "}\\strut$}"
+                else:
+                    t += "] {$" + words[i] + "\\strut$}"
+                paylist.append(t)
+            return paylist
+        # Single comma-separated node. right=0.5\paydown clears the terminal disk edge.
         parts = []
         for i in range(1, maxp):
             payoff_player_color = get_player_color(i, color_scheme)
@@ -1005,14 +1023,11 @@ def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
                 v = f"\\mathsf{{{words[i]}}}"
             else:
                 v = words[i]
-            if color_scheme != "default" and not _label_bg:
+            if color_scheme != "default":
                 v = f"\\textcolor{{{payoff_player_color}}}{{{v}}}"
             parts.append(v)
         combined = ", ".join(parts)
-        first_color = get_player_color(1, color_scheme) if maxp > 1 else _label_bg_color_name()
-        t = f"   node[below,yshift=0.1{paydown}"
-        t += _label_bg_node_opts(first_color)
-        t += f"] {{${combined}\\strut$}}"
+        t = f"   node[right=0.5{paydown}] {{${combined}\\strut$}}"
         return [t]
 
     # When label backgrounds are active the filled boxes are ~1.7× taller than the

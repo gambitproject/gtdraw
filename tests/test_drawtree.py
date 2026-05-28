@@ -1857,7 +1857,7 @@ class TestHorizontalLayout:
         assert result_invalid[14] == "top-left"
 
     def test_horizontal_payoff_position(self):
-        """Test that payoffs are comma-separated in a single node in horizontal mode."""
+        """Test that payoffs are comma-separated and positioned using 'right' in horizontal mode."""
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
             f.write("player 1\n")
             f.write("level 0 node n1 player 1 payoffs 1 2\n")
@@ -1869,6 +1869,17 @@ class TestHorizontalLayout:
             assert "1, 2" in result
             # Vertical mode would emit separate values without commas; comma means combined
             assert "1, 2" in result and "2, " not in result
+            # Should be positioned with 'right=0.5\paydown'
+            assert "right=0.5\\paydown" in result
+            assert "below=0.5\\paydown" not in result
+
+            # Test with label background enabled
+            result_bg = draw_tree.generate_tikz(ef_file_path, horizontal=True, label_bg=True)
+            # Payoffs should be separate nodes with 'right=0.5\paydown' and 'right=2.5\paydown'
+            assert "right=0.5\\paydown" in result_bg
+            assert "right=2.5\\paydown" in result_bg
+            assert "below=0.5\\paydown" not in result_bg
+            assert "below=2.5\\paydown" not in result_bg
         finally:
             os.unlink(ef_file_path)
 
