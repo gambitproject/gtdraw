@@ -179,6 +179,9 @@ def run_app():
     iset_fill = False
     iset_fill_opacity = 0.2
     iset_boundary = "solid"
+    label_bg = False
+    label_bg_color = "white"
+    label_bg_opacity = 0.8
 
     if not is_nfg:
         with st.sidebar.expander("📐 Layout", expanded=False):
@@ -324,6 +327,17 @@ def run_app():
         }
         font_size = size_map[font_size_name]
 
+        st.markdown("---")
+        st.markdown("##### Label Background")
+        label_bg = st.checkbox("Enable Label Background", value=False)
+        label_bg_color_hex = st.color_picker(
+            "Background Colour", value="#ffffff", disabled=not label_bg
+        )
+        label_bg_opacity = st.slider(
+            "Background Opacity", 0.0, 1.0, 0.8, 0.05, disabled=not label_bg
+        )
+        label_bg_color = label_bg_color_hex  # hex accepted by _label_bg_definecolor
+
     # Main Area: Display
     if not game_source:
         if icon_path.exists():
@@ -459,6 +473,9 @@ def run_app():
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                label_bg=label_bg,
+                label_bg_color=label_bg_color,
+                label_bg_opacity=label_bg_opacity,
             )
 
             if not os.path.exists(svg_path):
@@ -498,6 +515,9 @@ def run_app():
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                label_bg=label_bg,
+                label_bg_color=label_bg_color,
+                label_bg_opacity=label_bg_opacity,
             )
 
             tex_path = generate_tex(
@@ -525,6 +545,9 @@ def run_app():
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                label_bg=label_bg,
+                label_bg_color=label_bg_color,
+                label_bg_opacity=label_bg_opacity,
             )
             with open(tex_path, "r") as f:
                 tex_data = f.read()
@@ -554,6 +577,9 @@ def run_app():
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                label_bg=label_bg,
+                label_bg_color=label_bg_color,
+                label_bg_opacity=label_bg_opacity,
             )
             with open(pdf_path, "rb") as f:
                 pdf_data = f.read()
@@ -584,6 +610,9 @@ def run_app():
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                label_bg=label_bg,
+                label_bg_color=label_bg_color,
+                label_bg_opacity=label_bg_opacity,
             )
             with open(png_path, "rb") as f:
                 png_data = f.read()

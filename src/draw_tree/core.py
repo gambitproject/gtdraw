@@ -89,6 +89,9 @@ _legend_position: str = "top-left"
 _action_label_dist: float = 1.0
 _iset_boundary: str = "solid"
 _node_size: float = 1.5
+_label_bg: bool = False
+_label_bg_color: str = "white"
+_label_bg_opacity: float = 0.8
 
 
 def get_player_color(player: int, color_scheme: str = "default") -> str:
@@ -209,6 +212,33 @@ def color_definitions(color_scheme: str = "default", num_players: int = 6) -> li
             print(f"Warning: Failed to generate {color_scheme} colors: {e}")
 
     return defs
+
+
+_HEX_RE = re.compile(r"^#?([0-9A-Fa-f]{6})$")
+
+
+def _label_bg_color_name() -> str:
+    """Return the LaTeX colour name for the label background."""
+    m = _HEX_RE.match(_label_bg_color)
+    if m:
+        return "drawtreedropbg"
+    return _label_bg_color
+
+
+def _label_bg_definecolor() -> str:
+    """Return a \\definecolor statement for a hex label-bg colour, or ''."""
+    m = _HEX_RE.match(_label_bg_color)
+    if m:
+        return f"\\definecolor{{drawtreedropbg}}{{HTML}}{{{m.group(1).upper()}}}"
+    return ""
+
+
+def _label_bg_node_opts() -> str:
+    """Return extra TikZ node options that add a filled background, or ''."""
+    if not _label_bg:
+        return ""
+    color = _label_bg_color_name()
+    return f",fill={color},fill opacity={fformat(_label_bg_opacity)},text opacity=1"
 
 
 def outall(stream: Optional[List[str]] = None) -> None:
@@ -963,6 +993,7 @@ def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
         if color_scheme != "default":
             player_color = get_player_color(i, color_scheme)
             t += f",color={player_color}"
+        t += _label_bg_node_opts()
         if _font_family == "sffamily":
             t += "] {$\\mathsf{" + words[i]
             if words[i][0] == "-":  # negative payoff
@@ -1384,6 +1415,7 @@ def level(
 
         if color_style:
             s += "," + color_style
+        s += _label_bg_node_opts()
         s += "] {\\"
         s += playertexname[p] + "\\strut}"
     outs(s)
@@ -1435,6 +1467,7 @@ def level(
         # Add edge color to action label
         if edge_color_style:
             s += "," + edge_color_style
+        s += _label_bg_node_opts()
 
         mov_display = mov
 
@@ -1555,6 +1588,7 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
             s += spx + ",yshift=" + spy
             if color_style:
                 s += "," + color_style
+            s += _label_bg_node_opts()
             s += "] {\\"
             s += playertexname[p] + "} ;"
             outs(s)
@@ -1571,6 +1605,7 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
             s += " node[xshift=0.0cm"
             if color_style:
                 s += "," + color_style
+            s += _label_bg_node_opts()
             s += "] {\\" + playertexname[p] + "} ;"
             outs(s)
     return
@@ -1645,6 +1680,9 @@ def commandline(
     iset_fill_opacity = 0.2
     iset_boundary = "solid"
     node_size = 1.5
+    label_bg = False
+    label_bg_color = "white"
+    label_bg_opacity = 0.8
     color_scheme = "default"
     edge_thickness = 1.0
     action_label_position = 0.5
@@ -1745,6 +1783,18 @@ def commandline(
                     "Warning: Invalid action-label-dist value, using default 1.0",
                     file=sys.stderr,
                 )
+        elif arg == "--label-bg":
+            label_bg = True
+        elif arg.startswith("--label-bg-color="):
+            label_bg_color = arg.split("=", 1)[1]
+        elif arg.startswith("--label-bg-opacity="):
+            try:
+                label_bg_opacity = float(arg[19:])
+            except ValueError:
+                print(
+                    "Warning: Invalid label-bg-opacity value, using default 0.8",
+                    file=sys.stderr,
+                )
         elif arg == "--iset-fill":
             iset_fill = True
         elif arg.startswith("--iset-fill-opacity="):
@@ -1841,6 +1891,9 @@ def commandline(
         iset_fill_opacity,
         iset_boundary,
         node_size,
+        label_bg,
+        label_bg_color,
+        label_bg_opacity,
         color_scheme,
         edge_thickness,
         action_label_position,
@@ -1871,6 +1924,9 @@ def ef_to_tex(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
+    label_bg: bool = False,
+    label_bg_color: str = "white",
+    label_bg_opacity: float = 0.8,
 ) -> str:
     """
     Convert an extensive form (.ef) file to TikZ code.
@@ -1925,6 +1981,7 @@ def ef_to_tex(
 
         global _font_family, _font_bold, _font_italic, _font_size
         global _iset_fill, _iset_fill_opacity, _iset_boundary, _node_size
+        global _label_bg, _label_bg_color, _label_bg_opacity
         _font_family = font_family
         _font_bold = font_bold
         _font_italic = font_italic
@@ -1933,6 +1990,9 @@ def ef_to_tex(
         _iset_fill_opacity = iset_fill_opacity
         _iset_boundary = iset_boundary
         _node_size = node_size
+        _label_bg = label_bg
+        _label_bg_color = label_bg_color
+        _label_bg_opacity = max(0.0, min(1.0, label_bg_opacity))
         global _horizontal
         global _mirror
         global _legend_position
@@ -2038,6 +2098,9 @@ def generate_tikz(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
+    label_bg: bool = False,
+    label_bg_color: str = "white",
+    label_bg_opacity: float = 0.8,
 ) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
@@ -2140,6 +2203,9 @@ def generate_tikz(
         iset_fill_opacity=iset_fill_opacity,
         iset_boundary=iset_boundary,
         node_size=node_size,
+        label_bg=label_bg,
+        label_bg_color=label_bg_color,
+        label_bg_opacity=label_bg_opacity,
     )
 
     # Step 2: Define built-in macro definitions (from macros-drawtree.tex)
@@ -2159,6 +2225,11 @@ def generate_tikz(
     ]
     # Step 2a: Define player color macros
     macro_definitions.extend(color_definitions(color_scheme, num_players))
+
+    # Step 2b: Define label background colour if a hex value was supplied
+    defcol = _label_bg_definecolor()
+    if defcol:
+        macro_definitions.append(defcol)
 
     # Build the TikZ set font style
     font_style = f"font=\\{font_family}"
@@ -2277,6 +2348,9 @@ def draw_tree(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
+    label_bg: bool = False,
+    label_bg_color: str = "white",
+    label_bg_opacity: float = 0.8,
 ) -> Optional[str]:
     """
     Generate TikZ code and display in Jupyter notebooks.
@@ -2342,6 +2416,9 @@ def draw_tree(
         iset_fill_opacity=iset_fill_opacity,
         iset_boundary=iset_boundary,
         node_size=node_size,
+        label_bg=label_bg,
+        label_bg_color=label_bg_color,
+        label_bg_opacity=label_bg_opacity,
     )
 
     # Execute cell magic or return TikZ
@@ -2445,6 +2522,9 @@ def generate_tex(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
+    label_bg: bool = False,
+    label_bg_color: str = "white",
+    label_bg_opacity: float = 0.8,
 ) -> str:
     """
     Generate a complete LaTeX document file directly from an extensive form (.ef) file.
@@ -2529,6 +2609,9 @@ def generate_tex(
         iset_fill_opacity=iset_fill_opacity,
         iset_boundary=iset_boundary,
         node_size=node_size,
+        label_bg=label_bg,
+        label_bg_color=label_bg_color,
+        label_bg_opacity=label_bg_opacity,
     )
 
     # Wrap in complete LaTeX document
@@ -2567,6 +2650,9 @@ def generate_pdf(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
+    label_bg: bool = False,
+    label_bg_color: str = "white",
+    label_bg_opacity: float = 0.8,
 ) -> str:
     """
     Generate a PDF directly from an extensive form (.ef) file.
@@ -2683,6 +2769,9 @@ def generate_pdf(
         iset_fill_opacity=iset_fill_opacity,
         iset_boundary=iset_boundary,
         node_size=node_size,
+        label_bg=label_bg,
+        label_bg_color=label_bg_color,
+        label_bg_opacity=label_bg_opacity,
     )
 
     # Create LaTeX wrapper document
@@ -2765,6 +2854,9 @@ def generate_png(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
+    label_bg: bool = False,
+    label_bg_color: str = "white",
+    label_bg_opacity: float = 0.8,
 ) -> str:
     """
     Generate a PNG image directly from an extensive form (.ef) file.
@@ -2844,6 +2936,9 @@ def generate_png(
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                label_bg=label_bg,
+                label_bg_color=label_bg_color,
+                label_bg_opacity=label_bg_opacity,
             )
 
             # Step 2: Convert PDF to PNG
@@ -2973,6 +3068,9 @@ def generate_svg(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
+    label_bg: bool = False,
+    label_bg_color: str = "white",
+    label_bg_opacity: float = 0.8,
 ) -> str:
     """
     Generate an SVG image directly from an extensive form (.ef) file.
@@ -3045,6 +3143,9 @@ def generate_svg(
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                label_bg=label_bg,
+                label_bg_color=label_bg_color,
+                label_bg_opacity=label_bg_opacity,
             )
 
             # Convert PDF to SVG using pdf2svg

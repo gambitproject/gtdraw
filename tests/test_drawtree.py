@@ -649,6 +649,9 @@ class TestCommandlineArguments:
             iset_fill_opacity,
             iset_boundary,
             node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -693,6 +696,9 @@ class TestCommandlineArguments:
             iset_fill_opacity,
             iset_boundary,
             node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -737,6 +743,9 @@ class TestCommandlineArguments:
             iset_fill_opacity,
             iset_boundary,
             node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -781,6 +790,9 @@ class TestCommandlineArguments:
             iset_fill_opacity,
             iset_boundary,
             node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -823,6 +835,9 @@ class TestCommandlineArguments:
             iset_fill_opacity,
             iset_boundary,
             node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -867,6 +882,9 @@ class TestCommandlineArguments:
             iset_fill_opacity,
             iset_boundary,
             node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -910,6 +928,9 @@ class TestCommandlineArguments:
             iset_fill_opacity,
             iset_boundary,
             node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -947,6 +968,9 @@ class TestCommandlineArguments:
             iset_fill_opacity,
             iset_boundary,
             node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -985,6 +1009,9 @@ class TestCommandlineArguments:
             iset_fill_opacity,
             iset_boundary,
             node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -1021,6 +1048,9 @@ class TestCommandlineArguments:
             iset_fill_opacity,
             iset_boundary,
             node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -1065,6 +1095,9 @@ class TestCommandlineArguments:
             iset_fill_opacity,
             iset_boundary,
             node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -1589,7 +1622,7 @@ def test_commandline_color_scheme():
     result = draw_tree.commandline(
         ["draw_tree.py", "test.ef", "--color-scheme=distinctipy"]
     )
-    assert result[20] == "distinctipy"
+    assert result[23] == "distinctipy"
 
 
 def test_commandline_edge_and_label_options():
@@ -1602,8 +1635,8 @@ def test_commandline_edge_and_label_options():
             "--action-label-position=0.7",
         ]
     )
-    assert result[21] == 2.0
-    assert result[22] == 0.7
+    assert result[24] == 2.0
+    assert result[25] == 0.7
 
 
 def test_commandline_efg_scaling_options():
@@ -1618,10 +1651,10 @@ def test_commandline_efg_scaling_options():
             "--shared-terminal-depth",
         ]
     )
-    assert result[23] == 1.5
-    assert result[24] == 0.8
-    assert result[25] == 1.2
-    assert result[26] is True
+    assert result[26] == 1.5
+    assert result[27] == 0.8
+    assert result[28] == 1.2
+    assert result[29] is True
 
 
 class TestHorizontalLayout:
@@ -2228,7 +2261,8 @@ class TestConverter:
             tex_requested, output_file, dpi, font_family, font_bold,
             font_italic, font_size, custom_colors, horizontal,
             mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
-            node_size, color_scheme, edge_thickness, action_label_position,
+            node_size, label_bg, label_bg_color, label_bg_opacity,
+            color_scheme, edge_thickness, action_label_position,
             level_scaling, sublevel_scaling, width_scaling,
             shared_terminal_depth, to_efg, to_ef,
         ) = result
@@ -2245,7 +2279,8 @@ class TestConverter:
             tex_requested, output_file, dpi, font_family, font_bold,
             font_italic, font_size, custom_colors, horizontal,
             mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
-            node_size, color_scheme, edge_thickness, action_label_position,
+            node_size, label_bg, label_bg_color, label_bg_opacity,
+            color_scheme, edge_thickness, action_label_position,
             level_scaling, sublevel_scaling, width_scaling,
             shared_terminal_depth, to_efg, to_ef,
         ) = result
@@ -2266,6 +2301,75 @@ class TestConverter:
         ef_to_efg(ef_file, save_to=out_path)
         game = pygambit.read_efg(out_path)
         assert len(game.players) == 2
+
+
+class TestLabelBackground:
+    """Tests for the label_bg / label_bg_color / label_bg_opacity feature."""
+
+    @pytest.fixture
+    def simple_ef(self, tmp_path):
+        ef = tmp_path / "simple.ef"
+        ef.write_text(
+            "player 1\nplayer 2\n"
+            "level 0 node root player 1\n"
+            "level 2 node 1 from 0,root move L payoffs 1 0\n"
+            "level 2 node 2 from 0,root move R payoffs 0 1\n"
+        )
+        return str(ef)
+
+    def test_label_bg_disabled_by_default(self, simple_ef):
+        result = draw_tree.generate_tikz(simple_ef)
+        assert "fill opacity=" not in result
+
+    def test_label_bg_enables_fill(self, simple_ef):
+        result = draw_tree.generate_tikz(simple_ef, label_bg=True)
+        assert "fill=white" in result
+        assert "fill opacity=" in result
+        assert "text opacity=1" in result
+
+    def test_label_bg_custom_named_color(self, simple_ef):
+        result = draw_tree.generate_tikz(simple_ef, label_bg=True, label_bg_color="yellow")
+        assert "fill=yellow" in result
+
+    def test_label_bg_custom_hex_color(self, simple_ef):
+        result = draw_tree.generate_tikz(simple_ef, label_bg=True, label_bg_color="#ffcc00")
+        assert "\\definecolor{drawtreedropbg}{HTML}{FFCC00}" in result
+        assert "fill=drawtreedropbg" in result
+
+    def test_label_bg_hex_without_hash(self, simple_ef):
+        result = draw_tree.generate_tikz(simple_ef, label_bg=True, label_bg_color="ffcc00")
+        assert "\\definecolor{drawtreedropbg}{HTML}{FFCC00}" in result
+
+    def test_label_bg_opacity_clamped_high(self, simple_ef):
+        # opacity > 1 should be clamped to 1.0
+        result = draw_tree.generate_tikz(simple_ef, label_bg=True, label_bg_opacity=5.0)
+        assert "fill opacity=1" in result
+
+    def test_label_bg_opacity_clamped_low(self, simple_ef):
+        # opacity < 0 should be clamped to 0.0
+        result = draw_tree.generate_tikz(simple_ef, label_bg=True, label_bg_opacity=-1.0)
+        assert "fill opacity=0" in result
+
+    def test_cli_label_bg_flag(self):
+        from draw_tree.core import commandline
+
+        result = commandline([
+            "draw_tree", "game.ef",
+            "--label-bg", "--label-bg-color=#aabbcc", "--label-bg-opacity=0.5",
+        ])
+        (
+            output_mode, pdf_requested, png_requested, svg_requested,
+            tex_requested, output_file, dpi, font_family, font_bold,
+            font_italic, font_size, custom_colors, horizontal,
+            mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
+            node_size, label_bg, label_bg_color, label_bg_opacity,
+            color_scheme, edge_thickness, action_label_position,
+            level_scaling, sublevel_scaling, width_scaling,
+            shared_terminal_depth, to_efg, to_ef,
+        ) = result
+        assert label_bg is True
+        assert label_bg_color == "#aabbcc"
+        assert label_bg_opacity == pytest.approx(0.5)
 
 
 if __name__ == "__main__":
