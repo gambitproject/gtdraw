@@ -233,12 +233,27 @@ def _label_bg_definecolor() -> str:
     return ""
 
 
-def _label_bg_node_opts() -> str:
+def _label_bg_node_opts(player_color: str = "") -> str:
     """Return extra TikZ node options that add a filled background, or ''."""
     if not _label_bg:
         return ""
-    color = _label_bg_color_name()
-    return f",fill={color},fill opacity={fformat(_label_bg_opacity)},text opacity=1"
+    bg_color = player_color if player_color else _label_bg_color_name()
+    return (
+        f",fill={bg_color}"
+        f",fill opacity={fformat(_label_bg_opacity)}"
+        ",text opacity=1"
+        ",text=white"
+    )
+
+
+def _emit_label(s: str) -> None:
+    """Emit a label draw command; wrap in the labels layer when label_bg is active."""
+    if _label_bg:
+        outs("\\begin{pgfonlayer}{labels}")
+        outs(s)
+        outs("\\end{pgfonlayer}")
+    else:
+        outs(s)
 
 
 def outall(stream: Optional[List[str]] = None) -> None:
@@ -965,7 +980,7 @@ def arrow(words: List[str]) -> tuple[float, str, int]:
     return arrowpos, arrowcolor, advance
 
 
-def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
+def payoffs(words: List[str], color_scheme: str = "default", bg_color: str = "") -> List[str]:
     """
     Parse 'payoffs' command to generate TikZ payoff display code.
 
@@ -993,7 +1008,7 @@ def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
         if color_scheme != "default":
             player_color = get_player_color(i, color_scheme)
             t += f",color={player_color}"
-        t += _label_bg_node_opts()
+        t += _label_bg_node_opts(bg_color)
         if _font_family == "sffamily":
             t += "] {$\\mathsf{" + words[i]
             if words[i][0] == "-":  # negative payoff
@@ -1311,7 +1326,8 @@ def level(
             arrowcolorlist.append(arrowcolor)
             count += advance
         elif words[count] == "payoffs":  # automatically last
-            pay = payoffs(words[count:], color_scheme=color_scheme)
+            _payoff_bg = get_player_color(nodes[fromn]["player"], color_scheme) if fromn in nodes else ""
+            pay = payoffs(words[count:], color_scheme=color_scheme, bg_color=_payoff_bg)
             break
         else:  # unknown keyword
             error("unknown keyword " + words[count])
@@ -1376,6 +1392,7 @@ def level(
     color_style = f"color={player_color}"
 
     # For edges, use the PARENT node's color, not the current node's color
+    parent_color = ""
     edge_color_style = ""
     if existsfrom and fromn in nodes:
         parent_player = nodes[fromn]["player"]
@@ -1392,6 +1409,7 @@ def level(
     show_label = (
         p >= 0 and playername[p] and not node_in_iset and color_scheme == "default"
     )
+    player_label_cmd = ""  # standalone draw command emitted in labels layer when _label_bg
     if show_label:
         # Determine side and shifts based on layout
         if _horizontal:
@@ -1402,24 +1420,33 @@ def level(
                 side = "above"
             else:  # Original right is Page-DOWN
                 side = "below"
-            s += f" node[{side},yshift=" + spy + ",xshift=" + spx
+            node_opts = f"{side},yshift=" + spy + ",xshift=" + spx
         else:
             # Vertical mode
             if existsfrom and xs < 0:
                 side = "left"
-                s += f" node[{side},xshift=-"
+                node_opts = f"{side},xshift=-" + spx + ",yshift=" + spy
             else:
                 side = "right"
-                s += f" node[{side},xshift="
-            s += spx + ",yshift=" + spy
+                node_opts = f"{side},xshift=" + spx + ",yshift=" + spy
 
         if color_style:
-            s += "," + color_style
-        s += _label_bg_node_opts()
-        s += "] {\\"
-        s += playertexname[p] + "\\strut}"
+            node_opts += "," + color_style
+        node_opts += _label_bg_node_opts(player_color)
+        if not _label_bg:
+            # Embed player label node in the edge draw command
+            s += f" node[{node_opts}]"
+            s += "{\\" + playertexname[p] + "\\strut}"
+        else:
+            # Build standalone draw command to be emitted later in the labels layer
+            player_label_cmd = (
+                "\\draw " + coord(xx, yy)
+                + f" node[{node_opts}]"
+                + "{\\" + playertexname[p] + "\\strut};"
+            )
     outs(s)
-    outlist(pay)  # possibly empty
+    if not _label_bg:
+        outlist(pay)  # possibly empty
     if existsfrom:  # draw line to father
         outs("   -- " + coord(xfrom, yfrom) + ";")
         # annotate moves above
@@ -1467,7 +1494,7 @@ def level(
         # Add edge color to action label
         if edge_color_style:
             s += "," + edge_color_style
-        s += _label_bg_node_opts()
+        s += _label_bg_node_opts(parent_color)
 
         mov_display = mov
 
@@ -1501,7 +1528,7 @@ def level(
             mov_display = re.sub(r"(\^[a-zA-Z0-9]+|\^{[^}]+})", r"$\1$", mov_display)
 
         s += f"] {{{mov_display}\\strut}};"
-        outs(s)
+        _emit_label(s)
         # output arrows
         while arrowposlist:
             arrowpos = arrowposlist.pop(0)
@@ -1518,6 +1545,12 @@ def level(
             outs(s)
     else:
         outs("   ;")
+    # Emit deferred player label and payoffs in the labels layer (after edge is closed)
+    if player_label_cmd:
+        _emit_label(player_label_cmd)
+    if _label_bg and pay:
+        for payoff_node in pay:
+            _emit_label("\\draw " + coord(xx, yy) + payoff_node + ";")
     return
 
 
@@ -1588,10 +1621,10 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
             s += spx + ",yshift=" + spy
             if color_style:
                 s += "," + color_style
-            s += _label_bg_node_opts()
+            s += _label_bg_node_opts(player_color)
             s += "] {\\"
             s += playertexname[p] + "} ;"
-            outs(s)
+            _emit_label(s)
         else:  # at least two nodes
             if where > len(nodelist):  # "player" at end
                 where = int(len(nodelist) / 2) + 1
@@ -1605,9 +1638,9 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
             s += " node[xshift=0.0cm"
             if color_style:
                 s += "," + color_style
-            s += _label_bg_node_opts()
+            s += _label_bg_node_opts(player_color)
             s += "] {\\" + playertexname[p] + "} ;"
-            outs(s)
+            _emit_label(s)
     return
 
 
@@ -2230,6 +2263,11 @@ def generate_tikz(
     defcol = _label_bg_definecolor()
     if defcol:
         macro_definitions.append(defcol)
+
+    # Step 2c: Declare foreground layer for label backgrounds
+    if label_bg:
+        macro_definitions.append("\\pgfdeclarelayer{labels}")
+        macro_definitions.append("\\pgfsetlayers{main,labels}")
 
     # Build the TikZ set font style
     font_style = f"font=\\{font_family}"

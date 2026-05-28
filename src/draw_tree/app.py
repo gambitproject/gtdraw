@@ -329,14 +329,15 @@ def run_app():
 
         st.markdown("---")
         st.markdown("##### Label Background")
-        label_bg = st.checkbox("Enable Label Background", value=False)
-        label_bg_color_hex = st.color_picker(
-            "Background Colour", value="#ffffff", disabled=not label_bg
+        label_bg = st.checkbox(
+            "Enable Label Background",
+            value=False,
+            help="Adds a filled background behind label text using each player's colour, with white text.",
         )
         label_bg_opacity = st.slider(
             "Background Opacity", 0.0, 1.0, 0.8, 0.05, disabled=not label_bg
         )
-        label_bg_color = label_bg_color_hex  # hex accepted by _label_bg_definecolor
+        label_bg_color = "white"  # fallback; player colors used automatically
 
     # Main Area: Display
     if not game_source:

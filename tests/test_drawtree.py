@@ -2322,19 +2322,24 @@ class TestLabelBackground:
         assert "fill opacity=" not in result
 
     def test_label_bg_enables_fill(self, simple_ef):
+        # Default colour scheme: player 1 is black; background uses player colour
         result = draw_tree.generate_tikz(simple_ef, label_bg=True)
-        assert "fill=white" in result
+        assert "fill=black" in result
         assert "fill opacity=" in result
         assert "text opacity=1" in result
+        assert "text=white" in result
 
     def test_label_bg_custom_named_color(self, simple_ef):
+        # label_bg_color is a fallback; player colors still take precedence for labelled nodes
         result = draw_tree.generate_tikz(simple_ef, label_bg=True, label_bg_color="yellow")
-        assert "fill=yellow" in result
+        assert "fill opacity=" in result  # fill is present (player colour used)
+        assert "text=white" in result    # text is always white when label_bg active
 
     def test_label_bg_custom_hex_color(self, simple_ef):
+        # Hex fallback colour is still defined in preamble even though player colours take precedence
         result = draw_tree.generate_tikz(simple_ef, label_bg=True, label_bg_color="#ffcc00")
         assert "\\definecolor{drawtreedropbg}{HTML}{FFCC00}" in result
-        assert "fill=drawtreedropbg" in result
+        assert "fill opacity=" in result
 
     def test_label_bg_hex_without_hash(self, simple_ef):
         result = draw_tree.generate_tikz(simple_ef, label_bg=True, label_bg_color="ffcc00")
@@ -2370,6 +2375,27 @@ class TestLabelBackground:
         assert label_bg is True
         assert label_bg_color == "#aabbcc"
         assert label_bg_opacity == pytest.approx(0.5)
+
+    def test_label_bg_declares_layer(self, simple_ef):
+        from draw_tree.core import generate_tikz
+
+        code = generate_tikz(str(simple_ef), label_bg=True)
+        assert "\\pgfdeclarelayer{labels}" in code
+        assert "\\pgfsetlayers{main,labels}" in code
+
+    def test_label_bg_no_layer_when_disabled(self, simple_ef):
+        from draw_tree.core import generate_tikz
+
+        code = generate_tikz(str(simple_ef), label_bg=False)
+        assert "\\pgfdeclarelayer" not in code
+        assert "\\pgfsetlayers" not in code
+
+    def test_label_bg_labels_in_foreground(self, simple_ef):
+        from draw_tree.core import generate_tikz
+
+        code = generate_tikz(str(simple_ef), label_bg=True)
+        assert "\\begin{pgfonlayer}{labels}" in code
+        assert "\\end{pgfonlayer}" in code
 
 
 if __name__ == "__main__":
