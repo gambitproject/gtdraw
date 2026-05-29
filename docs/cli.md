@@ -28,6 +28,9 @@ You can also use `.efg` files from Gambit instead of `.ef` files.
 | | `--sublevel-scaling=X.X` | Sublevel spacing multiplier (for `.efg` files, default: 1.0). |
 | | `--width-scaling=X.X` | Width spacing multiplier (for `.efg` files, default: 1.0). |
 | | `--shared-terminal-depth` | Enforce shared terminal node depth (for `.efg` files). |
+| **Label Background** | `--label-bg` | Add a filled background behind all label text to improve readability. |
+| | `--label-bg-color=X` | Colour of the label background (named xcolor colour or `#RRGGBB`, default: `white`). |
+| | `--label-bg-opacity=X.X` | Opacity of the label background (0.0-1.0, default: 0.8). |
 | **Information Sets**| `--iset-fill` | Fill information sets with player colors. |
 | | `--iset-fill-opacity=X.X` | Opacity of information set fill (0.0-1.0, default: 0.2). |
 | | `--iset-boundary=X` | Boundary style: `solid`, `dotted`, `none` (default: `solid`). |

@@ -66,6 +66,9 @@ def main():
         )
         print("  --action-label-position=X Set position of action labels along the edge (0.0 to 1.0, default: 0.5)")
         print("  --edge-thickness=X Set thickness of edges (default: 1.0)")
+        print("  --label-bg   Add a filled background behind all label text")
+        print("  --label-bg-color=X Set label background colour (named or #RRGGBB, default: white)")
+        print("  --label-bg-opacity=X Set label background opacity (0.0-1.0, default: 0.8)")
         print("  --iset-fill  Fill information sets with player colors")
         print(
             "  --iset-fill-opacity=X Set opacity of information set fill (0.0-1.0, default: 0.2)"
@@ -141,6 +144,9 @@ def main():
         iset_fill_opacity,
         iset_boundary,
         node_size,
+        label_bg,
+        label_bg_color,
+        label_bg_opacity,
         color_scheme,
         edge_thickness,
         action_label_position,
@@ -206,6 +212,9 @@ def main():
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                label_bg=label_bg,
+                label_bg_color=label_bg_color,
+                label_bg_opacity=label_bg_opacity,
                 color_scheme=color_scheme,
                 edge_thickness=edge_thickness,
                 action_label_position=action_label_position,
@@ -240,6 +249,9 @@ def main():
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                label_bg=label_bg,
+                label_bg_color=label_bg_color,
+                label_bg_opacity=label_bg_opacity,
                 color_scheme=color_scheme,
                 edge_thickness=edge_thickness,
                 action_label_position=action_label_position,
@@ -273,6 +285,9 @@ def main():
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                label_bg=label_bg,
+                label_bg_color=label_bg_color,
+                label_bg_opacity=label_bg_opacity,
                 color_scheme=color_scheme,
                 edge_thickness=edge_thickness,
                 action_label_position=action_label_position,
@@ -306,6 +321,9 @@ def main():
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                label_bg=label_bg,
+                label_bg_color=label_bg_color,
+                label_bg_opacity=label_bg_opacity,
                 color_scheme=color_scheme,
                 edge_thickness=edge_thickness,
                 action_label_position=action_label_position,
@@ -335,6 +353,9 @@ def main():
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                label_bg=label_bg,
+                label_bg_color=label_bg_color,
+                label_bg_opacity=label_bg_opacity,
                 color_scheme=color_scheme,
                 edge_thickness=edge_thickness,
                 action_label_position=action_label_position,

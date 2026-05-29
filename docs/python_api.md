@@ -62,6 +62,9 @@ All `generate_*` functions and the main `draw_tree` function accept a variety of
 | **Information Sets**| `iset_fill=True/False` | Fill information sets with player colors (default: False). |
 | | `iset_fill_opacity=X.X` | Opacity of information set fill (0.0-1.0, default: 0.2). |
 | | `iset_boundary="X"` | Boundary style: `"solid"`, `"dotted"`, `"none"` (default: `"solid"`). |
+| **Label Background** | `label_bg=True/False` | Add a filled background behind all label text to improve readability when labels overlap edges (default: False). |
+| | `label_bg_color="X"` | Colour of the label background. Accepts any named xcolor colour (e.g. `"white"`, `"yellow"`) or a hex string (e.g. `"#ffcc00"`) (default: `"white"`). |
+| | `label_bg_opacity=X.X` | Opacity of the label background (0.0-1.0, default: 0.8). |
 | **Aesthetics** | `color_scheme="X"` | Set color scheme (`"default"`, `"gambit"`, `"distinctipy"`, `"colorblind"`, `"custom"`). |
 | | `edge_thickness=X.X` | Set thickness of edges (default: 1.0). |
 | | `font_family="X"` | Set the global LaTeX font family (`"rmfamily"`, `"sffamily"`, `"ttfamily"`). |

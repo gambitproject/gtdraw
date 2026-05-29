@@ -89,6 +89,9 @@ _legend_position: str = "top-left"
 _action_label_dist: float = 1.0
 _iset_boundary: str = "solid"
 _node_size: float = 1.5
+_label_bg: bool = False
+_label_bg_color: str = "white"
+_label_bg_opacity: float = 0.8
 
 
 def get_player_color(player: int, color_scheme: str = "default") -> str:
@@ -209,6 +212,48 @@ def color_definitions(color_scheme: str = "default", num_players: int = 6) -> li
             print(f"Warning: Failed to generate {color_scheme} colors: {e}")
 
     return defs
+
+
+_HEX_RE = re.compile(r"^#?([0-9A-Fa-f]{6})$")
+
+
+def _label_bg_color_name() -> str:
+    """Return the LaTeX colour name for the label background."""
+    m = _HEX_RE.match(_label_bg_color)
+    if m:
+        return "drawtreedropbg"
+    return _label_bg_color
+
+
+def _label_bg_definecolor() -> str:
+    """Return a \\definecolor statement for a hex label-bg colour, or ''."""
+    m = _HEX_RE.match(_label_bg_color)
+    if m:
+        return f"\\definecolor{{drawtreedropbg}}{{HTML}}{{{m.group(1).upper()}}}"
+    return ""
+
+
+def _label_bg_node_opts(player_color: str = "") -> str:
+    """Return extra TikZ node options that add a filled background, or ''."""
+    if not _label_bg:
+        return ""
+    bg_color = player_color if player_color else _label_bg_color_name()
+    return (
+        f",fill={bg_color}"
+        f",fill opacity={fformat(_label_bg_opacity)}"
+        ",text opacity=1"
+        ",text=white"
+    )
+
+
+def _emit_label(s: str) -> None:
+    """Emit a label draw command; wrap in the labels layer when label_bg is active."""
+    if _label_bg:
+        outs("\\begin{pgfonlayer}{labels}")
+        outs(s)
+        outs("\\end{pgfonlayer}")
+    else:
+        outs(s)
 
 
 def outall(stream: Optional[List[str]] = None) -> None:
@@ -951,26 +996,59 @@ def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
     if len(words) > maxplayer + 1:
         error("too many payoffs, discard " + str(words[maxplayer + 1 :]))
         maxp = maxplayer + 1
+    if _horizontal:
+        # In horizontal mode, node[right] places content physically to the RIGHT of the anchor.
+        # node[right=X\paydown] controls the rightward distance without any vertical offset.
+        payoff_step = 2.0
+        if _label_bg:
+            # Separate nodes per payoff, each with its player's background color.
+            # Anchored at the same point with increasing right= values → side-by-side.
+            paylist = []
+            for i in range(1, maxp):
+                payoff_player_color = get_player_color(i, color_scheme)
+                factor = 0.5 + (i - 1) * payoff_step
+                t = f"   node[right={fformat(factor)}{paydown}"
+                t += _label_bg_node_opts(payoff_player_color)
+                if _font_family == "sffamily":
+                    t += "] {$\\mathsf{" + words[i] + "}\\strut$}"
+                else:
+                    t += "] {$" + words[i] + "\\strut$}"
+                paylist.append(t)
+            return paylist
+        # Single comma-separated node. right=0.5\paydown clears the terminal disk edge.
+        parts = []
+        for i in range(1, maxp):
+            payoff_player_color = get_player_color(i, color_scheme)
+            if _font_family == "sffamily":
+                v = f"\\mathsf{{{words[i]}}}"
+            else:
+                v = words[i]
+            if color_scheme != "default":
+                v = f"\\textcolor{{{payoff_player_color}}}{{{v}}}"
+            parts.append(v)
+        combined = ", ".join(parts)
+        t = f"   node[right=0.5{paydown}] {{${combined}\\strut$}}"
+        return [t]
+
+    # When label backgrounds are active the filled boxes are ~1.7× taller than the
+    # default step (1×paydown), so double the step to prevent boxes from overlapping.
+    payoff_step = 2.0 if _label_bg else 1.0
     paylist = []
     for i in range(1, maxp):
-        # tikz code
-        if _horizontal:
-            # Use centered anchor with xshift to keep payoffs aligned horizontally
-            t = "   node[xshift=0.6cm,yshift="
-        else:
-            t = "   node[below,yshift="
-        t += fformat(payup - (i - 1)) + paydown
+        payoff_player_color = get_player_color(i, color_scheme)
+        t = "   node[below,yshift="
+        t += fformat(payup - (i - 1) * payoff_step) + paydown
         if color_scheme != "default":
-            player_color = get_player_color(i, color_scheme)
-            t += f",color={player_color}"
+            t += f",color={payoff_player_color}"
+        t += _label_bg_node_opts(payoff_player_color)
         if _font_family == "sffamily":
             t += "] {$\\mathsf{" + words[i]
-            if words[i][0] == "-":  # negative payoff
+            if words[i][0] == "-" and not _label_bg:
                 t += "{\\phantom-}"
             t += "}\\strut$}"
         else:
             t += "] {$" + words[i]
-            if words[i][0] == "-":  # negative payoff
+            if words[i][0] == "-" and not _label_bg:
                 t += "{\\phantom-}"
             t += "\\strut$}"
         paylist.append(t)
@@ -1345,6 +1423,7 @@ def level(
     color_style = f"color={player_color}"
 
     # For edges, use the PARENT node's color, not the current node's color
+    parent_color = ""
     edge_color_style = ""
     if existsfrom and fromn in nodes:
         parent_player = nodes[fromn]["player"]
@@ -1361,6 +1440,7 @@ def level(
     show_label = (
         p >= 0 and playername[p] and not node_in_iset and color_scheme == "default"
     )
+    player_label_cmd = ""  # standalone draw command emitted in labels layer when _label_bg
     if show_label:
         # Determine side and shifts based on layout
         if _horizontal:
@@ -1371,23 +1451,33 @@ def level(
                 side = "above"
             else:  # Original right is Page-DOWN
                 side = "below"
-            s += f" node[{side},yshift=" + spy + ",xshift=" + spx
+            node_opts = f"{side},yshift=" + spy + ",xshift=" + spx
         else:
             # Vertical mode
             if existsfrom and xs < 0:
                 side = "left"
-                s += f" node[{side},xshift=-"
+                node_opts = f"{side},xshift=-" + spx + ",yshift=" + spy
             else:
                 side = "right"
-                s += f" node[{side},xshift="
-            s += spx + ",yshift=" + spy
+                node_opts = f"{side},xshift=" + spx + ",yshift=" + spy
 
         if color_style:
-            s += "," + color_style
-        s += "] {\\"
-        s += playertexname[p] + "\\strut}"
+            node_opts += "," + color_style
+        node_opts += _label_bg_node_opts(player_color)
+        if not _label_bg:
+            # Embed player label node in the edge draw command
+            s += f" node[{node_opts}]"
+            s += "{\\" + playertexname[p] + "\\strut}"
+        else:
+            # Build standalone draw command to be emitted later in the labels layer
+            player_label_cmd = (
+                "\\draw " + coord(xx, yy)
+                + f" node[{node_opts}]"
+                + "{\\" + playertexname[p] + "\\strut};"
+            )
     outs(s)
-    outlist(pay)  # possibly empty
+    if not _label_bg:
+        outlist(pay)  # possibly empty
     if existsfrom:  # draw line to father
         outs("   -- " + coord(xfrom, yfrom) + ";")
         # annotate moves above
@@ -1435,6 +1525,7 @@ def level(
         # Add edge color to action label
         if edge_color_style:
             s += "," + edge_color_style
+        s += _label_bg_node_opts(parent_color)
 
         mov_display = mov
 
@@ -1468,7 +1559,7 @@ def level(
             mov_display = re.sub(r"(\^[a-zA-Z0-9]+|\^{[^}]+})", r"$\1$", mov_display)
 
         s += f"] {{{mov_display}\\strut}};"
-        outs(s)
+        _emit_label(s)
         # output arrows
         while arrowposlist:
             arrowpos = arrowposlist.pop(0)
@@ -1485,6 +1576,12 @@ def level(
             outs(s)
     else:
         outs("   ;")
+    # Emit deferred player label and payoffs in the labels layer (after edge is closed)
+    if player_label_cmd:
+        _emit_label(player_label_cmd)
+    if _label_bg and pay:
+        for payoff_node in pay:
+            _emit_label("\\draw " + coord(xx, yy) + payoff_node + ";")
     return
 
 
@@ -1555,9 +1652,10 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
             s += spx + ",yshift=" + spy
             if color_style:
                 s += "," + color_style
+            s += _label_bg_node_opts(player_color)
             s += "] {\\"
             s += playertexname[p] + "} ;"
-            outs(s)
+            _emit_label(s)
         else:  # at least two nodes
             if where > len(nodelist):  # "player" at end
                 where = int(len(nodelist) / 2) + 1
@@ -1571,8 +1669,9 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
             s += " node[xshift=0.0cm"
             if color_style:
                 s += "," + color_style
+            s += _label_bg_node_opts(player_color)
             s += "] {\\" + playertexname[p] + "} ;"
-            outs(s)
+            _emit_label(s)
     return
 
 
@@ -1645,6 +1744,9 @@ def commandline(
     iset_fill_opacity = 0.2
     iset_boundary = "solid"
     node_size = 1.5
+    label_bg = False
+    label_bg_color = "white"
+    label_bg_opacity = 0.8
     color_scheme = "default"
     edge_thickness = 1.0
     action_label_position = 0.5
@@ -1745,6 +1847,18 @@ def commandline(
                     "Warning: Invalid action-label-dist value, using default 1.0",
                     file=sys.stderr,
                 )
+        elif arg == "--label-bg":
+            label_bg = True
+        elif arg.startswith("--label-bg-color="):
+            label_bg_color = arg.split("=", 1)[1]
+        elif arg.startswith("--label-bg-opacity="):
+            try:
+                label_bg_opacity = float(arg[19:])
+            except ValueError:
+                print(
+                    "Warning: Invalid label-bg-opacity value, using default 0.8",
+                    file=sys.stderr,
+                )
         elif arg == "--iset-fill":
             iset_fill = True
         elif arg.startswith("--iset-fill-opacity="):
@@ -1841,6 +1955,9 @@ def commandline(
         iset_fill_opacity,
         iset_boundary,
         node_size,
+        label_bg,
+        label_bg_color,
+        label_bg_opacity,
         color_scheme,
         edge_thickness,
         action_label_position,
@@ -1871,6 +1988,9 @@ def ef_to_tex(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
+    label_bg: bool = False,
+    label_bg_color: str = "white",
+    label_bg_opacity: float = 0.8,
 ) -> str:
     """
     Convert an extensive form (.ef) file to TikZ code.
@@ -1925,6 +2045,7 @@ def ef_to_tex(
 
         global _font_family, _font_bold, _font_italic, _font_size
         global _iset_fill, _iset_fill_opacity, _iset_boundary, _node_size
+        global _label_bg, _label_bg_color, _label_bg_opacity
         _font_family = font_family
         _font_bold = font_bold
         _font_italic = font_italic
@@ -1933,6 +2054,9 @@ def ef_to_tex(
         _iset_fill_opacity = iset_fill_opacity
         _iset_boundary = iset_boundary
         _node_size = node_size
+        _label_bg = label_bg
+        _label_bg_color = label_bg_color
+        _label_bg_opacity = max(0.0, min(1.0, label_bg_opacity))
         global _horizontal
         global _mirror
         global _legend_position
@@ -2038,6 +2162,9 @@ def generate_tikz(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
+    label_bg: bool = False,
+    label_bg_color: str = "white",
+    label_bg_opacity: float = 0.8,
 ) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
@@ -2140,6 +2267,9 @@ def generate_tikz(
         iset_fill_opacity=iset_fill_opacity,
         iset_boundary=iset_boundary,
         node_size=node_size,
+        label_bg=label_bg,
+        label_bg_color=label_bg_color,
+        label_bg_opacity=label_bg_opacity,
     )
 
     # Step 2: Define built-in macro definitions (from macros-drawtree.tex)
@@ -2159,6 +2289,16 @@ def generate_tikz(
     ]
     # Step 2a: Define player color macros
     macro_definitions.extend(color_definitions(color_scheme, num_players))
+
+    # Step 2b: Define label background colour if a hex value was supplied
+    defcol = _label_bg_definecolor()
+    if defcol:
+        macro_definitions.append(defcol)
+
+    # Step 2c: Declare foreground layer for label backgrounds
+    if label_bg:
+        macro_definitions.append("\\pgfdeclarelayer{labels}")
+        macro_definitions.append("\\pgfsetlayers{main,labels}")
 
     # Build the TikZ set font style
     font_style = f"font=\\{font_family}"
@@ -2277,6 +2417,9 @@ def draw_tree(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
+    label_bg: bool = False,
+    label_bg_color: str = "white",
+    label_bg_opacity: float = 0.8,
 ) -> Optional[str]:
     """
     Generate TikZ code and display in Jupyter notebooks.
@@ -2342,6 +2485,9 @@ def draw_tree(
         iset_fill_opacity=iset_fill_opacity,
         iset_boundary=iset_boundary,
         node_size=node_size,
+        label_bg=label_bg,
+        label_bg_color=label_bg_color,
+        label_bg_opacity=label_bg_opacity,
     )
 
     # Execute cell magic or return TikZ
@@ -2445,6 +2591,9 @@ def generate_tex(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
+    label_bg: bool = False,
+    label_bg_color: str = "white",
+    label_bg_opacity: float = 0.8,
 ) -> str:
     """
     Generate a complete LaTeX document file directly from an extensive form (.ef) file.
@@ -2529,6 +2678,9 @@ def generate_tex(
         iset_fill_opacity=iset_fill_opacity,
         iset_boundary=iset_boundary,
         node_size=node_size,
+        label_bg=label_bg,
+        label_bg_color=label_bg_color,
+        label_bg_opacity=label_bg_opacity,
     )
 
     # Wrap in complete LaTeX document
@@ -2567,6 +2719,9 @@ def generate_pdf(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
+    label_bg: bool = False,
+    label_bg_color: str = "white",
+    label_bg_opacity: float = 0.8,
 ) -> str:
     """
     Generate a PDF directly from an extensive form (.ef) file.
@@ -2683,6 +2838,9 @@ def generate_pdf(
         iset_fill_opacity=iset_fill_opacity,
         iset_boundary=iset_boundary,
         node_size=node_size,
+        label_bg=label_bg,
+        label_bg_color=label_bg_color,
+        label_bg_opacity=label_bg_opacity,
     )
 
     # Create LaTeX wrapper document
@@ -2765,6 +2923,9 @@ def generate_png(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
+    label_bg: bool = False,
+    label_bg_color: str = "white",
+    label_bg_opacity: float = 0.8,
 ) -> str:
     """
     Generate a PNG image directly from an extensive form (.ef) file.
@@ -2844,6 +3005,9 @@ def generate_png(
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                label_bg=label_bg,
+                label_bg_color=label_bg_color,
+                label_bg_opacity=label_bg_opacity,
             )
 
             # Step 2: Convert PDF to PNG
@@ -2973,6 +3137,9 @@ def generate_svg(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
+    label_bg: bool = False,
+    label_bg_color: str = "white",
+    label_bg_opacity: float = 0.8,
 ) -> str:
     """
     Generate an SVG image directly from an extensive form (.ef) file.
@@ -3045,6 +3212,9 @@ def generate_svg(
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
                 node_size=node_size,
+                label_bg=label_bg,
+                label_bg_color=label_bg_color,
+                label_bg_opacity=label_bg_opacity,
             )
 
             # Convert PDF to SVG using pdf2svg
