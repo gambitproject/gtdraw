@@ -24,6 +24,7 @@ You can also use `.efg` files from Gambit instead of `.ef` files.
 | | `--legend-position=X` | Corner for the colour legend: `top-left` (default), `top-right`, `bottom-left`, `bottom-right`. |
 | | `--action-label-dist=X.X` | Distance of action labels from the edge (default: 1.0). |
 | | `--action-label-position=X.X` | Position of action labels along the edge (0.0 to 1.0, default: 0.5). |
+| | `--vary-action-label-positions`| Vary action label positions along child edges of a node to avoid clashes. |
 | | `--level-scaling=X.X` | Level spacing multiplier (for `.efg` files, default: 1.0). |
 | | `--sublevel-scaling=X.X` | Sublevel spacing multiplier (for `.efg` files, default: 1.0). |
 | | `--width-scaling=X.X` | Width spacing multiplier (for `.efg` files, default: 1.0). |

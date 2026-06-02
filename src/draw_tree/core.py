@@ -87,6 +87,8 @@ _horizontal: bool = False
 _mirror: bool = False
 _legend_position: str = "top-left"
 _action_label_dist: float = 1.0
+_vary_action_label_positions: bool = False
+parent_to_children: dict[str, list[str]] = {}
 _iset_boundary: str = "solid"
 _node_size: float = 1.5
 _label_bg: bool = False
@@ -1150,6 +1152,43 @@ def cleannodeid(ns: str) -> str:
 # "inner" boolean: inner node, draw disk/square
 
 
+def preparse_tree(lines: List[str]) -> None:
+    """
+    Pre-parse all level commands to build parent-to-children mapping.
+    
+    Used to vary the action label positions dynamically according to
+    the number of edges coming out of a node.
+    
+    Args:
+        lines: All lines from the .ef file.
+    """
+    global parent_to_children
+    parent_to_children.clear()
+    
+    for line in lines:
+        words = line.split()
+        if len(words) > 0 and words[0] == "level":
+            try:
+                lev = float(words[1])
+                assert words[2] == "node"
+                name = words[3]
+                nodeid = setnodeid(lev, name)
+            except Exception:
+                continue
+            
+            fromn = ""
+            if "from" in words:
+                idx = words.index("from")
+                if idx + 1 < len(words):
+                    fromn = cleannodeid(words[idx + 1])
+            
+            if fromn:
+                if fromn not in parent_to_children:
+                    parent_to_children[fromn] = []
+                if nodeid not in parent_to_children[fromn]:
+                    parent_to_children[fromn].append(nodeid)
+
+
 def parse_isets_first(lines: List[str]) -> None:
     """
     Pre-parse all iset commands to build node-to-player mappings.
@@ -1463,7 +1502,17 @@ def level(
         outs("   -- " + coord(xfrom, yfrom) + ";")
         # annotate moves above
         if convex < 0:
-            convex = action_label_position / factor
+            pos = action_label_position
+            if _vary_action_label_positions and fromn in parent_to_children:
+                children = parent_to_children[fromn]
+                if nodeid in children:
+                    N = len(children)
+                    if N == 1:
+                        pos = 0.5
+                    else:
+                        idx = children.index(nodeid)
+                        pos = (idx + 1) / (N + 1)
+            convex = pos / factor
         xmove = xx * convex + xfrom * (1 - convex)
         ymove = yy * convex + yfrom * (1 - convex)
         s = "\\draw " + coord(xmove, ymove)
@@ -1746,6 +1795,7 @@ def commandline(
     shared_terminal_depth = False
     to_efg = False
     to_ef = False
+    vary_action_label_positions = False
 
     for arg in argv[1:]:
         if arg[:5] == "scale":
@@ -1906,6 +1956,8 @@ def commandline(
             to_efg = True
         elif arg == "--to-ef":
             to_ef = True
+        elif arg == "--vary-action-label-positions":
+            vary_action_label_positions = True
         elif arg.endswith(".ef"):
             ef_file = arg
         else:
@@ -1957,6 +2009,7 @@ def commandline(
         shared_terminal_depth,
         to_efg,
         to_ef,
+        vary_action_label_positions,
     )
 
 
@@ -1981,6 +2034,7 @@ def ef_to_tex(
     label_bg: bool = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    vary_action_label_positions: bool = False,
 ) -> str:
     """
     Convert an extensive form (.ef) file to TikZ code.
@@ -2051,16 +2105,19 @@ def ef_to_tex(
         global _mirror
         global _legend_position
         global _action_label_dist
+        global _vary_action_label_positions
         _horizontal = horizontal
         _mirror = mirror
         _legend_position = legend_position
         _action_label_dist = action_label_dist
+        _vary_action_label_positions = vary_action_label_positions
 
         # Process the .ef file
         lines = readfile(ef_file)
 
         # FIRST: Pre-parse all iset commands to build node-to-player mapping
         parse_isets_first(lines)
+        preparse_tree(lines)
 
         # begin tikz picture
         outs("\\begin{tikzpicture}[scale=" + str(scale), stream0)
@@ -2124,6 +2181,7 @@ def ef_to_tex(
             playerdefined[i] = original_playerdefined[i]
         scale = original_scale
         grid = original_grid
+        parent_to_children.clear()
 
 
 def generate_tikz(
@@ -2155,6 +2213,7 @@ def generate_tikz(
     label_bg: bool = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    vary_action_label_positions: bool = False,
 ) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
@@ -2260,6 +2319,7 @@ def generate_tikz(
         label_bg=label_bg,
         label_bg_color=label_bg_color,
         label_bg_opacity=label_bg_opacity,
+        vary_action_label_positions=vary_action_label_positions,
     )
 
     # Step 2: Define built-in macro definitions (from macros-drawtree.tex)
@@ -2410,6 +2470,7 @@ def draw_tree(
     label_bg: bool = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    vary_action_label_positions: bool = False,
 ) -> Optional[str]:
     """
     Generate TikZ code and display in Jupyter notebooks.
@@ -2478,6 +2539,7 @@ def draw_tree(
         label_bg=label_bg,
         label_bg_color=label_bg_color,
         label_bg_opacity=label_bg_opacity,
+        vary_action_label_positions=vary_action_label_positions,
     )
 
     # Execute cell magic or return TikZ
@@ -2584,6 +2646,7 @@ def generate_tex(
     label_bg: bool = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    vary_action_label_positions: bool = False,
 ) -> str:
     """
     Generate a complete LaTeX document file directly from an extensive form (.ef) file.
@@ -2671,6 +2734,7 @@ def generate_tex(
         label_bg=label_bg,
         label_bg_color=label_bg_color,
         label_bg_opacity=label_bg_opacity,
+        vary_action_label_positions=vary_action_label_positions,
     )
 
     # Wrap in complete LaTeX document
@@ -2712,6 +2776,7 @@ def generate_pdf(
     label_bg: bool = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    vary_action_label_positions: bool = False,
 ) -> str:
     """
     Generate a PDF directly from an extensive form (.ef) file.
@@ -2831,6 +2896,7 @@ def generate_pdf(
         label_bg=label_bg,
         label_bg_color=label_bg_color,
         label_bg_opacity=label_bg_opacity,
+        vary_action_label_positions=vary_action_label_positions,
     )
 
     # Create LaTeX wrapper document
@@ -2916,6 +2982,7 @@ def generate_png(
     label_bg: bool = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    vary_action_label_positions: bool = False,
 ) -> str:
     """
     Generate a PNG image directly from an extensive form (.ef) file.
@@ -2998,6 +3065,7 @@ def generate_png(
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                vary_action_label_positions=vary_action_label_positions,
             )
 
             # Step 2: Convert PDF to PNG
@@ -3130,6 +3198,7 @@ def generate_svg(
     label_bg: bool = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    vary_action_label_positions: bool = False,
 ) -> str:
     """
     Generate an SVG image directly from an extensive form (.ef) file.
@@ -3205,6 +3274,7 @@ def generate_svg(
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                vary_action_label_positions=vary_action_label_positions,
             )
 
             # Convert PDF to SVG using pdf2svg

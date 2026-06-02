@@ -661,6 +661,7 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -708,6 +709,7 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -755,6 +757,7 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -802,6 +805,7 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
         ) = result
         assert output_mode == "pdf"
         assert pdf_requested
@@ -847,6 +851,7 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -894,6 +899,7 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -940,6 +946,7 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -980,6 +987,7 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -1021,6 +1029,7 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
         ) = result
         assert dpi == 300  # Should default to 300 for invalid values
 
@@ -1060,6 +1069,7 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -1107,6 +1117,7 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -2309,6 +2320,7 @@ class TestConverter:
             color_scheme, edge_thickness, action_label_position,
             level_scaling, sublevel_scaling, width_scaling,
             shared_terminal_depth, to_efg, to_ef,
+            vary_action_label_positions,
         ) = result
         assert to_efg is True
         assert to_ef is False
@@ -2327,6 +2339,7 @@ class TestConverter:
             color_scheme, edge_thickness, action_label_position,
             level_scaling, sublevel_scaling, width_scaling,
             shared_terminal_depth, to_efg, to_ef,
+            vary_action_label_positions,
         ) = result
         assert to_efg is False
         assert to_ef is True
@@ -2415,6 +2428,7 @@ class TestLabelBackground:
             color_scheme, edge_thickness, action_label_position,
             level_scaling, sublevel_scaling, width_scaling,
             shared_terminal_depth, to_efg, to_ef,
+            vary_action_label_positions,
         ) = result
         assert label_bg is True
         assert label_bg_color == "#aabbcc"
@@ -2440,6 +2454,29 @@ class TestLabelBackground:
         code = generate_tikz(str(simple_ef), label_bg=True)
         assert "\\begin{pgfonlayer}{labels}" in code
         assert "\\end{pgfonlayer}" in code
+
+
+class TestVaryActionLabelPositions:
+    """Tests for the vary_action_label_positions feature."""
+
+    def test_commandline_vary_action_label_positions_flag(self):
+        """Test parsing of the --vary-action-label-positions option."""
+        from draw_tree.core import commandline
+        result = commandline(["draw_tree.py", "test.ef", "--vary-action-label-positions"])
+        assert result[32] is True
+
+    def test_vary_action_label_positions_layout(self, tmp_path):
+        """Test that vary_action_label_positions=True staggers action labels for nodes with multiple children."""
+        ef_file = tmp_path / "game.ef"
+        ef_file.write_text(
+            "player 1\n"
+            "level 0 node root player 1\n"
+            "level 1 node 1 from 0,root move Left payoffs 1 0\n"
+            "level 1 node 2 from 0,root move Right payoffs 0 1\n"
+        )
+        result_default = draw_tree.generate_tikz(str(ef_file), vary_action_label_positions=False)
+        result_varied = draw_tree.generate_tikz(str(ef_file), vary_action_label_positions=True)
+        assert result_default != result_varied
 
 
 if __name__ == "__main__":

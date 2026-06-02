@@ -311,6 +311,11 @@ def run_app():
         )
         label_bg_color = "white"  # fallback; player colors used automatically
 
+        vary_action_label_positions = st.checkbox(
+            "Vary Action Label Positions",
+            value=False,
+            help="Vary action label positions based on the number of outgoing edges to avoid clashes.",
+        )
         action_label_position = st.slider(
             "Action Label Position",
             0.0,
@@ -318,6 +323,7 @@ def run_app():
             0.5,
             0.05,
             help="Position of action labels along the edge (0=start, 1=end).",
+            disabled=vary_action_label_positions,
         )
         action_label_dist = st.slider(
             "Action Label Distance",
@@ -484,6 +490,7 @@ def run_app():
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                vary_action_label_positions=vary_action_label_positions,
             )
 
             if not os.path.exists(svg_path):
@@ -526,6 +533,7 @@ def run_app():
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                vary_action_label_positions=vary_action_label_positions,
             )
 
             tex_path = generate_tex(
@@ -556,6 +564,7 @@ def run_app():
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                vary_action_label_positions=vary_action_label_positions,
             )
             with open(tex_path, "r") as f:
                 tex_data = f.read()
@@ -588,6 +597,7 @@ def run_app():
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                vary_action_label_positions=vary_action_label_positions,
             )
             with open(pdf_path, "rb") as f:
                 pdf_data = f.read()
@@ -621,6 +631,7 @@ def run_app():
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                vary_action_label_positions=vary_action_label_positions,
             )
             with open(png_path, "rb") as f:
                 png_data = f.read()
