@@ -997,25 +997,8 @@ def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
         error("too many payoffs, discard " + str(words[maxplayer + 1 :]))
         maxp = maxplayer + 1
     if _horizontal:
-        # In horizontal mode, node[right] places content physically to the RIGHT of the anchor.
-        # node[right=X\paydown] controls the rightward distance without any vertical offset.
-        payoff_step = 2.0
-        if _label_bg:
-            # Separate nodes per payoff, each with its player's background color.
-            # Anchored at the same point with increasing right= values → side-by-side.
-            paylist = []
-            for i in range(1, maxp):
-                payoff_player_color = get_player_color(i, color_scheme)
-                factor = 0.5 + (i - 1) * payoff_step
-                t = f"   node[right={fformat(factor)}{paydown}"
-                t += _label_bg_node_opts(payoff_player_color)
-                if _font_family == "sffamily":
-                    t += "] {$\\mathsf{" + words[i] + "}\\strut$}"
-                else:
-                    t += "] {$" + words[i] + "\\strut$}"
-                paylist.append(t)
-            return paylist
         # Single comma-separated node. right=0.5\paydown clears the terminal disk edge.
+        # Payoffs always lack backgrounds and are not drawn in separate nodes.
         parts = []
         for i in range(1, maxp):
             payoff_player_color = get_player_color(i, color_scheme)
@@ -1030,9 +1013,8 @@ def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
         t = f"   node[right=0.5{paydown}] {{${combined}\\strut$}}"
         return [t]
 
-    # When label backgrounds are active the filled boxes are ~1.7× taller than the
-    # default step (1×paydown), so double the step to prevent boxes from overlapping.
-    payoff_step = 2.0 if _label_bg else 1.0
+    # Payoffs always lack backgrounds, so payoff_step is always 1.0 (no double step).
+    payoff_step = 1.0
     paylist = []
     for i in range(1, maxp):
         payoff_player_color = get_player_color(i, color_scheme)
@@ -1040,15 +1022,14 @@ def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
         t += fformat(payup - (i - 1) * payoff_step) + paydown
         if color_scheme != "default":
             t += f",color={payoff_player_color}"
-        t += _label_bg_node_opts(payoff_player_color)
         if _font_family == "sffamily":
             t += "] {$\\mathsf{" + words[i]
-            if words[i][0] == "-" and not _label_bg:
+            if words[i][0] == "-":
                 t += "{\\phantom-}"
             t += "}\\strut$}"
         else:
             t += "] {$" + words[i]
-            if words[i][0] == "-" and not _label_bg:
+            if words[i][0] == "-":
                 t += "{\\phantom-}"
             t += "\\strut$}"
         paylist.append(t)
@@ -1521,11 +1502,20 @@ def level(
         if side in ["left", "below"]:
             dist = -dist
 
-        s += f" node[{side},{shift_type}={fformat(dist)}mm"
-        # Add edge color to action label
-        if edge_color_style:
-            s += "," + edge_color_style
-        s += _label_bg_node_opts(parent_color)
+        if _label_bg:
+            opts = []
+            if edge_color_style:
+                opts.append(edge_color_style)
+            bg_opts = _label_bg_node_opts(parent_color)
+            if bg_opts.startswith(","):
+                bg_opts = bg_opts[1:]
+            if bg_opts:
+                opts.append(bg_opts)
+            s += f" node[{','.join(opts)}"
+        else:
+            s += f" node[{side},{shift_type}={fformat(dist)}mm"
+            if edge_color_style:
+                s += "," + edge_color_style
 
         mov_display = mov
 

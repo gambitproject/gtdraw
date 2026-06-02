@@ -217,22 +217,6 @@ def run_app():
             node_size = st.slider(
                 "Node Size", 0.5, 5.0, 1.5, 0.1, help="Size of player nodes in mm."
             )
-            action_label_position = st.slider(
-                "Action Label Position",
-                0.0,
-                1.0,
-                0.5,
-                0.05,
-                help="Position of action labels along the edge (0=start, 1=end).",
-            )
-            action_label_dist = st.slider(
-                "Action Label Distance",
-                1.0,
-                5.0,
-                1.0,
-                0.1,
-                help="Distance of action labels from the edge.",
-            )
 
         with st.sidebar.expander("🔵 Information Sets", expanded=False):
             iset_fill = st.checkbox("Fill Information Sets", value=False)
@@ -328,7 +312,7 @@ def run_app():
         font_size = size_map[font_size_name]
 
         st.markdown("---")
-        st.markdown("##### Label Background")
+        st.markdown("##### Label Styling")
         label_bg = st.checkbox(
             "Enable Label Background",
             value=False,
@@ -338,6 +322,24 @@ def run_app():
             "Background Opacity", 0.0, 1.0, 0.8, 0.05, disabled=not label_bg
         )
         label_bg_color = "white"  # fallback; player colors used automatically
+
+        action_label_position = st.slider(
+            "Action Label Position",
+            0.0,
+            1.0,
+            0.5,
+            0.05,
+            help="Position of action labels along the edge (0=start, 1=end).",
+        )
+        action_label_dist = st.slider(
+            "Action Label Distance",
+            1.0,
+            5.0,
+            1.0,
+            0.1,
+            help="Distance of action labels from the edge.",
+            disabled=label_bg,
+        )
 
     # Main Area: Display
     if not game_source:

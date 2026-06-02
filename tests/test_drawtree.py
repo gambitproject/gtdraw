@@ -1873,13 +1873,45 @@ class TestHorizontalLayout:
             assert "right=0.5\\paydown" in result
             assert "below=0.5\\paydown" not in result
 
-            # Test with label background enabled
+            # Test with label background enabled (terminal payoffs should still lack a background and be comma-separated)
             result_bg = draw_tree.generate_tikz(ef_file_path, horizontal=True, label_bg=True)
-            # Payoffs should be separate nodes with 'right=0.5\paydown' and 'right=2.5\paydown'
+            assert "1, 2" in result_bg
             assert "right=0.5\\paydown" in result_bg
-            assert "right=2.5\\paydown" in result_bg
+            assert "right=2.5\\paydown" not in result_bg
             assert "below=0.5\\paydown" not in result_bg
             assert "below=2.5\\paydown" not in result_bg
+        finally:
+            os.unlink(ef_file_path)
+
+    def test_action_labels_centered_with_label_bg(self):
+        """Test that action labels are centered on edges when label backgrounds are on."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1\n")
+            f.write("level 0 node root player 1\n")
+            f.write("level 1 node child from 0,root player 1 move MyAction payoffs 1 2\n")
+            ef_file_path = f.name
+
+        try:
+            # 1. Backgrounds off: should have positional offsets/sides (e.g. above/below/left/right/yshift/xshift)
+            res_no_bg = draw_tree.generate_tikz(ef_file_path, label_bg=False)
+            assert "MyAction" in res_no_bg
+            assert "xshift=" in res_no_bg or "yshift=" in res_no_bg
+
+            # 2. Backgrounds on: should NOT have positional offsets/sides and should be centered on edge
+            res_bg = draw_tree.generate_tikz(ef_file_path, label_bg=True)
+            assert "MyAction" in res_bg
+            # Because it is centered, there are no side or shift options in the action label node
+            action_lines = [line for line in res_bg.split("\n") if "MyAction" in line and not line.strip().startswith("%")]
+            assert len(action_lines) == 1
+            action_line = action_lines[0]
+            assert "xshift" not in action_line
+            assert "yshift" not in action_line
+            assert "above" not in action_line
+            assert "below" not in action_line
+            assert "left" not in action_line
+            assert "right" not in action_line
+            # It should have fill options
+            assert "fill=" in action_line
         finally:
             os.unlink(ef_file_path)
 
