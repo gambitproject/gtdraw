@@ -213,19 +213,7 @@ def run_app():
                 sublevel_scaling = st.slider("Sublevel Spacing", 0.0, 5.0, 1.0, 0.05)
                 width_scaling = st.slider("Width Spacing", 0.0, 5.0, 1.0, 0.05)
 
-            edge_thickness = st.slider("Edge Thickness", 0.1, 5.0, 1.0, 0.1)
-            node_size = st.slider(
-                "Node Size", 0.5, 5.0, 1.5, 0.1, help="Size of player nodes in mm."
-            )
 
-        with st.sidebar.expander("🔵 Information Sets", expanded=False):
-            iset_fill = st.checkbox("Fill Information Sets", value=False)
-            iset_fill_opacity = st.slider(
-                "Fill Opacity", 0.0, 1.0, 0.2, 0.05, disabled=not iset_fill
-            )
-            iset_boundary = st.selectbox(
-                "Boundary Style", ["solid", "dotted", "none"], index=0
-            )
 
     # Defaults used when aesthetics expander is hidden (NFG path)
     color_scheme = "custom"
@@ -339,6 +327,23 @@ def run_app():
             0.1,
             help="Distance of action labels from the edge.",
             disabled=label_bg,
+        )
+
+        st.markdown("---")
+        st.markdown("##### Edge & Node Styling")
+        edge_thickness = st.slider("Edge Thickness", 0.1, 5.0, 1.0, 0.1)
+        node_size = st.slider(
+            "Node Size", 0.5, 5.0, 1.5, 0.1, help="Size of player nodes in mm."
+        )
+
+        st.markdown("---")
+        st.markdown("##### Information Sets")
+        iset_fill = st.checkbox("Fill Information Sets", value=False)
+        iset_fill_opacity = st.slider(
+            "Fill Opacity", 0.0, 1.0, 0.2, 0.05, disabled=not iset_fill
+        )
+        iset_boundary = st.selectbox(
+            "Boundary Style", ["solid", "dotted", "none"], index=0
         )
 
     # Main Area: Display
