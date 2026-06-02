@@ -4,6 +4,7 @@ from pathlib import Path
 import os
 import sys
 import warnings
+import yaml
 
 # Suppress warnings in the GUI
 warnings.filterwarnings("ignore")
@@ -214,8 +215,6 @@ def run_app():
                 sublevel_scaling = st.slider("Sublevel Spacing", 0.0, 5.0, 1.0, 0.05)
                 width_scaling = st.slider("Width Spacing", 0.0, 5.0, 1.0, 0.05)
 
-
-
     # Defaults used when aesthetics expander is hidden (NFG path)
     color_scheme = "custom"
     legend_position = "top-left"
@@ -226,198 +225,216 @@ def run_app():
     font_size = "normalsize"
 
     if not is_nfg:
-     with st.sidebar.expander("🎨 Aesthetics", expanded=False):
-        color_scheme = st.selectbox(
-            "Color Scheme",
-            ["default", "gambit", "distinctipy", "colorblind", "custom"],
-            index=4,  # custom
-        )
-        legend_position = st.selectbox(
-            "Legend Position",
-            ["top-left", "top-right", "bottom-left", "bottom-right"],
-            index=0,
-            help="Corner of the diagram where the player colour legend appears.",
-            disabled=(color_scheme == "default"),
-        )
-
-        custom_colors = None
-        if color_scheme == "custom":
-            st.markdown("---")
-            st.markdown("##### Custom Palette")
-            num_players = count_players(game_source) if game_source else 2
-            custom_colors = {}
-            # Chance color
-            custom_colors[0] = st.color_picker(
-                "Chance Node", value="#759138", key="cp_chance"
+        with st.sidebar.expander("🎨 Aesthetics", expanded=False):
+            color_scheme = st.selectbox(
+                "Color Scheme",
+                ["default", "gambit", "distinctipy", "colorblind", "custom"],
+                index=4,  # custom
             )
-            # Player colors
-            for i in range(1, num_players + 1):
-                default_val = "#000000"
-                # Use some sensible defaults for first few players
-                if i == 1:
-                    default_val = "#E41A1C"
-                elif i == 2:
-                    default_val = "#377EB8"
-                elif i == 3:
-                    default_val = "#4DAF4A"
-
-                custom_colors[i] = st.color_picker(
-                    f"Player {i}", value=default_val, key=f"cp_p{i}"
-                )
-
-        st.markdown("---")
-        st.markdown("##### Typography")
-        font_family_name = st.selectbox(
-            "Font Family",
-            ["Serif", "Sans-Serif", "Monospace"],
-            index=0,
-            help="Global font family for the diagram.",
-        )
-        font_map = {
-            "Serif": "rmfamily",
-            "Sans-Serif": "sffamily",
-            "Monospace": "ttfamily",
-        }
-        font_family = font_map[font_family_name]
-
-        col1, col2 = st.columns(2)
-        with col1:
-            font_bold = st.checkbox("Bold")
-        with col2:
-            font_italic = st.checkbox("Italic")
-
-        font_size_name = st.selectbox(
-            "Text Size",
-            ["Small", "Normal", "Large", "Huge"],
-            index=1,
-            help="Global text size for the diagram.",
-        )
-        size_map = {
-            "Small": "small",
-            "Normal": "normalsize",
-            "Large": "large",
-            "Huge": "Large",
-        }
-        font_size = size_map[font_size_name]
-
-        st.markdown("---")
-        st.markdown("##### Label Styling")
-        label_bg = st.checkbox(
-            "Enable Label Background",
-            value=False,
-            help="Adds a filled background behind label text using each player's colour, with white text.",
-        )
-        label_bg_opacity = st.slider(
-            "Background Opacity", 0.0, 1.0, 0.8, 0.05, disabled=not label_bg
-        )
-        label_bg_color = "white"  # fallback; player colors used automatically
-
-        st.markdown("---")
-        st.markdown("##### Action Label Positioning")
-
-        num_players = count_players(game_source) if game_source else 2
-        max_level = count_levels(game_source) if game_source else 4
-
-        # Vary action label positions
-        vary_action_label_positions = st.checkbox(
-            "Vary Action Label Positions",
-            value=False,
-            help="Vary action label positions based on the number of outgoing edges to avoid clashes.",
-        )
-        if vary_action_label_positions:
-            vary_by = st.selectbox(
-                "Vary by",
-                ["All", "Player", "Level"],
+            legend_position = st.selectbox(
+                "Legend Position",
+                ["top-left", "top-right", "bottom-left", "bottom-right"],
                 index=0,
-                help="Apply varying positions to all nodes, or selectively to specific players or levels.",
+                help="Corner of the diagram where the player colour legend appears.",
+                disabled=(color_scheme == "default"),
             )
-            vary_action_label_positions_by = vary_by.lower()
-            if vary_by == "Player":
-                selected_players = st.multiselect(
-                    "Apply vary to players",
-                    options=list(range(num_players + 1)),
-                    default=list(range(num_players + 1)),
-                    format_func=lambda x: "Chance" if x == 0 else f"Player {x}",
-                    help="Select which players' outgoing edges should have varied label positions.",
+
+            custom_colors = None
+            if color_scheme == "custom":
+                st.markdown("---")
+                st.markdown("##### Custom Palette")
+                num_players = count_players(game_source) if game_source else 2
+                custom_colors = {}
+                # Chance color
+                custom_colors[0] = st.color_picker(
+                    "Chance Node", value="#759138", key="cp_chance"
                 )
-                vary_action_label_positions_choices = selected_players if selected_players else None
-            elif vary_by == "Level":
-                selected_levels = st.multiselect(
-                    "Apply vary to levels",
-                    options=list(range(max_level + 1)),
-                    default=list(range(max_level + 1)),
-                    format_func=lambda x: f"Level {x}",
-                    help="Select which tree levels should have varied label positions.",
+                # Player colors
+                for i in range(1, num_players + 1):
+                    default_val = "#000000"
+                    # Use some sensible defaults for first few players
+                    if i == 1:
+                        default_val = "#E41A1C"
+                    elif i == 2:
+                        default_val = "#377EB8"
+                    elif i == 3:
+                        default_val = "#4DAF4A"
+
+                    custom_colors[i] = st.color_picker(
+                        f"Player {i}", value=default_val, key=f"cp_p{i}"
+                    )
+
+            st.markdown("---")
+            st.markdown("##### Typography")
+            font_family_name = st.selectbox(
+                "Font Family",
+                ["Serif", "Sans-Serif", "Monospace"],
+                index=0,
+                help="Global font family for the diagram.",
+            )
+            font_map = {
+                "Serif": "rmfamily",
+                "Sans-Serif": "sffamily",
+                "Monospace": "ttfamily",
+            }
+            font_family = font_map[font_family_name]
+
+            col1, col2 = st.columns(2)
+            with col1:
+                font_bold = st.checkbox("Bold")
+            with col2:
+                font_italic = st.checkbox("Italic")
+
+            font_size_name = st.selectbox(
+                "Text Size",
+                ["Small", "Normal", "Large", "Huge"],
+                index=1,
+                help="Global text size for the diagram.",
+            )
+            size_map = {
+                "Small": "small",
+                "Normal": "normalsize",
+                "Large": "large",
+                "Huge": "Large",
+            }
+            font_size = size_map[font_size_name]
+
+            st.markdown("---")
+            st.markdown("##### Label Styling")
+            label_bg = st.checkbox(
+                "Enable Label Background",
+                value=False,
+                help="Adds a filled background behind label text using each player's colour, with white text.",
+            )
+            label_bg_opacity = st.slider(
+                "Background Opacity", 0.0, 1.0, 0.8, 0.05, disabled=not label_bg
+            )
+            label_bg_color = "white"  # fallback; player colors used automatically
+
+            st.markdown("---")
+            st.markdown("##### Action Label Positioning")
+
+            num_players = count_players(game_source) if game_source else 2
+            max_level = count_levels(game_source) if game_source else 4
+
+            # Vary action label positions
+            vary_action_label_positions = st.checkbox(
+                "Vary Action Label Positions",
+                value=False,
+                help="Vary action label positions based on the number of outgoing edges to avoid clashes.",
+            )
+            if vary_action_label_positions:
+                vary_by = st.selectbox(
+                    "Vary by",
+                    ["All", "Player", "Level"],
+                    index=0,
+                    help="Apply varying positions to all nodes, or selectively to specific players or levels.",
                 )
-                vary_action_label_positions_choices = selected_levels if selected_levels else None
+                vary_action_label_positions_by = vary_by.lower()
+                if vary_by == "Player":
+                    selected_players = st.multiselect(
+                        "Apply vary to players",
+                        options=list(range(num_players + 1)),
+                        default=list(range(num_players + 1)),
+                        format_func=lambda x: "Chance" if x == 0 else f"Player {x}",
+                        help="Select which players' outgoing edges should have varied label positions.",
+                    )
+                    vary_action_label_positions_choices = (
+                        selected_players if selected_players else None
+                    )
+                elif vary_by == "Level":
+                    selected_levels = st.multiselect(
+                        "Apply vary to levels",
+                        options=list(range(max_level + 1)),
+                        default=list(range(max_level + 1)),
+                        format_func=lambda x: f"Level {x}",
+                        help="Select which tree levels should have varied label positions.",
+                    )
+                    vary_action_label_positions_choices = (
+                        selected_levels if selected_levels else None
+                    )
+                else:
+                    vary_action_label_positions_choices = None
             else:
+                vary_action_label_positions_by = "all"
                 vary_action_label_positions_choices = None
-        else:
-            vary_action_label_positions_by = "all"
-            vary_action_label_positions_choices = None
 
-        # Positioning mode
-        positioning_mode = st.selectbox(
-            "Positioning Mode",
-            ["Global", "By Player", "By Level"],
-            index=0,
-            disabled=vary_action_label_positions,
-            help="Set a single global position, or customise per-player or per-level.",
-        )
-        action_label_position_by = "player" if positioning_mode == "By Player" else "level" if positioning_mode == "By Level" else "player"
-
-        if positioning_mode == "Global" or vary_action_label_positions:
-            action_label_position = st.slider(
-                "Action Label Position",
-                0.0, 1.0, 0.5, 0.05,
-                help="Position of action labels along the edge (0=start, 1=end).",
+            # Positioning mode
+            positioning_mode = st.selectbox(
+                "Positioning Mode",
+                ["Global", "By Player", "By Level"],
+                index=0,
                 disabled=vary_action_label_positions,
+                help="Set a single global position, or customise per-player or per-level.",
             )
-        elif positioning_mode == "By Player":
-            action_label_position = {}
-            pos_chance = st.slider(
-                "Chance Actions Position", 0.0, 1.0, 0.5, 0.05, key="alp_chance"
+            action_label_position_by = (
+                "player"
+                if positioning_mode == "By Player"
+                else "level"
+                if positioning_mode == "By Level"
+                else "player"
             )
-            action_label_position[0] = pos_chance
-            for i in range(1, num_players + 1):
-                pos_p = st.slider(
-                    f"Player {i} Actions Position", 0.0, 1.0, 0.5, 0.05, key=f"alp_p{i}"
+
+            if positioning_mode == "Global" or vary_action_label_positions:
+                action_label_position = st.slider(
+                    "Action Label Position",
+                    0.0,
+                    1.0,
+                    0.5,
+                    0.05,
+                    help="Position of action labels along the edge (0=start, 1=end).",
+                    disabled=vary_action_label_positions,
                 )
-                action_label_position[i] = pos_p
-        else:  # By Level
-            action_label_position = {}
-            for lv in range(max_level + 1):
-                pos_lv = st.slider(
-                    f"Level {lv} Position", 0.0, 1.0, 0.5, 0.05, key=f"alp_lv{lv}"
+            elif positioning_mode == "By Player":
+                action_label_position = {}
+                pos_chance = st.slider(
+                    "Chance Actions Position", 0.0, 1.0, 0.5, 0.05, key="alp_chance"
                 )
-                action_label_position[lv] = pos_lv
+                action_label_position[0] = pos_chance
+                for i in range(1, num_players + 1):
+                    pos_p = st.slider(
+                        f"Player {i} Actions Position",
+                        0.0,
+                        1.0,
+                        0.5,
+                        0.05,
+                        key=f"alp_p{i}",
+                    )
+                    action_label_position[i] = pos_p
+            else:  # By Level
+                action_label_position = {}
+                for lv in range(max_level + 1):
+                    pos_lv = st.slider(
+                        f"Level {lv} Position", 0.0, 1.0, 0.5, 0.05, key=f"alp_lv{lv}"
+                    )
+                    action_label_position[lv] = pos_lv
 
-        action_label_dist = st.slider(
-            "Action Label Distance",
-            1.0,
-            5.0,
-            1.0,
-            0.1,
-            help="Distance of action labels from the edge.",
-            disabled=label_bg,
-        )
+            action_label_dist = st.slider(
+                "Action Label Distance",
+                1.0,
+                5.0,
+                1.0,
+                0.1,
+                help="Distance of action labels from the edge.",
+                disabled=label_bg,
+            )
 
-        st.markdown("---")
-        st.markdown("##### Edge & Node Styling")
-        edge_thickness = st.slider("Edge Thickness", 0.1, 5.0, 1.0, 0.1)
-        node_size = st.slider(
-            "Node Size", 0.5, 5.0, 1.5, 0.1, help="Size of player nodes in mm."
-        )
+            st.markdown("---")
+            st.markdown("##### Edge & Node Styling")
+            edge_thickness = st.slider("Edge Thickness", 0.1, 5.0, 1.0, 0.1)
+            node_size = st.slider(
+                "Node Size", 0.5, 5.0, 1.5, 0.1, help="Size of player nodes in mm."
+            )
 
-        st.markdown("---")
-        st.markdown("##### Information Sets")
-        iset_fill = st.checkbox("Fill Information Sets", value=False)
-        iset_fill_opacity = st.slider(
-            "Fill Opacity", 0.0, 1.0, 0.2, 0.05, disabled=not iset_fill
-        )
-        iset_boundary = st.selectbox(
-            "Boundary Style", ["solid", "dotted", "none"], index=0
-        )
+            st.markdown("---")
+            st.markdown("##### Information Sets")
+            iset_fill = st.checkbox("Fill Information Sets", value=False)
+            iset_fill_opacity = st.slider(
+                "Fill Opacity", 0.0, 1.0, 0.2, 0.05, disabled=not iset_fill
+            )
+            iset_boundary = st.selectbox(
+                "Boundary Style", ["solid", "dotted", "none"], index=0
+            )
 
     # Main Area: Display
     if not game_source:
@@ -463,6 +480,7 @@ def run_app():
                     with open(png_path, "rb") as f:
                         png_data = f.read()
                     import base64
+
                     b64 = base64.b64encode(png_data).decode()
                     st.markdown(
                         f'<img src="data:image/png;base64,{b64}" '
@@ -470,7 +488,9 @@ def run_app():
                         f'object-fit:contain;display:block;margin:auto;" />',
                         unsafe_allow_html=True,
                     )
-                    pdf_path = generate_pdf(game=game_source, save_to=output_base + ".pdf")
+                    pdf_path = generate_pdf(
+                        game=game_source, save_to=output_base + ".pdf"
+                    )
                     with open(pdf_path, "rb") as f:
                         pdf_data = f.read()
                 except RuntimeError as e:
@@ -485,7 +505,9 @@ def run_app():
                     )
                     with st.expander("Show pdflatex error details"):
                         st.code(nfg_render_error)
-                    st.markdown("**LaTeX source** (copy into a `.tex` file to compile locally):")
+                    st.markdown(
+                        "**LaTeX source** (copy into a `.tex` file to compile locally):"
+                    )
                     st.code(tex_data, language="latex")
 
                 with st.sidebar.expander("📥 Downloads", expanded=False):
@@ -516,13 +538,13 @@ def run_app():
                             help="Raw \\begin{game}...\\end{game} LaTeX body.",
                         )
                         if png_data is not None:
-                                st.download_button(
-                                    "PNG",
-                                    png_data,
-                                    f"{base_filename}.png",
-                                    "image/png",
-                                    width="stretch",
-                                )
+                            st.download_button(
+                                "PNG",
+                                png_data,
+                                f"{base_filename}.png",
+                                "image/png",
+                                width="stretch",
+                            )
                 return
 
             svg_path = str(work_dir / f"{base_name}.svg")
@@ -814,6 +836,55 @@ def run_app():
                         png_data,
                         f"{base_filename}.png",
                         "image/png",
+                        width="stretch",
+                    )
+
+                settings = {
+                    "scale_factor": scale_factor,
+                    "level_scaling": level_scaling,
+                    "sublevel_scaling": sublevel_scaling,
+                    "width_scaling": width_scaling,
+                    "horizontal": horizontal,
+                    "mirror": mirror,
+                    "shared_terminal_depth": shared_terminal_depth,
+                    "color_scheme": color_scheme,
+                    "edge_thickness": edge_thickness,
+                    "action_label_position": action_label_position,
+                    "action_label_position_by": action_label_position_by,
+                    "action_label_dist": action_label_dist,
+                    "vary_action_label_positions": vary_action_label_positions,
+                    "vary_action_label_positions_by": vary_action_label_positions_by,
+                    "font_family": font_family,
+                    "font_bold": font_bold,
+                    "font_italic": font_italic,
+                    "font_size": font_size,
+                    "node_size": node_size,
+                    "label_bg": label_bg,
+                    "label_bg_color": label_bg_color,
+                    "label_bg_opacity": label_bg_opacity,
+                    "iset_fill": iset_fill,
+                    "iset_fill_opacity": iset_fill_opacity,
+                    "iset_boundary": iset_boundary,
+                    "legend_position": legend_position,
+                }
+                if custom_colors:
+                    settings["custom_colors"] = custom_colors
+                if vary_action_label_positions_choices:
+                    settings["vary_action_label_positions_choices"] = (
+                        vary_action_label_positions_choices
+                    )
+                settings_yaml = yaml.dump(
+                    {base_filename: settings},
+                    default_flow_style=False,
+                    sort_keys=False,
+                    allow_unicode=True,
+                )
+                with c2:
+                    st.download_button(
+                        "Settings",
+                        settings_yaml,
+                        f"{base_filename}_settings.yaml",
+                        "text/plain",
                         width="stretch",
                     )
 
