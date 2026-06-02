@@ -19,6 +19,7 @@ from draw_tree import (
     generate_pdf,
     generate_png,
     count_players,
+    count_levels,
     ef_to_efg,
     efg_to_ef,
 )
@@ -311,53 +312,86 @@ def run_app():
         )
         label_bg_color = "white"  # fallback; player colors used automatically
 
+        st.markdown("---")
+        st.markdown("##### Action Label Positioning")
+
+        num_players = count_players(game_source) if game_source else 2
+        max_level = count_levels(game_source) if game_source else 4
+
+        # Vary action label positions
         vary_action_label_positions = st.checkbox(
             "Vary Action Label Positions",
             value=False,
             help="Vary action label positions based on the number of outgoing edges to avoid clashes.",
         )
-        
-        num_players = count_players(game_source) if game_source else 2
-        customize_by_player = st.checkbox(
-            "Customize positions by player",
-            value=False,
-            help="Set action label position on a player-by-player basis.",
+        if vary_action_label_positions:
+            vary_by = st.selectbox(
+                "Vary by",
+                ["All", "Player", "Level"],
+                index=0,
+                help="Apply varying positions to all nodes, or selectively to specific players or levels.",
+            )
+            vary_action_label_positions_by = vary_by.lower()
+            if vary_by == "Player":
+                selected_players = st.multiselect(
+                    "Apply vary to players",
+                    options=list(range(num_players + 1)),
+                    default=list(range(num_players + 1)),
+                    format_func=lambda x: "Chance" if x == 0 else f"Player {x}",
+                    help="Select which players' outgoing edges should have varied label positions.",
+                )
+                vary_action_label_positions_choices = selected_players if selected_players else None
+            elif vary_by == "Level":
+                selected_levels = st.multiselect(
+                    "Apply vary to levels",
+                    options=list(range(max_level + 1)),
+                    default=list(range(max_level + 1)),
+                    format_func=lambda x: f"Level {x}",
+                    help="Select which tree levels should have varied label positions.",
+                )
+                vary_action_label_positions_choices = selected_levels if selected_levels else None
+            else:
+                vary_action_label_positions_choices = None
+        else:
+            vary_action_label_positions_by = "all"
+            vary_action_label_positions_choices = None
+
+        # Positioning mode
+        positioning_mode = st.selectbox(
+            "Positioning Mode",
+            ["Global", "By Player", "By Level"],
+            index=0,
             disabled=vary_action_label_positions,
+            help="Set a single global position, or customise per-player or per-level.",
         )
-        
-        if not customize_by_player:
+        action_label_position_by = "player" if positioning_mode == "By Player" else "level" if positioning_mode == "By Level" else "player"
+
+        if positioning_mode == "Global" or vary_action_label_positions:
             action_label_position = st.slider(
                 "Action Label Position",
-                0.0,
-                1.0,
-                0.5,
-                0.05,
+                0.0, 1.0, 0.5, 0.05,
                 help="Position of action labels along the edge (0=start, 1=end).",
                 disabled=vary_action_label_positions,
             )
-        else:
+        elif positioning_mode == "By Player":
             action_label_position = {}
             pos_chance = st.slider(
-                "Chance Actions Position",
-                0.0,
-                1.0,
-                0.5,
-                0.05,
-                key="alp_chance",
-                disabled=vary_action_label_positions,
+                "Chance Actions Position", 0.0, 1.0, 0.5, 0.05, key="alp_chance"
             )
             action_label_position[0] = pos_chance
             for i in range(1, num_players + 1):
                 pos_p = st.slider(
-                    f"Player {i} Actions Position",
-                    0.0,
-                    1.0,
-                    0.5,
-                    0.05,
-                    key=f"alp_p{i}",
-                    disabled=vary_action_label_positions,
+                    f"Player {i} Actions Position", 0.0, 1.0, 0.5, 0.05, key=f"alp_p{i}"
                 )
                 action_label_position[i] = pos_p
+        else:  # By Level
+            action_label_position = {}
+            for lv in range(max_level + 1):
+                pos_lv = st.slider(
+                    f"Level {lv} Position", 0.0, 1.0, 0.5, 0.05, key=f"alp_lv{lv}"
+                )
+                action_label_position[lv] = pos_lv
+
         action_label_dist = st.slider(
             "Action Label Distance",
             1.0,
@@ -524,6 +558,9 @@ def run_app():
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
                 vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
 
             if not os.path.exists(svg_path):
@@ -567,6 +604,9 @@ def run_app():
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
                 vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
 
             tex_path = generate_tex(
@@ -598,6 +638,9 @@ def run_app():
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
                 vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
             with open(tex_path, "r") as f:
                 tex_data = f.read()
@@ -631,6 +674,9 @@ def run_app():
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
                 vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
             with open(pdf_path, "rb") as f:
                 pdf_data = f.read()
@@ -665,6 +711,9 @@ def run_app():
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
                 vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
             with open(png_path, "rb") as f:
                 png_data = f.read()

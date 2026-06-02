@@ -158,6 +158,9 @@ def main():
         to_efg_requested,
         to_ef_requested,
         vary_action_label_positions,
+        action_label_position_by,
+        vary_action_label_positions_by,
+        vary_action_label_positions_choices,
     ) = commandline(sys.argv)
 
     # Import the core module to access global variables after commandline() has set them
@@ -225,6 +228,9 @@ def main():
                 width_scaling=width_scaling,
                 shared_terminal_depth=shared_terminal_depth,
                 vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
             print(f"PDF generated successfully: {pdf_path}")
 
@@ -263,6 +269,9 @@ def main():
                 width_scaling=width_scaling,
                 shared_terminal_depth=shared_terminal_depth,
                 vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
             print(f"PNG generated successfully: {png_path}")
 
@@ -300,6 +309,9 @@ def main():
                 width_scaling=width_scaling,
                 shared_terminal_depth=shared_terminal_depth,
                 vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
             print(f"SVG generated successfully: {svg_path}")
 
@@ -337,6 +349,9 @@ def main():
                 width_scaling=width_scaling,
                 shared_terminal_depth=shared_terminal_depth,
                 vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
             print(f"LaTeX generated successfully: {tex_path}")
 
@@ -370,6 +385,9 @@ def main():
                 width_scaling=width_scaling,
                 shared_terminal_depth=shared_terminal_depth,
                 vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
 
             # Output the complete TikZ code

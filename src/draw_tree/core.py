@@ -88,6 +88,8 @@ _mirror: bool = False
 _legend_position: str = "top-left"
 _action_label_dist: float = 1.0
 _vary_action_label_positions: bool = False
+_vary_action_label_positions_by: str = "all"
+_vary_action_label_positions_choices: Optional[set[int]] = None
 parent_to_children: dict[str, list[str]] = {}
 _iset_boundary: str = "solid"
 _node_size: float = 1.5
@@ -1317,6 +1319,7 @@ def level(
     words: List[str],
     color_scheme: str = "default",
     action_label_position: float | dict[int, float] = 0.5,
+    action_label_position_by: str = "player",
 ) -> None:
     """
     Process a complete level command to create a game tree node.
@@ -1431,7 +1434,7 @@ def level(
             + "'; node identifiers must be unique within a level "
             "(this entry overwrites the earlier one in the node table)"
         )
-    nodes[nodeid] = {"x": xx, "y": yy, "player": p}
+    nodes[nodeid] = {"x": xx, "y": yy, "player": p, "level": int(lev)}
     nodes[nodeid]["xshift"] = xs
     nodes[nodeid]["move"] = mov
     nodes[nodeid]["from"] = fromn
@@ -1503,19 +1506,36 @@ def level(
         # annotate moves above
         if convex < 0:
             if isinstance(action_label_position, dict):
-                parent_player = nodes[fromn]["player"] if (existsfrom and fromn in nodes) else -1
-                pos = action_label_position.get(parent_player, 0.5)
+                if action_label_position_by == "level":
+                    parent_level = nodes[fromn].get("level", 0) if (existsfrom and fromn in nodes) else 0
+                    pos = action_label_position.get(int(parent_level), 0.5)
+                else:
+                    parent_player = nodes[fromn]["player"] if (existsfrom and fromn in nodes) else -1
+                    pos = action_label_position.get(parent_player, 0.5)
             else:
                 pos = action_label_position
             if _vary_action_label_positions and fromn in parent_to_children:
-                children = parent_to_children[fromn]
-                if nodeid in children:
-                    N = len(children)
-                    if N == 1:
-                        pos = 0.5
-                    else:
-                        idx = children.index(nodeid)
-                        pos = (idx + 1) / (N + 1)
+                apply_vary = True
+                if _vary_action_label_positions_by == "player":
+                    if _vary_action_label_positions_choices is not None:
+                        parent_player = nodes[fromn]["player"] if (existsfrom and fromn in nodes) else -1
+                        if parent_player not in _vary_action_label_positions_choices:
+                            apply_vary = False
+                elif _vary_action_label_positions_by == "level":
+                    if _vary_action_label_positions_choices is not None:
+                        parent_level = nodes[fromn].get("level", 0) if (existsfrom and fromn in nodes) else 0
+                        if int(parent_level) not in _vary_action_label_positions_choices:
+                            apply_vary = False
+                
+                if apply_vary:
+                    children = parent_to_children[fromn]
+                    if nodeid in children:
+                        N = len(children)
+                        if N == 1:
+                            pos = 0.5
+                        else:
+                            idx = children.index(nodeid)
+                            pos = (idx + 1) / (N + 1)
             convex = pos / factor
         xmove = xx * convex + xfrom * (1 - convex)
         ymove = yy * convex + yfrom * (1 - convex)
@@ -1800,6 +1820,9 @@ def commandline(
     to_efg = False
     to_ef = False
     vary_action_label_positions = False
+    action_label_position_by = "player"
+    vary_action_label_positions_by = "all"
+    vary_action_label_positions_choices = None
 
     for arg in argv[1:]:
         if arg[:5] == "scale":
@@ -1951,6 +1974,24 @@ def commandline(
                         "Warning: Invalid action-label-position format, expected a float or '0:0.3,1:0.6'",
                         file=sys.stderr,
                     )
+        elif arg.startswith("--action-label-position-by="):
+            val = arg[27:].lower()
+            if val in ["player", "level"]:
+                action_label_position_by = val
+        elif arg.startswith("--vary-action-label-positions-by="):
+            val = arg[33:].lower()
+            if val in ["all", "player", "level"]:
+                vary_action_label_positions_by = val
+        elif arg.startswith("--vary-action-label-positions-choices="):
+            try:
+                vary_action_label_positions_choices = [
+                    int(x) for x in arg[38:].split(",")
+                ]
+            except ValueError:
+                print(
+                    "Warning: Invalid vary-action-label-positions-choices, expected comma-separated integers",
+                    file=sys.stderr,
+                )
         elif arg.startswith("--level-scaling="):
             try:
                 level_scaling = float(arg[16:])
@@ -2026,6 +2067,9 @@ def commandline(
         to_efg,
         to_ef,
         vary_action_label_positions,
+        action_label_position_by,
+        vary_action_label_positions_by,
+        vary_action_label_positions_choices,
     )
 
 
@@ -2051,6 +2095,9 @@ def ef_to_tex(
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
     vary_action_label_positions: bool = False,
+    action_label_position_by: str = "player",
+    vary_action_label_positions_by: str = "all",
+    vary_action_label_positions_choices: Optional[List[int]] = None,
 ) -> str:
     """
     Convert an extensive form (.ef) file to TikZ code.
@@ -2078,6 +2125,11 @@ def ef_to_tex(
     scale_factor = scale_factor * 0.8
 
     global scale, grid, node_to_iset_player
+    global _font_family, _font_bold, _font_italic, _font_size
+    global _iset_fill, _iset_fill_opacity, _iset_boundary, _node_size
+    global _label_bg, _label_bg_color, _label_bg_opacity
+    global _horizontal, _mirror, _legend_position, _action_label_dist
+    global _vary_action_label_positions, _vary_action_label_positions_by, _vary_action_label_positions_choices
 
     # Save original state
     original_outstream = outstream.copy()
@@ -2103,9 +2155,6 @@ def ef_to_tex(
         scale = scale_factor
         grid = show_grid
 
-        global _font_family, _font_bold, _font_italic, _font_size
-        global _iset_fill, _iset_fill_opacity, _iset_boundary, _node_size
-        global _label_bg, _label_bg_color, _label_bg_opacity
         _font_family = font_family
         _font_bold = font_bold
         _font_italic = font_italic
@@ -2117,16 +2166,13 @@ def ef_to_tex(
         _label_bg = label_bg
         _label_bg_color = label_bg_color
         _label_bg_opacity = max(0.0, min(1.0, label_bg_opacity))
-        global _horizontal
-        global _mirror
-        global _legend_position
-        global _action_label_dist
-        global _vary_action_label_positions
         _horizontal = horizontal
         _mirror = mirror
         _legend_position = legend_position
         _action_label_dist = action_label_dist
         _vary_action_label_positions = vary_action_label_positions
+        _vary_action_label_positions_by = vary_action_label_positions_by
+        _vary_action_label_positions_choices = set(vary_action_label_positions_choices) if vary_action_label_positions_choices is not None else None
 
         # Process the .ef file
         lines = readfile(ef_file)
@@ -2152,7 +2198,7 @@ def ef_to_tex(
                 if words[0] == "player":
                     player(words)
                 elif words[0] == "level":
-                    level(words, color_scheme, action_label_position)
+                    level(words, color_scheme, action_label_position, action_label_position_by)
                 elif words[0] == "iset":
                     isetgen(words, color_scheme)
 
@@ -2198,6 +2244,8 @@ def ef_to_tex(
         scale = original_scale
         grid = original_grid
         parent_to_children.clear()
+        _vary_action_label_positions_by = "all"
+        _vary_action_label_positions_choices = None
 
 
 def generate_tikz(
@@ -2230,6 +2278,9 @@ def generate_tikz(
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
     vary_action_label_positions: bool = False,
+    action_label_position_by: str = "player",
+    vary_action_label_positions_by: str = "all",
+    vary_action_label_positions_choices: Optional[List[int]] = None,
 ) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
@@ -2336,6 +2387,9 @@ def generate_tikz(
         label_bg_color=label_bg_color,
         label_bg_opacity=label_bg_opacity,
         vary_action_label_positions=vary_action_label_positions,
+        action_label_position_by=action_label_position_by,
+        vary_action_label_positions_by=vary_action_label_positions_by,
+        vary_action_label_positions_choices=vary_action_label_positions_choices,
     )
 
     # Step 2: Define built-in macro definitions (from macros-drawtree.tex)
@@ -2457,6 +2511,65 @@ def count_players(game_source: str | "pygambit.gambit.Game") -> int:
         return 6
 
 
+def count_levels(
+    game_source: str | "pygambit.gambit.Game",
+    level_scaling: float = 1.0,
+    sublevel_scaling: float = 1.0,
+) -> int:
+    """
+    Count the number of levels in a game tree.
+
+    Args:
+        game_source: Path to the .ef or .efg file, or a pygambit.gambit.Game object.
+        level_scaling: Level scaling multiplier.
+        sublevel_scaling: Sublevel scaling multiplier.
+
+    Returns:
+        The maximum level index in the game tree.
+    """
+    if not isinstance(game_source, str):
+        try:
+            import pygambit
+            from .gambit_layout import determine_node_level
+            layout = pygambit.layout_tree(game_source)
+            levels = set()
+            for coords in layout.values():
+                lev = determine_node_level(
+                    coords.level,
+                    coords.sublevel,
+                    level_multiplier=level_scaling * 4,
+                    sublevel_multiplier=sublevel_scaling * 2,
+                )
+                levels.add(int(lev))
+            return max(levels) if levels else 0
+        except Exception:
+            return 0
+
+    # If EFG file, read it with pygambit first
+    if game_source.lower().endswith(".efg"):
+        try:
+            import pygambit
+            g = pygambit.read_efg(game_source)
+            return count_levels(g, level_scaling, sublevel_scaling)
+        except Exception:
+            return 0
+
+    # If EF file, parse for 'level' lines
+    try:
+        levels = set()
+        for line in readfile(game_source):
+            if line.startswith("level"):
+                try:
+                    lev = int(float(line.split()[1]))
+                    levels.add(lev)
+                except (IndexError, ValueError):
+                    pass
+        return max(levels) if levels else 0
+    except Exception:
+        return 0
+
+
+
 def draw_tree(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
@@ -2487,6 +2600,9 @@ def draw_tree(
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
     vary_action_label_positions: bool = False,
+    action_label_position_by: str = "player",
+    vary_action_label_positions_by: str = "all",
+    vary_action_label_positions_choices: Optional[List[int]] = None,
 ) -> Optional[str]:
     """
     Generate TikZ code and display in Jupyter notebooks.
@@ -2556,6 +2672,9 @@ def draw_tree(
         label_bg_color=label_bg_color,
         label_bg_opacity=label_bg_opacity,
         vary_action_label_positions=vary_action_label_positions,
+        action_label_position_by=action_label_position_by,
+        vary_action_label_positions_by=vary_action_label_positions_by,
+        vary_action_label_positions_choices=vary_action_label_positions_choices,
     )
 
     # Execute cell magic or return TikZ
@@ -2663,6 +2782,9 @@ def generate_tex(
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
     vary_action_label_positions: bool = False,
+    action_label_position_by: str = "player",
+    vary_action_label_positions_by: str = "all",
+    vary_action_label_positions_choices: Optional[List[int]] = None,
 ) -> str:
     """
     Generate a complete LaTeX document file directly from an extensive form (.ef) file.
@@ -2751,6 +2873,9 @@ def generate_tex(
         label_bg_color=label_bg_color,
         label_bg_opacity=label_bg_opacity,
         vary_action_label_positions=vary_action_label_positions,
+        action_label_position_by=action_label_position_by,
+        vary_action_label_positions_by=vary_action_label_positions_by,
+        vary_action_label_positions_choices=vary_action_label_positions_choices,
     )
 
     # Wrap in complete LaTeX document
@@ -2793,6 +2918,9 @@ def generate_pdf(
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
     vary_action_label_positions: bool = False,
+    action_label_position_by: str = "player",
+    vary_action_label_positions_by: str = "all",
+    vary_action_label_positions_choices: Optional[List[int]] = None,
 ) -> str:
     """
     Generate a PDF directly from an extensive form (.ef) file.
@@ -2913,6 +3041,9 @@ def generate_pdf(
         label_bg_color=label_bg_color,
         label_bg_opacity=label_bg_opacity,
         vary_action_label_positions=vary_action_label_positions,
+        action_label_position_by=action_label_position_by,
+        vary_action_label_positions_by=vary_action_label_positions_by,
+        vary_action_label_positions_choices=vary_action_label_positions_choices,
     )
 
     # Create LaTeX wrapper document
@@ -2999,6 +3130,9 @@ def generate_png(
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
     vary_action_label_positions: bool = False,
+    action_label_position_by: str = "player",
+    vary_action_label_positions_by: str = "all",
+    vary_action_label_positions_choices: Optional[List[int]] = None,
 ) -> str:
     """
     Generate a PNG image directly from an extensive form (.ef) file.
@@ -3082,6 +3216,9 @@ def generate_png(
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
                 vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
 
             # Step 2: Convert PDF to PNG
@@ -3215,6 +3352,9 @@ def generate_svg(
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
     vary_action_label_positions: bool = False,
+    action_label_position_by: str = "player",
+    vary_action_label_positions_by: str = "all",
+    vary_action_label_positions_choices: Optional[List[int]] = None,
 ) -> str:
     """
     Generate an SVG image directly from an extensive form (.ef) file.
@@ -3291,6 +3431,9 @@ def generate_svg(
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
                 vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
 
             # Convert PDF to SVG using pdf2svg

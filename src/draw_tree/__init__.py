@@ -17,6 +17,7 @@ from .core import (
     ef_to_tex,
     latex_wrapper,
     count_players,
+    count_levels,
 )
 
 from .gambit_layout import gambit_layout_to_ef
@@ -34,6 +35,7 @@ __all__ = [
     "latex_wrapper",
     "gambit_layout_to_ef",
     "count_players",
+    "count_levels",
     "ef_to_efg",
     "efg_to_ef",
 ]

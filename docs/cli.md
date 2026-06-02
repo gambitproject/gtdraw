@@ -23,8 +23,11 @@ You can also use `.efg` files from Gambit instead of `.ef` files.
 | | `--mirror` | Mirror the tree left-to-right (flip xshift values). |
 | | `--legend-position=X` | Corner for the colour legend: `top-left` (default), `top-right`, `bottom-left`, `bottom-right`. |
 | | `--action-label-dist=X.X` | Distance of action labels from the edge (default: 1.0). |
-| | `--action-label-position=X` | Position of action labels along the edge. Accepts a single float (0.0 to 1.0, default: 0.5) or a player-by-player comma-separated list of `player_index:position` (e.g. `0:0.3,1:0.7`). |
+| | `--action-label-position=X` | Position of action labels along the edge. Accepts a single float (0.0 to 1.0, default: 0.5), a player-keyed list (`player_index:position`, e.g. `0:0.3,1:0.7`), or a level-keyed list (`level_index:position`, e.g. `0:0.3,1:0.7`). |
+| | `--action-label-position-by=[player\|level]` | Interpret a dictionary `--action-label-position` as keyed by player index (default: `player`) or by tree level index (`level`). |
 | | `--vary-action-label-positions`| Vary action label positions along child edges of a node to avoid clashes. |
+| | `--vary-action-label-positions-by=[all\|player\|level]` | Apply vary logic to all nodes (default: `all`), or selectively to specific players (`player`) or tree levels (`level`). |
+| | `--vary-action-label-positions-choices=X,Y` | Comma-separated list of player or level indices to which vary logic applies (used with `--vary-action-label-positions-by=player` or `level`). |
 | | `--level-scaling=X.X` | Level spacing multiplier (for `.efg` files, default: 1.0). |
 | | `--sublevel-scaling=X.X` | Sublevel spacing multiplier (for `.efg` files, default: 1.0). |
 | | `--width-scaling=X.X` | Width spacing multiplier (for `.efg` files, default: 1.0). |
