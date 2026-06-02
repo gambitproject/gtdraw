@@ -54,7 +54,7 @@ All `generate_*` functions and the main `draw_tree` function accept a variety of
 | | `mirror=True/False` | Mirror the tree left-to-right by flipping xshift values (default: False). |
 | | `legend_position="X"` | Corner for the colour legend: `"top-left"` (default), `"top-right"`, `"bottom-left"`, `"bottom-right"`. |
 | | `action_label_dist=X.X` | Distance of action labels from the edge (default: 1.0). |
-| | `action_label_position=X.X` | Position of action labels along the edge (0.0 to 1.0, default: 0.5). |
+| | `action_label_position=X` | Position of action labels along the edge. Accepts a single float (0.0 to 1.0, default: 0.5) or a dictionary mapping player indices to float positions (e.g. `{0: 0.3, 1: 0.7}`). |
 | | `vary_action_label_positions=True/False`| Vary action label positions along child edges of a node to avoid clashes (default: False). |
 | | `level_scaling=X.X` | Level spacing multiplier (for pygambit, default: 1.0). |
 | | `sublevel_scaling=X.X` | Sublevel spacing multiplier (for pygambit, default: 1.0). |

@@ -23,7 +23,7 @@ You can also use `.efg` files from Gambit instead of `.ef` files.
 | | `--mirror` | Mirror the tree left-to-right (flip xshift values). |
 | | `--legend-position=X` | Corner for the colour legend: `top-left` (default), `top-right`, `bottom-left`, `bottom-right`. |
 | | `--action-label-dist=X.X` | Distance of action labels from the edge (default: 1.0). |
-| | `--action-label-position=X.X` | Position of action labels along the edge (0.0 to 1.0, default: 0.5). |
+| | `--action-label-position=X` | Position of action labels along the edge. Accepts a single float (0.0 to 1.0, default: 0.5) or a player-by-player comma-separated list of `player_index:position` (e.g. `0:0.3,1:0.7`). |
 | | `--vary-action-label-positions`| Vary action label positions along child edges of a node to avoid clashes. |
 | | `--level-scaling=X.X` | Level spacing multiplier (for `.efg` files, default: 1.0). |
 | | `--sublevel-scaling=X.X` | Sublevel spacing multiplier (for `.efg` files, default: 1.0). |

@@ -2479,6 +2479,50 @@ class TestVaryActionLabelPositions:
         assert result_default != result_varied
 
 
+class TestPlayerActionLabelPositions:
+    """Tests for the player-by-player action label positions feature."""
+
+    def test_commandline_player_action_label_positions(self):
+        """Test parsing of dictionary-based --action-label-position settings."""
+        from draw_tree.core import commandline
+
+        # Dictionary format
+        result = commandline([
+            "draw_tree.py", "test.ef",
+            "--action-label-position=0:0.3,1:0.65"
+        ])
+        assert isinstance(result[25], dict)
+        assert result[25][0] == 0.3
+        assert result[25][1] == 0.65
+
+        # Invalid format falls back
+        result_invalid = commandline([
+            "draw_tree.py", "test.ef",
+            "--action-label-position=invalid"
+        ])
+        assert result_invalid[25] == 0.5
+
+    def test_player_action_label_positions_layout(self, tmp_path):
+        """Test that different player nodes apply different action label positions."""
+        ef_file = tmp_path / "game.ef"
+        ef_file.write_text(
+            "player 1 name Alice\n"
+            "player 2 name Bob\n"
+            "level 0 node root player 1\n"
+            "level 1 node child1 from 0,root player 2 move L1 payoffs 1 0\n"
+            "level 2 node child2 from 1,child1 player 1 move L2 payoffs 0 1\n"
+        )
+
+        positions = {1: 0.3, 2: 0.7}
+        result = draw_tree.generate_tikz(str(ef_file), action_label_position=positions)
+
+        result_global_0_3 = draw_tree.generate_tikz(str(ef_file), action_label_position=0.3)
+        result_global_0_7 = draw_tree.generate_tikz(str(ef_file), action_label_position=0.7)
+
+        assert result != result_global_0_3
+        assert result != result_global_0_7
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
 

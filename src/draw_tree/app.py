@@ -316,15 +316,48 @@ def run_app():
             value=False,
             help="Vary action label positions based on the number of outgoing edges to avoid clashes.",
         )
-        action_label_position = st.slider(
-            "Action Label Position",
-            0.0,
-            1.0,
-            0.5,
-            0.05,
-            help="Position of action labels along the edge (0=start, 1=end).",
+        
+        num_players = count_players(game_source) if game_source else 2
+        customize_by_player = st.checkbox(
+            "Customize positions by player",
+            value=False,
+            help="Set action label position on a player-by-player basis.",
             disabled=vary_action_label_positions,
         )
+        
+        if not customize_by_player:
+            action_label_position = st.slider(
+                "Action Label Position",
+                0.0,
+                1.0,
+                0.5,
+                0.05,
+                help="Position of action labels along the edge (0=start, 1=end).",
+                disabled=vary_action_label_positions,
+            )
+        else:
+            action_label_position = {}
+            pos_chance = st.slider(
+                "Chance Actions Position",
+                0.0,
+                1.0,
+                0.5,
+                0.05,
+                key="alp_chance",
+                disabled=vary_action_label_positions,
+            )
+            action_label_position[0] = pos_chance
+            for i in range(1, num_players + 1):
+                pos_p = st.slider(
+                    f"Player {i} Actions Position",
+                    0.0,
+                    1.0,
+                    0.5,
+                    0.05,
+                    key=f"alp_p{i}",
+                    disabled=vary_action_label_positions,
+                )
+                action_label_position[i] = pos_p
         action_label_dist = st.slider(
             "Action Label Distance",
             1.0,

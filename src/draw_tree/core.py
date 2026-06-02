@@ -1316,7 +1316,7 @@ def generate_legend(
 def level(
     words: List[str],
     color_scheme: str = "default",
-    action_label_position: float = 0.5,
+    action_label_position: float | dict[int, float] = 0.5,
 ) -> None:
     """
     Process a complete level command to create a game tree node.
@@ -1502,7 +1502,11 @@ def level(
         outs("   -- " + coord(xfrom, yfrom) + ";")
         # annotate moves above
         if convex < 0:
-            pos = action_label_position
+            if isinstance(action_label_position, dict):
+                parent_player = nodes[fromn]["player"] if (existsfrom and fromn in nodes) else -1
+                pos = action_label_position.get(parent_player, 0.5)
+            else:
+                pos = action_label_position
             if _vary_action_label_positions and fromn in parent_to_children:
                 children = parent_to_children[fromn]
                 if nodeid in children:
@@ -1931,10 +1935,22 @@ def commandline(
             except ValueError:
                 pass
         elif arg.startswith("--action-label-position="):
+            val = arg[24:].strip('"')
             try:
-                action_label_position = float(arg[24:])
+                action_label_position = float(val)
             except ValueError:
-                pass
+                try:
+                    positions_dict = {}
+                    pairs = val.split(",")
+                    for pair in pairs:
+                        p_str, pos_str = pair.split(":")
+                        positions_dict[int(p_str)] = float(pos_str)
+                    action_label_position = positions_dict
+                except Exception:
+                    print(
+                        "Warning: Invalid action-label-position format, expected a float or '0:0.3,1:0.6'",
+                        file=sys.stderr,
+                    )
         elif arg.startswith("--level-scaling="):
             try:
                 level_scaling = float(arg[16:])
@@ -2018,7 +2034,7 @@ def ef_to_tex(
     scale_factor: float = 1.0,
     show_grid: bool = False,
     color_scheme: str = "default",
-    action_label_position: float = 0.5,
+    action_label_position: float | dict[int, float] = 0.5,
     font_family: str = "rmfamily",
     font_bold: bool = False,
     font_italic: bool = False,
@@ -2196,7 +2212,7 @@ def generate_tikz(
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
-    action_label_position: float = 0.5,
+    action_label_position: float | dict[int, float] = 0.5,
     font_family: str = "rmfamily",
     font_bold: bool = False,
     font_italic: bool = False,
@@ -2453,7 +2469,7 @@ def draw_tree(
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
-    action_label_position: float = 0.5,
+    action_label_position: float | dict[int, float] = 0.5,
     font_family: str = "rmfamily",
     font_bold: bool = False,
     font_italic: bool = False,
@@ -2629,7 +2645,7 @@ def generate_tex(
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
-    action_label_position: float = 0.5,
+    action_label_position: float | dict[int, float] = 0.5,
     font_family: str = "rmfamily",
     font_bold: bool = False,
     font_italic: bool = False,
@@ -2759,7 +2775,7 @@ def generate_pdf(
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
-    action_label_position: float = 0.5,
+    action_label_position: float | dict[int, float] = 0.5,
     font_family: str = "rmfamily",
     font_bold: bool = False,
     font_italic: bool = False,
@@ -2964,7 +2980,7 @@ def generate_png(
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
-    action_label_position: float = 0.5,
+    action_label_position: float | dict[int, float] = 0.5,
     dpi: int = 300,
     font_family: str = "rmfamily",
     font_bold: bool = False,
@@ -3180,7 +3196,7 @@ def generate_svg(
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
-    action_label_position: float = 0.5,
+    action_label_position: float | dict[int, float] = 0.5,
     responsive_sizing: bool = False,
     font_family: str = "rmfamily",
     font_bold: bool = False,
