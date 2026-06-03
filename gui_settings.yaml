@@ -1,0 +1,10 @@
+# draw_tree GUI master settings
+# Per-game overrides are written here automatically as you adjust settings.
+# Edit the defaults section to change settings that apply to all games.
+# Consult https://www.gambit-project.org/draw_tree/ for available settings.
+
+defaults:
+  color_scheme: colorblind
+overrides:
+  example:
+    color_scheme: colorblind
