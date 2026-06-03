@@ -6,5 +6,3 @@
 defaults:
   color_scheme: colorblind
 overrides:
-  example:
-    color_scheme: colorblind
