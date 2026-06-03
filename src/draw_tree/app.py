@@ -20,7 +20,7 @@ from draw_tree import (
     generate_pdf,
     generate_png,
     count_players,
-    count_levels,
+    get_game_levels,
     ef_to_efg,
     efg_to_ef,
 )
@@ -305,7 +305,7 @@ def run_app():
             st.markdown("##### Label Styling")
 
             num_players = count_players(game_source) if game_source else 2
-            max_level = count_levels(game_source) if game_source else 4
+            game_levels = get_game_levels(game_source, level_scaling=level_scaling, sublevel_scaling=sublevel_scaling) if game_source else list(range(5))
 
             label_bg_enabled = st.checkbox(
                 "Enable Label Background",
@@ -337,8 +337,8 @@ def run_app():
                     label_bg_by = "level"
                     selected_bg_levels = st.multiselect(
                         "Apply to levels",
-                        options=list(range(max_level + 1)),
-                        default=list(range(max_level + 1)),
+                        options=game_levels,
+                        default=game_levels,
                         format_func=lambda x: f"Level {x}",
                         help="Select which tree levels' labels should have a background.",
                         key="lbg_levels",
@@ -367,12 +367,12 @@ def run_app():
             if vary_action_label_positions:
                 vary_by = st.selectbox(
                     "Vary by",
-                    ["All", "Player", "Level"],
+                    ["All", "By Player", "By Level"],
                     index=0,
                     help="Apply varying positions to all nodes, or selectively to specific players or levels.",
                 )
-                vary_action_label_positions_by = vary_by.lower()
-                if vary_by == "Player":
+                vary_action_label_positions_by = {"All": "all", "By Player": "player", "By Level": "level"}[vary_by]
+                if vary_by == "By Player":
                     selected_players = st.multiselect(
                         "Apply vary to players",
                         options=list(range(num_players + 1)),
@@ -383,11 +383,11 @@ def run_app():
                     vary_action_label_positions_choices = (
                         selected_players if selected_players else None
                     )
-                elif vary_by == "Level":
+                elif vary_by == "By Level":
                     selected_levels = st.multiselect(
                         "Apply vary to levels",
-                        options=list(range(max_level + 1)),
-                        default=list(range(max_level + 1)),
+                        options=game_levels,
+                        default=game_levels,
                         format_func=lambda x: f"Level {x}",
                         help="Select which tree levels should have varied label positions.",
                     )
@@ -444,7 +444,7 @@ def run_app():
                     action_label_position[i] = pos_p
             else:  # By Level
                 action_label_position = {}
-                for lv in range(max_level + 1):
+                for lv in game_levels:
                     pos_lv = st.slider(
                         f"Level {lv} Position", 0.0, 1.0, 0.5, 0.05, key=f"alp_lv{lv}"
                     )

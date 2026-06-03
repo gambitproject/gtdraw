@@ -1516,8 +1516,8 @@ def level(
 
         if color_style:
             node_opts += "," + color_style
-        node_opts += _label_bg_node_opts(player_color, player=p, level=parent_level)
-        this_bg = _label_bg_active(player=p, level=parent_level)
+        node_opts += _label_bg_node_opts(player_color, player=p, level=int(lev))
+        this_bg = _label_bg_active(player=p, level=int(lev))
         if not this_bg:
             # Embed player label node in the edge draw command
             s += f" node[{node_opts}]"
@@ -1606,12 +1606,12 @@ def level(
         if side in ["left", "below"]:
             dist = -dist
 
-        action_bg = _label_bg_active(player=parent_player, level=parent_level)
+        action_bg = _label_bg_active(player=parent_player, level=int(lev))
         if action_bg:
             opts = []
             if edge_color_style:
                 opts.append(edge_color_style)
-            bg_opts = _label_bg_node_opts(parent_color, player=parent_player, level=parent_level)
+            bg_opts = _label_bg_node_opts(parent_color, player=parent_player, level=int(lev))
             if bg_opts.startswith(","):
                 bg_opts = bg_opts[1:]
             if bg_opts:
@@ -2639,6 +2639,69 @@ def count_levels(
     except Exception:
         return 0
 
+
+def get_game_levels(
+    game_source: str | "pygambit.gambit.Game",
+    level_scaling: float = 1.0,
+    sublevel_scaling: float = 1.0,
+) -> list[int]:
+    """
+    Return the sorted list of unique integer level values present in the game tree.
+
+    Unlike ``count_levels``, which returns only the maximum, this returns every
+    distinct level so the GUI can show only the options that actually exist.
+    The ``level_scaling`` and ``sublevel_scaling`` parameters must match those
+    used for rendering so that the returned values agree with what ends up in
+    the ``nodes`` dict during TikZ generation.
+
+    Args:
+        game_source: Path to the .ef or .efg file, or a pygambit.gambit.Game.
+        level_scaling: Level spacing multiplier (default 1.0).
+        sublevel_scaling: Sublevel spacing multiplier (default 1.0).
+
+    Returns:
+        Sorted list of unique integer level values, e.g. ``[0, 2, 4]`` or
+        ``[2, 6, 10]`` for a pygambit game with default scaling.  Falls back
+        to ``[0]`` if parsing fails.
+    """
+    if not isinstance(game_source, str):
+        try:
+            import pygambit
+            from .gambit_layout import determine_node_level
+            layout = pygambit.layout_tree(game_source)
+            levels = set()
+            for coords in layout.values():
+                lev = determine_node_level(
+                    coords.level,
+                    coords.sublevel,
+                    level_multiplier=level_scaling * 4,
+                    sublevel_multiplier=sublevel_scaling * 2,
+                )
+                levels.add(int(lev))
+            return sorted(levels) if levels else [0]
+        except Exception:
+            return [0]
+
+    if game_source.lower().endswith(".efg"):
+        try:
+            import pygambit
+            g = pygambit.read_efg(game_source)
+            return get_game_levels(g, level_scaling, sublevel_scaling)
+        except Exception:
+            return [0]
+
+    try:
+        levels = set()
+        for line in readfile(game_source):
+            if line.startswith("level"):
+                try:
+                    lev = int(float(line.split()[1]))
+                    levels.add(lev)
+                except (IndexError, ValueError):
+                    pass
+        return sorted(levels) if levels else [0]
+    except Exception:
+        return [0]
 
 
 def draw_tree(
