@@ -80,7 +80,7 @@ def _snapshot_settings() -> dict:
     """Capture all layout/aesthetics widget session-state values."""
     snap = {}
     for k, v in st.session_state.items():
-        if k.startswith(("gui_", "cp_", "alp_", "lbg_")) or k in ("scheme_selector", "_prev_scheme"):
+        if k.startswith(("gui_", "cp_", "alp_", "lbg_")) or k == "scheme_selector":
             snap[k] = v
     return snap
 
@@ -420,29 +420,27 @@ def run_app():
     if not is_nfg:
         _col_undo, _col_redo, _col_reset = st.sidebar.columns(3)
         with _col_undo:
-            if st.button("↩ Undo", disabled="undo_state" not in st.session_state,
+            if st.button("↩ Undo", disabled=not st.session_state.get("undo_stack"),
                          use_container_width=True, help="Undo last settings change"):
                 _redo_snap = _snapshot_settings()
-                _apply_snapshot(st.session_state.pop("undo_state"))
-                st.session_state["redo_state"] = _redo_snap
-                # Stamp _last_snap so the change-tracker doesn't clear redo_state
+                _apply_snapshot(st.session_state["undo_stack"].pop())
+                st.session_state.setdefault("redo_stack", []).append(_redo_snap)
                 st.session_state["_last_snap"] = _snapshot_settings()
                 st.rerun()
         with _col_redo:
-            if st.button("↪ Redo", disabled="redo_state" not in st.session_state,
+            if st.button("↪ Redo", disabled=not st.session_state.get("redo_stack"),
                          use_container_width=True, help="Redo last undone change"):
                 _undo_snap = _snapshot_settings()
-                _apply_snapshot(st.session_state.pop("redo_state"))
-                st.session_state["undo_state"] = _undo_snap
-                # Stamp _last_snap so the change-tracker doesn't clear undo_state
+                _apply_snapshot(st.session_state["redo_stack"].pop())
+                st.session_state.setdefault("undo_stack", []).append(_undo_snap)
                 st.session_state["_last_snap"] = _snapshot_settings()
                 st.rerun()
         with _col_reset:
             if st.button("↺ Reset", use_container_width=True,
                          help="Restore defaults from gui_settings.yaml",
                          disabled=not game_slug):
-                st.session_state["undo_state"] = _snapshot_settings()
-                st.session_state.pop("redo_state", None)
+                st.session_state.setdefault("undo_stack", []).append(_snapshot_settings())
+                st.session_state["redo_stack"] = []
                 _write_game_settings(_yaml, game_slug, {})
                 _loaded = _effective_settings_for_game(_yaml, game_slug)
                 _apply_yaml_to_session_state(_loaded)
@@ -803,9 +801,13 @@ def run_app():
     if not is_nfg and game_source:
         _current_snap = _snapshot_settings()
         _prev_snap = st.session_state.get("_last_snap")
+        _MAX_UNDO = 50
         if _prev_snap is not None and _current_snap != _prev_snap:
-            st.session_state["undo_state"] = _prev_snap
-            st.session_state.pop("redo_state", None)
+            _stack = st.session_state.setdefault("undo_stack", [])
+            _stack.append(_prev_snap)
+            if len(_stack) > _MAX_UNDO:
+                _stack.pop(0)
+            st.session_state["redo_stack"] = []
         st.session_state["_last_snap"] = _current_snap
 
         if game_slug and _yaml.exists():
