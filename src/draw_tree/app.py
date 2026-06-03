@@ -324,15 +324,26 @@ def run_app():
                     label_bg_by = "player"
                 elif label_bg_scope == "By Player":
                     label_bg_by = "player"
-                    label_bg = {}
-                    label_bg[0] = st.checkbox("Chance Actions", value=True, key="lbg_p0")
-                    for i in range(1, num_players + 1):
-                        label_bg[i] = st.checkbox(f"Player {i}", value=True, key=f"lbg_p{i}")
+                    selected_bg_players = st.multiselect(
+                        "Apply to players",
+                        options=list(range(num_players + 1)),
+                        default=list(range(num_players + 1)),
+                        format_func=lambda x: "Chance" if x == 0 else f"Player {x}",
+                        help="Select which players' labels should have a background.",
+                        key="lbg_players",
+                    )
+                    label_bg = {i: True for i in selected_bg_players}
                 else:  # By Level
                     label_bg_by = "level"
-                    label_bg = {}
-                    for lv in range(max_level + 1):
-                        label_bg[lv] = st.checkbox(f"Level {lv}", value=True, key=f"lbg_lv{lv}")
+                    selected_bg_levels = st.multiselect(
+                        "Apply to levels",
+                        options=list(range(max_level + 1)),
+                        default=list(range(max_level + 1)),
+                        format_func=lambda x: f"Level {x}",
+                        help="Select which tree levels' labels should have a background.",
+                        key="lbg_levels",
+                    )
+                    label_bg = {lv: True for lv in selected_bg_levels}
 
                 label_bg_style_name = st.selectbox(
                     "Background Style",
