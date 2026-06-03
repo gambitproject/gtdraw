@@ -6,3 +6,37 @@
 defaults:
   color_scheme: colorblind
 overrides:
+  kuhn-4-card:
+    level_scaling: 2.0
+    sublevel_scaling: 0.5
+    width_scaling: 0.75
+    shared_terminal_depth: true
+    color_scheme: colorblind
+    edge_thickness: 1.6
+    font_family: sffamily
+    font_italic: true
+    font_size: Large
+    iset_fill: true
+    iset_boundary: none
+    node_size: 3.1
+    label_bg:
+      0: true
+    vary_action_label_positions: true
+    vary_action_label_positions_by: level
+    vary_action_label_positions_choices:
+    - 4
+    - 5
+    - 6
+    - 7
+    - 15
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+    - 22
+    - 23
+    - 24
+    - 28
+    - 13
