@@ -66,8 +66,10 @@ All `generate_*` functions and the main `draw_tree` function accept a variety of
 | **Information Sets**| `iset_fill=True/False` | Fill information sets with player colors (default: False). |
 | | `iset_fill_opacity=X.X` | Opacity of information set fill (0.0-1.0, default: 0.2). |
 | | `iset_boundary="X"` | Boundary style: `"solid"`, `"dotted"`, `"none"` (default: `"solid"`). |
-| **Label Background** | `label_bg=True/False` | Add a filled background behind all label text to improve readability when labels overlap edges (default: False). |
-| | `label_bg_color="X"` | Colour of the label background. Accepts any named xcolor colour (e.g. `"white"`, `"yellow"`) or a hex string (e.g. `"#ffcc00"`) (default: `"white"`). |
+| **Label Background** | `label_bg=True/False` | Add a filled background behind all label text to improve readability. Also accepts a `dict[int, bool]` to enable per-player or per-level (use with `label_bg_by`, default: False). |
+| | `label_bg_by="X"` | Interpret a dictionary `label_bg` as keyed by player index (`"player"`, default) or by tree level index (`"level"`). |
+| | `label_bg_style="X"` | Background style: `"player_bg"` (player-colour background with white text, default) or `"white_bg"` (white background with player-colour text). |
+| | `label_bg_color="X"` | Fallback colour of the label background when no player colour applies. Accepts any named xcolor colour (e.g. `"white"`) or a hex string (e.g. `"#ffcc00"`) (default: `"white"`). |
 | | `label_bg_opacity=X.X` | Opacity of the label background (0.0-1.0, default: 0.8). |
 | **Aesthetics** | `color_scheme="X"` | Set color scheme (`"default"`, `"gambit"`, `"distinctipy"`, `"colorblind"`, `"custom"`). |
 | | `edge_thickness=X.X` | Set thickness of edges (default: 1.0). |

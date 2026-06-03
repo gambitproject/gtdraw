@@ -32,8 +32,10 @@ You can also use `.efg` files from Gambit instead of `.ef` files.
 | | `--sublevel-scaling=X.X` | Sublevel spacing multiplier (for `.efg` files, default: 1.0). |
 | | `--width-scaling=X.X` | Width spacing multiplier (for `.efg` files, default: 1.0). |
 | | `--shared-terminal-depth` | Enforce shared terminal node depth (for `.efg` files). |
-| **Label Background** | `--label-bg` | Add a filled background behind all label text to improve readability. |
-| | `--label-bg-color=X` | Colour of the label background (named xcolor colour or `#RRGGBB`, default: `white`). |
+| **Label Background** | `--label-bg` | Add a filled background behind all label text. Use `--label-bg=1,2,3` to enable only for specific player or level indices (combine with `--label-bg-by`). |
+| | `--label-bg-by=[player\|level]` | Interpret `--label-bg=...` indices as player indices (default: `player`) or tree level indices (`level`). |
+| | `--label-bg-style=[player_bg\|white_bg]` | Background style: `player_bg` (player-colour background, white text, default) or `white_bg` (white background, player-colour text). |
+| | `--label-bg-color=X` | Fallback colour of the label background (named xcolor colour or `#RRGGBB`, default: `white`). |
 | | `--label-bg-opacity=X.X` | Opacity of the label background (0.0-1.0, default: 0.8). |
 | **Information Sets**| `--iset-fill` | Fill information sets with player colors. |
 | | `--iset-fill-opacity=X.X` | Opacity of information set fill (0.0-1.0, default: 0.2). |

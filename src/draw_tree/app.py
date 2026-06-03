@@ -182,6 +182,8 @@ def run_app():
     iset_fill_opacity = 0.2
     iset_boundary = "solid"
     label_bg = False
+    label_bg_by = "player"
+    label_bg_style = "player_bg"
     label_bg_color = "white"
     label_bg_opacity = 0.8
 
@@ -301,21 +303,49 @@ def run_app():
 
             st.markdown("---")
             st.markdown("##### Label Styling")
-            label_bg = st.checkbox(
+
+            num_players = count_players(game_source) if game_source else 2
+            max_level = count_levels(game_source) if game_source else 4
+
+            label_bg_enabled = st.checkbox(
                 "Enable Label Background",
                 value=False,
-                help="Adds a filled background behind label text using each player's colour, with white text.",
+                help="Adds a filled background behind label text to improve readability.",
             )
-            label_bg_opacity = st.slider(
-                "Background Opacity", 0.0, 1.0, 0.8, 0.05, disabled=not label_bg
-            )
+            if label_bg_enabled:
+                label_bg_scope = st.selectbox(
+                    "Background applies to",
+                    ["All", "By Player", "By Level"],
+                    index=0,
+                    help="Apply to all labels, or selectively per player or per level.",
+                )
+                if label_bg_scope == "All":
+                    label_bg = True
+                    label_bg_by = "player"
+                elif label_bg_scope == "By Player":
+                    label_bg_by = "player"
+                    label_bg = {}
+                    label_bg[0] = st.checkbox("Chance Actions", value=True, key="lbg_p0")
+                    for i in range(1, num_players + 1):
+                        label_bg[i] = st.checkbox(f"Player {i}", value=True, key=f"lbg_p{i}")
+                else:  # By Level
+                    label_bg_by = "level"
+                    label_bg = {}
+                    for lv in range(max_level + 1):
+                        label_bg[lv] = st.checkbox(f"Level {lv}", value=True, key=f"lbg_lv{lv}")
+
+                label_bg_style_name = st.selectbox(
+                    "Background Style",
+                    ["Player colour (white text)", "White (player colour text)"],
+                    index=0,
+                    help="Player colour background with white text, or white background with player-colour text.",
+                )
+                label_bg_style = "white_bg" if label_bg_style_name.startswith("White") else "player_bg"
+                label_bg_opacity = st.slider("Background Opacity", 0.0, 1.0, 0.8, 0.05)
             label_bg_color = "white"  # fallback; player colors used automatically
 
             st.markdown("---")
             st.markdown("##### Action Label Positioning")
-
-            num_players = count_players(game_source) if game_source else 2
-            max_level = count_levels(game_source) if game_source else 4
 
             # Vary action label positions
             vary_action_label_positions = st.checkbox(
@@ -416,7 +446,7 @@ def run_app():
                 1.0,
                 0.1,
                 help="Distance of action labels from the edge.",
-                disabled=label_bg,
+                disabled=bool(label_bg),
             )
 
             st.markdown("---")
@@ -579,6 +609,8 @@ def run_app():
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                label_bg_by=label_bg_by,
+                label_bg_style=label_bg_style,
                 vary_action_label_positions=vary_action_label_positions,
                 action_label_position_by=action_label_position_by,
                 vary_action_label_positions_by=vary_action_label_positions_by,
@@ -625,6 +657,8 @@ def run_app():
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                label_bg_by=label_bg_by,
+                label_bg_style=label_bg_style,
                 vary_action_label_positions=vary_action_label_positions,
                 action_label_position_by=action_label_position_by,
                 vary_action_label_positions_by=vary_action_label_positions_by,
@@ -659,6 +693,8 @@ def run_app():
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                label_bg_by=label_bg_by,
+                label_bg_style=label_bg_style,
                 vary_action_label_positions=vary_action_label_positions,
                 action_label_position_by=action_label_position_by,
                 vary_action_label_positions_by=vary_action_label_positions_by,
@@ -695,6 +731,8 @@ def run_app():
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                label_bg_by=label_bg_by,
+                label_bg_style=label_bg_style,
                 vary_action_label_positions=vary_action_label_positions,
                 action_label_position_by=action_label_position_by,
                 vary_action_label_positions_by=vary_action_label_positions_by,
@@ -732,6 +770,8 @@ def run_app():
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                label_bg_by=label_bg_by,
+                label_bg_style=label_bg_style,
                 vary_action_label_positions=vary_action_label_positions,
                 action_label_position_by=action_label_position_by,
                 vary_action_label_positions_by=vary_action_label_positions_by,

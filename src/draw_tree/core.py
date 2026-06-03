@@ -93,7 +93,9 @@ _vary_action_label_positions_choices: Optional[set[int]] = None
 parent_to_children: dict[str, list[str]] = {}
 _iset_boundary: str = "solid"
 _node_size: float = 1.5
-_label_bg: bool = False
+_label_bg: bool | dict[int, bool] = False
+_label_bg_by: str = "player"
+_label_bg_style: str = "player_bg"
 _label_bg_color: str = "white"
 _label_bg_opacity: float = 0.8
 
@@ -237,10 +239,36 @@ def _label_bg_definecolor() -> str:
     return ""
 
 
-def _label_bg_node_opts(player_color: str = "") -> str:
-    """Return extra TikZ node options that add a filled background, or ''."""
+def _any_label_bg() -> bool:
+    """True if any label background is active."""
+    if isinstance(_label_bg, dict):
+        return any(_label_bg.values())
+    return bool(_label_bg)
+
+
+def _label_bg_active(player: int = -1, level: int = -1) -> bool:
+    """True if label background is active for this specific player/level."""
     if not _label_bg:
+        return False
+    if isinstance(_label_bg, dict):
+        if _label_bg_by == "level":
+            return _label_bg.get(level, False)
+        return _label_bg.get(player, False)
+    return True
+
+
+def _label_bg_node_opts(player_color: str = "", player: int = -1, level: int = -1) -> str:
+    """Return extra TikZ node options that add a filled background, or ''."""
+    if not _label_bg_active(player, level):
         return ""
+    if _label_bg_style == "white_bg":
+        text_color = player_color if player_color else "black"
+        return (
+            ",fill=white"
+            f",fill opacity={fformat(_label_bg_opacity)}"
+            ",text opacity=1"
+            f",text={text_color}"
+        )
     bg_color = player_color if player_color else _label_bg_color_name()
     return (
         f",fill={bg_color}"
@@ -252,7 +280,7 @@ def _label_bg_node_opts(player_color: str = "") -> str:
 
 def _emit_label(s: str) -> None:
     """Emit a label draw command; wrap in the labels layer when label_bg is active."""
-    if _label_bg:
+    if _any_label_bg():
         outs("\\begin{pgfonlayer}{labels}")
         outs(s)
         outs("\\end{pgfonlayer}")
@@ -1446,8 +1474,10 @@ def level(
     color_style = f"color={player_color}"
 
     # For edges, use the PARENT node's color, not the current node's color
+    parent_player = -1
     parent_color = ""
     edge_color_style = ""
+    parent_level = int(nodes[fromn].get("level", 0)) if existsfrom and fromn in nodes else 0
     if existsfrom and fromn in nodes:
         parent_player = nodes[fromn]["player"]
         parent_color = get_player_color(parent_player, color_scheme)
@@ -1486,8 +1516,9 @@ def level(
 
         if color_style:
             node_opts += "," + color_style
-        node_opts += _label_bg_node_opts(player_color)
-        if not _label_bg:
+        node_opts += _label_bg_node_opts(player_color, player=p, level=parent_level)
+        this_bg = _label_bg_active(player=p, level=parent_level)
+        if not this_bg:
             # Embed player label node in the edge draw command
             s += f" node[{node_opts}]"
             s += "{\\" + playertexname[p] + "\\strut}"
@@ -1499,7 +1530,7 @@ def level(
                 + "{\\" + playertexname[p] + "\\strut};"
             )
     outs(s)
-    if not _label_bg:
+    if not _any_label_bg():
         outlist(pay)  # possibly empty
     if existsfrom:  # draw line to father
         outs("   -- " + coord(xfrom, yfrom) + ";")
@@ -1575,11 +1606,12 @@ def level(
         if side in ["left", "below"]:
             dist = -dist
 
-        if _label_bg:
+        action_bg = _label_bg_active(player=parent_player, level=parent_level)
+        if action_bg:
             opts = []
             if edge_color_style:
                 opts.append(edge_color_style)
-            bg_opts = _label_bg_node_opts(parent_color)
+            bg_opts = _label_bg_node_opts(parent_color, player=parent_player, level=parent_level)
             if bg_opts.startswith(","):
                 bg_opts = bg_opts[1:]
             if bg_opts:
@@ -1642,7 +1674,7 @@ def level(
     # Emit deferred player label and payoffs in the labels layer (after edge is closed)
     if player_label_cmd:
         _emit_label(player_label_cmd)
-    if _label_bg and pay:
+    if _any_label_bg() and pay:
         for payoff_node in pay:
             _emit_label("\\draw " + coord(xx, yy) + payoff_node + ";")
     return
@@ -1715,7 +1747,7 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
             s += spx + ",yshift=" + spy
             if color_style:
                 s += "," + color_style
-            s += _label_bg_node_opts(player_color)
+            s += _label_bg_node_opts(player_color, player=p)
             s += "] {\\"
             s += playertexname[p] + "} ;"
             _emit_label(s)
@@ -1732,7 +1764,7 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
             s += " node[xshift=0.0cm"
             if color_style:
                 s += "," + color_style
-            s += _label_bg_node_opts(player_color)
+            s += _label_bg_node_opts(player_color, player=p)
             s += "] {\\" + playertexname[p] + "} ;"
             _emit_label(s)
     return
@@ -1810,6 +1842,8 @@ def commandline(
     label_bg = False
     label_bg_color = "white"
     label_bg_opacity = 0.8
+    label_bg_by = "player"
+    label_bg_style = "player_bg"
     color_scheme = "default"
     edge_thickness = 1.0
     action_label_position = 0.5
@@ -1916,6 +1950,33 @@ def commandline(
                 )
         elif arg == "--label-bg":
             label_bg = True
+        elif arg.startswith("--label-bg="):
+            val = arg.split("=", 1)[1]
+            try:
+                label_bg = {int(x): True for x in val.split(",")}
+            except ValueError:
+                print(
+                    "Warning: Invalid --label-bg value; use flag alone or '1,2,3' indices",
+                    file=sys.stderr,
+                )
+        elif arg.startswith("--label-bg-by="):
+            val = arg.split("=", 1)[1]
+            if val in ("player", "level"):
+                label_bg_by = val
+            else:
+                print(
+                    "Warning: --label-bg-by must be 'player' or 'level'",
+                    file=sys.stderr,
+                )
+        elif arg.startswith("--label-bg-style="):
+            val = arg.split("=", 1)[1]
+            if val in ("player_bg", "white_bg"):
+                label_bg_style = val
+            else:
+                print(
+                    "Warning: --label-bg-style must be 'player_bg' or 'white_bg'",
+                    file=sys.stderr,
+                )
         elif arg.startswith("--label-bg-color="):
             label_bg_color = arg.split("=", 1)[1]
         elif arg.startswith("--label-bg-opacity="):
@@ -2057,6 +2118,8 @@ def commandline(
         label_bg,
         label_bg_color,
         label_bg_opacity,
+        label_bg_by,
+        label_bg_style,
         color_scheme,
         edge_thickness,
         action_label_position,
@@ -2091,9 +2154,11 @@ def ef_to_tex(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
-    label_bg: bool = False,
+    label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    label_bg_by: str = "player",
+    label_bg_style: str = "player_bg",
     vary_action_label_positions: bool = False,
     action_label_position_by: str = "player",
     vary_action_label_positions_by: str = "all",
@@ -2127,7 +2192,7 @@ def ef_to_tex(
     global scale, grid, node_to_iset_player
     global _font_family, _font_bold, _font_italic, _font_size
     global _iset_fill, _iset_fill_opacity, _iset_boundary, _node_size
-    global _label_bg, _label_bg_color, _label_bg_opacity
+    global _label_bg, _label_bg_by, _label_bg_style, _label_bg_color, _label_bg_opacity
     global _horizontal, _mirror, _legend_position, _action_label_dist
     global _vary_action_label_positions, _vary_action_label_positions_by, _vary_action_label_positions_choices
 
@@ -2164,6 +2229,8 @@ def ef_to_tex(
         _iset_boundary = iset_boundary
         _node_size = node_size
         _label_bg = label_bg
+        _label_bg_by = label_bg_by
+        _label_bg_style = label_bg_style
         _label_bg_color = label_bg_color
         _label_bg_opacity = max(0.0, min(1.0, label_bg_opacity))
         _horizontal = horizontal
@@ -2274,9 +2341,11 @@ def generate_tikz(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
-    label_bg: bool = False,
+    label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    label_bg_by: str = "player",
+    label_bg_style: str = "player_bg",
     vary_action_label_positions: bool = False,
     action_label_position_by: str = "player",
     vary_action_label_positions_by: str = "all",
@@ -2386,6 +2455,8 @@ def generate_tikz(
         label_bg=label_bg,
         label_bg_color=label_bg_color,
         label_bg_opacity=label_bg_opacity,
+        label_bg_by=label_bg_by,
+        label_bg_style=label_bg_style,
         vary_action_label_positions=vary_action_label_positions,
         action_label_position_by=action_label_position_by,
         vary_action_label_positions_by=vary_action_label_positions_by,
@@ -2416,7 +2487,7 @@ def generate_tikz(
         macro_definitions.append(defcol)
 
     # Step 2c: Declare foreground layer for label backgrounds
-    if label_bg:
+    if _any_label_bg():
         macro_definitions.append("\\pgfdeclarelayer{labels}")
         macro_definitions.append("\\pgfsetlayers{main,labels}")
 
@@ -2596,9 +2667,11 @@ def draw_tree(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
-    label_bg: bool = False,
+    label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    label_bg_by: str = "player",
+    label_bg_style: str = "player_bg",
     vary_action_label_positions: bool = False,
     action_label_position_by: str = "player",
     vary_action_label_positions_by: str = "all",
@@ -2671,6 +2744,8 @@ def draw_tree(
         label_bg=label_bg,
         label_bg_color=label_bg_color,
         label_bg_opacity=label_bg_opacity,
+        label_bg_by=label_bg_by,
+        label_bg_style=label_bg_style,
         vary_action_label_positions=vary_action_label_positions,
         action_label_position_by=action_label_position_by,
         vary_action_label_positions_by=vary_action_label_positions_by,
@@ -2778,9 +2853,11 @@ def generate_tex(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
-    label_bg: bool = False,
+    label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    label_bg_by: str = "player",
+    label_bg_style: str = "player_bg",
     vary_action_label_positions: bool = False,
     action_label_position_by: str = "player",
     vary_action_label_positions_by: str = "all",
@@ -2872,6 +2949,8 @@ def generate_tex(
         label_bg=label_bg,
         label_bg_color=label_bg_color,
         label_bg_opacity=label_bg_opacity,
+        label_bg_by=label_bg_by,
+        label_bg_style=label_bg_style,
         vary_action_label_positions=vary_action_label_positions,
         action_label_position_by=action_label_position_by,
         vary_action_label_positions_by=vary_action_label_positions_by,
@@ -2914,9 +2993,11 @@ def generate_pdf(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
-    label_bg: bool = False,
+    label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    label_bg_by: str = "player",
+    label_bg_style: str = "player_bg",
     vary_action_label_positions: bool = False,
     action_label_position_by: str = "player",
     vary_action_label_positions_by: str = "all",
@@ -3040,6 +3121,8 @@ def generate_pdf(
         label_bg=label_bg,
         label_bg_color=label_bg_color,
         label_bg_opacity=label_bg_opacity,
+        label_bg_by=label_bg_by,
+        label_bg_style=label_bg_style,
         vary_action_label_positions=vary_action_label_positions,
         action_label_position_by=action_label_position_by,
         vary_action_label_positions_by=vary_action_label_positions_by,
@@ -3126,9 +3209,11 @@ def generate_png(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
-    label_bg: bool = False,
+    label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    label_bg_by: str = "player",
+    label_bg_style: str = "player_bg",
     vary_action_label_positions: bool = False,
     action_label_position_by: str = "player",
     vary_action_label_positions_by: str = "all",
@@ -3215,6 +3300,8 @@ def generate_png(
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                label_bg_by=label_bg_by,
+                label_bg_style=label_bg_style,
                 vary_action_label_positions=vary_action_label_positions,
                 action_label_position_by=action_label_position_by,
                 vary_action_label_positions_by=vary_action_label_positions_by,
@@ -3348,9 +3435,11 @@ def generate_svg(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
-    label_bg: bool = False,
+    label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    label_bg_by: str = "player",
+    label_bg_style: str = "player_bg",
     vary_action_label_positions: bool = False,
     action_label_position_by: str = "player",
     vary_action_label_positions_by: str = "all",
@@ -3430,6 +3519,8 @@ def generate_svg(
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                label_bg_by=label_bg_by,
+                label_bg_style=label_bg_style,
                 vary_action_label_positions=vary_action_label_positions,
                 action_label_position_by=action_label_position_by,
                 vary_action_label_positions_by=vary_action_label_positions_by,
