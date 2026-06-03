@@ -26,6 +26,35 @@ from draw_tree import (
 )
 
 
+def _get_scheme_colors(color_scheme: str, num_players: int) -> dict[int, str]:
+    """Return {player_index: '#RRGGBB'} for the named colour scheme."""
+    CHANCE = "#759138"
+    if color_scheme == "gambit":
+        palette = {
+            0: CHANCE, 1: "#EA3323", 2: "#0000FF", 3: "#FF7F00",
+            4: "#800080", 5: "#00FFFF", 6: "#FF00FF",
+        }
+        return {k: v for k, v in palette.items() if k <= num_players}
+    if color_scheme in ("distinctipy", "colorblind"):
+        try:
+            import distinctipy
+            colorblind_type = "Deuteranomaly" if color_scheme == "colorblind" else None
+            chance_rgb = (117 / 255, 145 / 255, 56 / 255)
+            colors = distinctipy.get_colors(
+                num_players,
+                exclude_colors=[(0, 0, 0), (1, 1, 1), chance_rgb],
+                rng=42,
+                colorblind_type=colorblind_type,
+            )
+            result = {0: CHANCE}
+            for i, (r, g, b) in enumerate(colors):
+                result[i + 1] = f"#{int(r * 255):02X}{int(g * 255):02X}{int(b * 255):02X}"
+            return result
+        except Exception:
+            return {i: "#000000" for i in range(num_players + 1)}
+    return {i: "#000000" for i in range(num_players + 1)}
+
+
 def run_app():
     # Use the project favicon if available
     icon_path = (
@@ -218,7 +247,7 @@ def run_app():
                 width_scaling = st.slider("Width Spacing", 0.0, 5.0, 1.0, 0.05)
 
     # Defaults used when aesthetics expander is hidden (NFG path)
-    color_scheme = "custom"
+    color_scheme = "colorblind"
     legend_position = "top-left"
     custom_colors = None
     font_family = "rmfamily"
@@ -228,10 +257,36 @@ def run_app():
 
     if not is_nfg:
         with st.sidebar.expander("🎨 Aesthetics", expanded=False):
+            # Session-state init: default to colorblind
+            if "scheme_selector" not in st.session_state:
+                st.session_state["scheme_selector"] = "colorblind"
+
+            _num_p = count_players(game_source) if game_source else 2
+
+            # Step 2: scheme-change → reset pickers to new scheme's defaults
+            _prev = st.session_state.get("_prev_scheme")
+            _cur = st.session_state["scheme_selector"]
+            if _prev != _cur and _cur not in ("default", "custom"):
+                for _pnum, _hex in _get_scheme_colors(_cur, _num_p).items():
+                    _pk = "cp_chance" if _pnum == 0 else f"cp_p{_pnum}"
+                    st.session_state[_pk] = _hex
+            st.session_state["_prev_scheme"] = _cur
+
+            # Step 3: colour-change → auto-switch to custom
+            if _cur not in ("default", "custom"):
+                _defs = _get_scheme_colors(_cur, _num_p)
+                for _pnum in range(_num_p + 1):
+                    _pk = "cp_chance" if _pnum == 0 else f"cp_p{_pnum}"
+                    _val = st.session_state.get(_pk)
+                    if _val is not None and _val.upper() != _defs.get(_pnum, "#000000").upper():
+                        st.session_state["scheme_selector"] = "custom"
+                        break
+
+            # Step 4: render scheme selector and legend position
             color_scheme = st.selectbox(
                 "Color Scheme",
                 ["default", "gambit", "distinctipy", "colorblind", "custom"],
-                index=4,  # custom
+                key="scheme_selector",
             )
             legend_position = st.selectbox(
                 "Legend Position",
@@ -241,30 +296,35 @@ def run_app():
                 disabled=(color_scheme == "default"),
             )
 
+            # Step 5: palette — shown for all non-default schemes
             custom_colors = None
-            if color_scheme == "custom":
+            if color_scheme != "default":
                 st.markdown("---")
-                st.markdown("##### Custom Palette")
-                num_players = count_players(game_source) if game_source else 2
-                custom_colors = {}
-                # Chance color
-                custom_colors[0] = st.color_picker(
-                    "Chance Node", value="#759138", key="cp_chance"
+                st.markdown("##### Palette")
+                if color_scheme != "custom":
+                    _disp = _get_scheme_colors(color_scheme, _num_p)
+                else:
+                    _disp = {0: "#759138", 1: "#E41A1C", 2: "#377EB8", 3: "#4DAF4A"}
+                _picked = {}
+                _picked[0] = st.color_picker(
+                    "Chance Node", value=_disp.get(0, "#759138"), key="cp_chance"
                 )
-                # Player colors
-                for i in range(1, num_players + 1):
-                    default_val = "#000000"
-                    # Use some sensible defaults for first few players
-                    if i == 1:
-                        default_val = "#E41A1C"
-                    elif i == 2:
-                        default_val = "#377EB8"
-                    elif i == 3:
-                        default_val = "#4DAF4A"
-
-                    custom_colors[i] = st.color_picker(
-                        f"Player {i}", value=default_val, key=f"cp_p{i}"
+                for _i in range(1, _num_p + 1):
+                    _picked[_i] = st.color_picker(
+                        f"Player {_i}",
+                        value=_disp.get(_i, "#000000"),
+                        key=f"cp_p{_i}",
                     )
+                # Determine rendering scheme and custom_colors
+                if color_scheme != "custom":
+                    _rdefs = _get_scheme_colors(color_scheme, _num_p)
+                    if all(_picked[k].upper() == _rdefs.get(k, "#000000").upper() for k in _picked):
+                        custom_colors = None  # unchanged — use named scheme
+                    else:
+                        color_scheme = "custom"
+                        custom_colors = _picked
+                else:
+                    custom_colors = _picked
 
             st.markdown("---")
             st.markdown("##### Typography")
