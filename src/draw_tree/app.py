@@ -425,6 +425,8 @@ def run_app():
                 _redo_snap = _snapshot_settings()
                 _apply_snapshot(st.session_state.pop("undo_state"))
                 st.session_state["redo_state"] = _redo_snap
+                # Stamp _last_snap so the change-tracker doesn't clear redo_state
+                st.session_state["_last_snap"] = _snapshot_settings()
                 st.rerun()
         with _col_redo:
             if st.button("↪ Redo", disabled="redo_state" not in st.session_state,
@@ -432,6 +434,8 @@ def run_app():
                 _undo_snap = _snapshot_settings()
                 _apply_snapshot(st.session_state.pop("redo_state"))
                 st.session_state["undo_state"] = _undo_snap
+                # Stamp _last_snap so the change-tracker doesn't clear undo_state
+                st.session_state["_last_snap"] = _snapshot_settings()
                 st.rerun()
         with _col_reset:
             if st.button("↺ Reset", use_container_width=True,
