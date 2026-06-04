@@ -65,6 +65,7 @@ def main():
             "  --action-label-dist=X Set distance of action labels from edges (default: 1.0)"
         )
         print("  --action-label-position=X Set position of action labels along the edge (0.0 to 1.0, default: 0.5)")
+        print("  --vary-action-label-positions Vary action label positions based on outgoing edges")
         print("  --edge-thickness=X Set thickness of edges (default: 1.0)")
         print("  --label-bg   Add a filled background behind all label text")
         print("  --label-bg-color=X Set label background colour (named or #RRGGBB, default: white)")
@@ -147,6 +148,8 @@ def main():
         label_bg,
         label_bg_color,
         label_bg_opacity,
+        label_bg_by,
+        label_bg_style,
         color_scheme,
         edge_thickness,
         action_label_position,
@@ -156,6 +159,10 @@ def main():
         shared_terminal_depth,
         to_efg_requested,
         to_ef_requested,
+        vary_action_label_positions,
+        action_label_position_by,
+        vary_action_label_positions_by,
+        vary_action_label_positions_choices,
     ) = commandline(sys.argv)
 
     # Import the core module to access global variables after commandline() has set them
@@ -215,6 +222,8 @@ def main():
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                label_bg_by=label_bg_by,
+                label_bg_style=label_bg_style,
                 color_scheme=color_scheme,
                 edge_thickness=edge_thickness,
                 action_label_position=action_label_position,
@@ -222,6 +231,10 @@ def main():
                 sublevel_scaling=sublevel_scaling,
                 width_scaling=width_scaling,
                 shared_terminal_depth=shared_terminal_depth,
+                vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
             print(f"PDF generated successfully: {pdf_path}")
 
@@ -252,6 +265,8 @@ def main():
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                label_bg_by=label_bg_by,
+                label_bg_style=label_bg_style,
                 color_scheme=color_scheme,
                 edge_thickness=edge_thickness,
                 action_label_position=action_label_position,
@@ -259,6 +274,10 @@ def main():
                 sublevel_scaling=sublevel_scaling,
                 width_scaling=width_scaling,
                 shared_terminal_depth=shared_terminal_depth,
+                vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
             print(f"PNG generated successfully: {png_path}")
 
@@ -288,6 +307,8 @@ def main():
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                label_bg_by=label_bg_by,
+                label_bg_style=label_bg_style,
                 color_scheme=color_scheme,
                 edge_thickness=edge_thickness,
                 action_label_position=action_label_position,
@@ -295,6 +316,10 @@ def main():
                 sublevel_scaling=sublevel_scaling,
                 width_scaling=width_scaling,
                 shared_terminal_depth=shared_terminal_depth,
+                vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
             print(f"SVG generated successfully: {svg_path}")
 
@@ -324,6 +349,8 @@ def main():
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                label_bg_by=label_bg_by,
+                label_bg_style=label_bg_style,
                 color_scheme=color_scheme,
                 edge_thickness=edge_thickness,
                 action_label_position=action_label_position,
@@ -331,6 +358,10 @@ def main():
                 sublevel_scaling=sublevel_scaling,
                 width_scaling=width_scaling,
                 shared_terminal_depth=shared_terminal_depth,
+                vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
             print(f"LaTeX generated successfully: {tex_path}")
 
@@ -356,6 +387,8 @@ def main():
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                label_bg_by=label_bg_by,
+                label_bg_style=label_bg_style,
                 color_scheme=color_scheme,
                 edge_thickness=edge_thickness,
                 action_label_position=action_label_position,
@@ -363,6 +396,10 @@ def main():
                 sublevel_scaling=sublevel_scaling,
                 width_scaling=width_scaling,
                 shared_terminal_depth=shared_terminal_depth,
+                vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
 
             # Output the complete TikZ code

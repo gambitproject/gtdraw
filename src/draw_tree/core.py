@@ -87,9 +87,15 @@ _horizontal: bool = False
 _mirror: bool = False
 _legend_position: str = "top-left"
 _action_label_dist: float = 1.0
+_vary_action_label_positions: bool = False
+_vary_action_label_positions_by: str = "all"
+_vary_action_label_positions_choices: Optional[set[int]] = None
+parent_to_children: dict[str, list[str]] = {}
 _iset_boundary: str = "solid"
 _node_size: float = 1.5
-_label_bg: bool = False
+_label_bg: bool | dict[int, bool] = False
+_label_bg_by: str = "player"
+_label_bg_style: str = "player_bg"
 _label_bg_color: str = "white"
 _label_bg_opacity: float = 0.8
 
@@ -233,10 +239,36 @@ def _label_bg_definecolor() -> str:
     return ""
 
 
-def _label_bg_node_opts(player_color: str = "") -> str:
-    """Return extra TikZ node options that add a filled background, or ''."""
+def _any_label_bg() -> bool:
+    """True if any label background is active."""
+    if isinstance(_label_bg, dict):
+        return any(_label_bg.values())
+    return bool(_label_bg)
+
+
+def _label_bg_active(player: int = -1, level: int = -1) -> bool:
+    """True if label background is active for this specific player/level."""
     if not _label_bg:
+        return False
+    if isinstance(_label_bg, dict):
+        if _label_bg_by == "level":
+            return _label_bg.get(level, False)
+        return _label_bg.get(player, False)
+    return True
+
+
+def _label_bg_node_opts(player_color: str = "", player: int = -1, level: int = -1) -> str:
+    """Return extra TikZ node options that add a filled background, or ''."""
+    if not _label_bg_active(player, level):
         return ""
+    if _label_bg_style == "white_bg":
+        text_color = player_color if player_color else "black"
+        return (
+            ",fill=white"
+            f",fill opacity={fformat(_label_bg_opacity)}"
+            ",text opacity=1"
+            f",text={text_color}"
+        )
     bg_color = player_color if player_color else _label_bg_color_name()
     return (
         f",fill={bg_color}"
@@ -248,7 +280,7 @@ def _label_bg_node_opts(player_color: str = "") -> str:
 
 def _emit_label(s: str) -> None:
     """Emit a label draw command; wrap in the labels layer when label_bg is active."""
-    if _label_bg:
+    if _any_label_bg():
         outs("\\begin{pgfonlayer}{labels}")
         outs(s)
         outs("\\end{pgfonlayer}")
@@ -997,25 +1029,8 @@ def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
         error("too many payoffs, discard " + str(words[maxplayer + 1 :]))
         maxp = maxplayer + 1
     if _horizontal:
-        # In horizontal mode, node[right] places content physically to the RIGHT of the anchor.
-        # node[right=X\paydown] controls the rightward distance without any vertical offset.
-        payoff_step = 2.0
-        if _label_bg:
-            # Separate nodes per payoff, each with its player's background color.
-            # Anchored at the same point with increasing right= values → side-by-side.
-            paylist = []
-            for i in range(1, maxp):
-                payoff_player_color = get_player_color(i, color_scheme)
-                factor = 0.5 + (i - 1) * payoff_step
-                t = f"   node[right={fformat(factor)}{paydown}"
-                t += _label_bg_node_opts(payoff_player_color)
-                if _font_family == "sffamily":
-                    t += "] {$\\mathsf{" + words[i] + "}\\strut$}"
-                else:
-                    t += "] {$" + words[i] + "\\strut$}"
-                paylist.append(t)
-            return paylist
         # Single comma-separated node. right=0.5\paydown clears the terminal disk edge.
+        # Payoffs always lack backgrounds and are not drawn in separate nodes.
         parts = []
         for i in range(1, maxp):
             payoff_player_color = get_player_color(i, color_scheme)
@@ -1030,9 +1045,8 @@ def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
         t = f"   node[right=0.5{paydown}] {{${combined}\\strut$}}"
         return [t]
 
-    # When label backgrounds are active the filled boxes are ~1.7× taller than the
-    # default step (1×paydown), so double the step to prevent boxes from overlapping.
-    payoff_step = 2.0 if _label_bg else 1.0
+    # Payoffs always lack backgrounds, so payoff_step is always 1.0 (no double step).
+    payoff_step = 1.0
     paylist = []
     for i in range(1, maxp):
         payoff_player_color = get_player_color(i, color_scheme)
@@ -1040,15 +1054,14 @@ def payoffs(words: List[str], color_scheme: str = "default") -> List[str]:
         t += fformat(payup - (i - 1) * payoff_step) + paydown
         if color_scheme != "default":
             t += f",color={payoff_player_color}"
-        t += _label_bg_node_opts(payoff_player_color)
         if _font_family == "sffamily":
             t += "] {$\\mathsf{" + words[i]
-            if words[i][0] == "-" and not _label_bg:
+            if words[i][0] == "-":
                 t += "{\\phantom-}"
             t += "}\\strut$}"
         else:
             t += "] {$" + words[i]
-            if words[i][0] == "-" and not _label_bg:
+            if words[i][0] == "-":
                 t += "{\\phantom-}"
             t += "\\strut$}"
         paylist.append(t)
@@ -1167,6 +1180,43 @@ def cleannodeid(ns: str) -> str:
 # "move" movename
 # "payoffs" list of payoffs, comes last
 # "inner" boolean: inner node, draw disk/square
+
+
+def preparse_tree(lines: List[str]) -> None:
+    """
+    Pre-parse all level commands to build parent-to-children mapping.
+    
+    Used to vary the action label positions dynamically according to
+    the number of edges coming out of a node.
+    
+    Args:
+        lines: All lines from the .ef file.
+    """
+    global parent_to_children
+    parent_to_children.clear()
+    
+    for line in lines:
+        words = line.split()
+        if len(words) > 0 and words[0] == "level":
+            try:
+                lev = float(words[1])
+                assert words[2] == "node"
+                name = words[3]
+                nodeid = setnodeid(lev, name)
+            except Exception:
+                continue
+            
+            fromn = ""
+            if "from" in words:
+                idx = words.index("from")
+                if idx + 1 < len(words):
+                    fromn = cleannodeid(words[idx + 1])
+            
+            if fromn:
+                if fromn not in parent_to_children:
+                    parent_to_children[fromn] = []
+                if nodeid not in parent_to_children[fromn]:
+                    parent_to_children[fromn].append(nodeid)
 
 
 def parse_isets_first(lines: List[str]) -> None:
@@ -1296,7 +1346,8 @@ def generate_legend(
 def level(
     words: List[str],
     color_scheme: str = "default",
-    action_label_position: float = 0.5,
+    action_label_position: float | dict[int, float] = 0.5,
+    action_label_position_by: str = "player",
 ) -> None:
     """
     Process a complete level command to create a game tree node.
@@ -1411,7 +1462,7 @@ def level(
             + "'; node identifiers must be unique within a level "
             "(this entry overwrites the earlier one in the node table)"
         )
-    nodes[nodeid] = {"x": xx, "y": yy, "player": p}
+    nodes[nodeid] = {"x": xx, "y": yy, "player": p, "level": int(lev)}
     nodes[nodeid]["xshift"] = xs
     nodes[nodeid]["move"] = mov
     nodes[nodeid]["from"] = fromn
@@ -1423,8 +1474,10 @@ def level(
     color_style = f"color={player_color}"
 
     # For edges, use the PARENT node's color, not the current node's color
+    parent_player = -1
     parent_color = ""
     edge_color_style = ""
+    parent_level = int(nodes[fromn].get("level", 0)) if existsfrom and fromn in nodes else 0
     if existsfrom and fromn in nodes:
         parent_player = nodes[fromn]["player"]
         parent_color = get_player_color(parent_player, color_scheme)
@@ -1463,8 +1516,9 @@ def level(
 
         if color_style:
             node_opts += "," + color_style
-        node_opts += _label_bg_node_opts(player_color)
-        if not _label_bg:
+        node_opts += _label_bg_node_opts(player_color, player=p, level=int(lev))
+        this_bg = _label_bg_active(player=p, level=int(lev))
+        if not this_bg:
             # Embed player label node in the edge draw command
             s += f" node[{node_opts}]"
             s += "{\\" + playertexname[p] + "\\strut}"
@@ -1476,13 +1530,44 @@ def level(
                 + "{\\" + playertexname[p] + "\\strut};"
             )
     outs(s)
-    if not _label_bg:
+    if not _any_label_bg():
         outlist(pay)  # possibly empty
     if existsfrom:  # draw line to father
         outs("   -- " + coord(xfrom, yfrom) + ";")
         # annotate moves above
         if convex < 0:
-            convex = action_label_position / factor
+            if isinstance(action_label_position, dict):
+                if action_label_position_by == "level":
+                    parent_level = nodes[fromn].get("level", 0) if (existsfrom and fromn in nodes) else 0
+                    pos = action_label_position.get(int(parent_level), 0.5)
+                else:
+                    parent_player = nodes[fromn]["player"] if (existsfrom and fromn in nodes) else -1
+                    pos = action_label_position.get(parent_player, 0.5)
+            else:
+                pos = action_label_position
+            if _vary_action_label_positions and fromn in parent_to_children:
+                apply_vary = True
+                if _vary_action_label_positions_by == "player":
+                    if _vary_action_label_positions_choices is not None:
+                        parent_player = nodes[fromn]["player"] if (existsfrom and fromn in nodes) else -1
+                        if parent_player not in _vary_action_label_positions_choices:
+                            apply_vary = False
+                elif _vary_action_label_positions_by == "level":
+                    if _vary_action_label_positions_choices is not None:
+                        parent_level = nodes[fromn].get("level", 0) if (existsfrom and fromn in nodes) else 0
+                        if int(parent_level) not in _vary_action_label_positions_choices:
+                            apply_vary = False
+                
+                if apply_vary:
+                    children = parent_to_children[fromn]
+                    if nodeid in children:
+                        N = len(children)
+                        if N == 1:
+                            pos = 0.5
+                        else:
+                            idx = children.index(nodeid)
+                            pos = (idx + 1) / (N + 1)
+            convex = pos / factor
         xmove = xx * convex + xfrom * (1 - convex)
         ymove = yy * convex + yfrom * (1 - convex)
         s = "\\draw " + coord(xmove, ymove)
@@ -1521,11 +1606,21 @@ def level(
         if side in ["left", "below"]:
             dist = -dist
 
-        s += f" node[{side},{shift_type}={fformat(dist)}mm"
-        # Add edge color to action label
-        if edge_color_style:
-            s += "," + edge_color_style
-        s += _label_bg_node_opts(parent_color)
+        action_bg = _label_bg_active(player=parent_player, level=int(lev))
+        if action_bg:
+            opts = []
+            if edge_color_style:
+                opts.append(edge_color_style)
+            bg_opts = _label_bg_node_opts(parent_color, player=parent_player, level=int(lev))
+            if bg_opts.startswith(","):
+                bg_opts = bg_opts[1:]
+            if bg_opts:
+                opts.append(bg_opts)
+            s += f" node[{','.join(opts)}"
+        else:
+            s += f" node[{side},{shift_type}={fformat(dist)}mm"
+            if edge_color_style:
+                s += "," + edge_color_style
 
         mov_display = mov
 
@@ -1579,7 +1674,7 @@ def level(
     # Emit deferred player label and payoffs in the labels layer (after edge is closed)
     if player_label_cmd:
         _emit_label(player_label_cmd)
-    if _label_bg and pay:
+    if _any_label_bg() and pay:
         for payoff_node in pay:
             _emit_label("\\draw " + coord(xx, yy) + payoff_node + ";")
     return
@@ -1652,7 +1747,7 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
             s += spx + ",yshift=" + spy
             if color_style:
                 s += "," + color_style
-            s += _label_bg_node_opts(player_color)
+            s += _label_bg_node_opts(player_color, player=p)
             s += "] {\\"
             s += playertexname[p] + "} ;"
             _emit_label(s)
@@ -1669,7 +1764,7 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
             s += " node[xshift=0.0cm"
             if color_style:
                 s += "," + color_style
-            s += _label_bg_node_opts(player_color)
+            s += _label_bg_node_opts(player_color, player=p)
             s += "] {\\" + playertexname[p] + "} ;"
             _emit_label(s)
     return
@@ -1747,6 +1842,8 @@ def commandline(
     label_bg = False
     label_bg_color = "white"
     label_bg_opacity = 0.8
+    label_bg_by = "player"
+    label_bg_style = "player_bg"
     color_scheme = "default"
     edge_thickness = 1.0
     action_label_position = 0.5
@@ -1756,6 +1853,10 @@ def commandline(
     shared_terminal_depth = False
     to_efg = False
     to_ef = False
+    vary_action_label_positions = False
+    action_label_position_by = "player"
+    vary_action_label_positions_by = "all"
+    vary_action_label_positions_choices = None
 
     for arg in argv[1:]:
         if arg[:5] == "scale":
@@ -1849,6 +1950,33 @@ def commandline(
                 )
         elif arg == "--label-bg":
             label_bg = True
+        elif arg.startswith("--label-bg="):
+            val = arg.split("=", 1)[1]
+            try:
+                label_bg = {int(x): True for x in val.split(",")}
+            except ValueError:
+                print(
+                    "Warning: Invalid --label-bg value; use flag alone or '1,2,3' indices",
+                    file=sys.stderr,
+                )
+        elif arg.startswith("--label-bg-by="):
+            val = arg.split("=", 1)[1]
+            if val in ("player", "level"):
+                label_bg_by = val
+            else:
+                print(
+                    "Warning: --label-bg-by must be 'player' or 'level'",
+                    file=sys.stderr,
+                )
+        elif arg.startswith("--label-bg-style="):
+            val = arg.split("=", 1)[1]
+            if val in ("player_bg", "white_bg"):
+                label_bg_style = val
+            else:
+                print(
+                    "Warning: --label-bg-style must be 'player_bg' or 'white_bg'",
+                    file=sys.stderr,
+                )
         elif arg.startswith("--label-bg-color="):
             label_bg_color = arg.split("=", 1)[1]
         elif arg.startswith("--label-bg-opacity="):
@@ -1891,10 +2019,40 @@ def commandline(
             except ValueError:
                 pass
         elif arg.startswith("--action-label-position="):
+            val = arg[24:].strip('"')
             try:
-                action_label_position = float(arg[24:])
+                action_label_position = float(val)
             except ValueError:
-                pass
+                try:
+                    positions_dict = {}
+                    pairs = val.split(",")
+                    for pair in pairs:
+                        p_str, pos_str = pair.split(":")
+                        positions_dict[int(p_str)] = float(pos_str)
+                    action_label_position = positions_dict
+                except Exception:
+                    print(
+                        "Warning: Invalid action-label-position format, expected a float or '0:0.3,1:0.6'",
+                        file=sys.stderr,
+                    )
+        elif arg.startswith("--action-label-position-by="):
+            val = arg[27:].lower()
+            if val in ["player", "level"]:
+                action_label_position_by = val
+        elif arg.startswith("--vary-action-label-positions-by="):
+            val = arg[33:].lower()
+            if val in ["all", "player", "level"]:
+                vary_action_label_positions_by = val
+        elif arg.startswith("--vary-action-label-positions-choices="):
+            try:
+                vary_action_label_positions_choices = [
+                    int(x) for x in arg[38:].split(",")
+                ]
+            except ValueError:
+                print(
+                    "Warning: Invalid vary-action-label-positions-choices, expected comma-separated integers",
+                    file=sys.stderr,
+                )
         elif arg.startswith("--level-scaling="):
             try:
                 level_scaling = float(arg[16:])
@@ -1916,6 +2074,8 @@ def commandline(
             to_efg = True
         elif arg == "--to-ef":
             to_ef = True
+        elif arg == "--vary-action-label-positions":
+            vary_action_label_positions = True
         elif arg.endswith(".ef"):
             ef_file = arg
         else:
@@ -1958,6 +2118,8 @@ def commandline(
         label_bg,
         label_bg_color,
         label_bg_opacity,
+        label_bg_by,
+        label_bg_style,
         color_scheme,
         edge_thickness,
         action_label_position,
@@ -1967,6 +2129,10 @@ def commandline(
         shared_terminal_depth,
         to_efg,
         to_ef,
+        vary_action_label_positions,
+        action_label_position_by,
+        vary_action_label_positions_by,
+        vary_action_label_positions_choices,
     )
 
 
@@ -1975,7 +2141,7 @@ def ef_to_tex(
     scale_factor: float = 1.0,
     show_grid: bool = False,
     color_scheme: str = "default",
-    action_label_position: float = 0.5,
+    action_label_position: float | dict[int, float] = 0.5,
     font_family: str = "rmfamily",
     font_bold: bool = False,
     font_italic: bool = False,
@@ -1988,9 +2154,15 @@ def ef_to_tex(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
-    label_bg: bool = False,
+    label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    label_bg_by: str = "player",
+    label_bg_style: str = "player_bg",
+    vary_action_label_positions: bool = False,
+    action_label_position_by: str = "player",
+    vary_action_label_positions_by: str = "all",
+    vary_action_label_positions_choices: Optional[List[int]] = None,
 ) -> str:
     """
     Convert an extensive form (.ef) file to TikZ code.
@@ -2018,6 +2190,11 @@ def ef_to_tex(
     scale_factor = scale_factor * 0.8
 
     global scale, grid, node_to_iset_player
+    global _font_family, _font_bold, _font_italic, _font_size
+    global _iset_fill, _iset_fill_opacity, _iset_boundary, _node_size
+    global _label_bg, _label_bg_by, _label_bg_style, _label_bg_color, _label_bg_opacity
+    global _horizontal, _mirror, _legend_position, _action_label_dist
+    global _vary_action_label_positions, _vary_action_label_positions_by, _vary_action_label_positions_choices
 
     # Save original state
     original_outstream = outstream.copy()
@@ -2043,9 +2220,6 @@ def ef_to_tex(
         scale = scale_factor
         grid = show_grid
 
-        global _font_family, _font_bold, _font_italic, _font_size
-        global _iset_fill, _iset_fill_opacity, _iset_boundary, _node_size
-        global _label_bg, _label_bg_color, _label_bg_opacity
         _font_family = font_family
         _font_bold = font_bold
         _font_italic = font_italic
@@ -2055,22 +2229,24 @@ def ef_to_tex(
         _iset_boundary = iset_boundary
         _node_size = node_size
         _label_bg = label_bg
+        _label_bg_by = label_bg_by
+        _label_bg_style = label_bg_style
         _label_bg_color = label_bg_color
         _label_bg_opacity = max(0.0, min(1.0, label_bg_opacity))
-        global _horizontal
-        global _mirror
-        global _legend_position
-        global _action_label_dist
         _horizontal = horizontal
         _mirror = mirror
         _legend_position = legend_position
         _action_label_dist = action_label_dist
+        _vary_action_label_positions = vary_action_label_positions
+        _vary_action_label_positions_by = vary_action_label_positions_by
+        _vary_action_label_positions_choices = set(vary_action_label_positions_choices) if vary_action_label_positions_choices is not None else None
 
         # Process the .ef file
         lines = readfile(ef_file)
 
         # FIRST: Pre-parse all iset commands to build node-to-player mapping
         parse_isets_first(lines)
+        preparse_tree(lines)
 
         # begin tikz picture
         outs("\\begin{tikzpicture}[scale=" + str(scale), stream0)
@@ -2089,7 +2265,7 @@ def ef_to_tex(
                 if words[0] == "player":
                     player(words)
                 elif words[0] == "level":
-                    level(words, color_scheme, action_label_position)
+                    level(words, color_scheme, action_label_position, action_label_position_by)
                 elif words[0] == "iset":
                     isetgen(words, color_scheme)
 
@@ -2134,6 +2310,9 @@ def ef_to_tex(
             playerdefined[i] = original_playerdefined[i]
         scale = original_scale
         grid = original_grid
+        parent_to_children.clear()
+        _vary_action_label_positions_by = "all"
+        _vary_action_label_positions_choices = None
 
 
 def generate_tikz(
@@ -2148,7 +2327,7 @@ def generate_tikz(
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
-    action_label_position: float = 0.5,
+    action_label_position: float | dict[int, float] = 0.5,
     font_family: str = "rmfamily",
     font_bold: bool = False,
     font_italic: bool = False,
@@ -2162,9 +2341,15 @@ def generate_tikz(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
-    label_bg: bool = False,
+    label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    label_bg_by: str = "player",
+    label_bg_style: str = "player_bg",
+    vary_action_label_positions: bool = False,
+    action_label_position_by: str = "player",
+    vary_action_label_positions_by: str = "all",
+    vary_action_label_positions_choices: Optional[List[int]] = None,
 ) -> str:
     """
     Generate complete TikZ code from an extensive form (.ef) file.
@@ -2270,6 +2455,12 @@ def generate_tikz(
         label_bg=label_bg,
         label_bg_color=label_bg_color,
         label_bg_opacity=label_bg_opacity,
+        label_bg_by=label_bg_by,
+        label_bg_style=label_bg_style,
+        vary_action_label_positions=vary_action_label_positions,
+        action_label_position_by=action_label_position_by,
+        vary_action_label_positions_by=vary_action_label_positions_by,
+        vary_action_label_positions_choices=vary_action_label_positions_choices,
     )
 
     # Step 2: Define built-in macro definitions (from macros-drawtree.tex)
@@ -2296,7 +2487,7 @@ def generate_tikz(
         macro_definitions.append(defcol)
 
     # Step 2c: Declare foreground layer for label backgrounds
-    if label_bg:
+    if _any_label_bg():
         macro_definitions.append("\\pgfdeclarelayer{labels}")
         macro_definitions.append("\\pgfsetlayers{main,labels}")
 
@@ -2391,6 +2582,128 @@ def count_players(game_source: str | "pygambit.gambit.Game") -> int:
         return 6
 
 
+def count_levels(
+    game_source: str | "pygambit.gambit.Game",
+    level_scaling: float = 1.0,
+    sublevel_scaling: float = 1.0,
+) -> int:
+    """
+    Count the number of levels in a game tree.
+
+    Args:
+        game_source: Path to the .ef or .efg file, or a pygambit.gambit.Game object.
+        level_scaling: Level scaling multiplier.
+        sublevel_scaling: Sublevel scaling multiplier.
+
+    Returns:
+        The maximum level index in the game tree.
+    """
+    if not isinstance(game_source, str):
+        try:
+            import pygambit
+            from .gambit_layout import determine_node_level
+            layout = pygambit.layout_tree(game_source)
+            levels = set()
+            for coords in layout.values():
+                lev = determine_node_level(
+                    coords.level,
+                    coords.sublevel,
+                    level_multiplier=level_scaling * 4,
+                    sublevel_multiplier=sublevel_scaling * 2,
+                )
+                levels.add(int(lev))
+            return max(levels) if levels else 0
+        except Exception:
+            return 0
+
+    # If EFG file, read it with pygambit first
+    if game_source.lower().endswith(".efg"):
+        try:
+            import pygambit
+            g = pygambit.read_efg(game_source)
+            return count_levels(g, level_scaling, sublevel_scaling)
+        except Exception:
+            return 0
+
+    # If EF file, parse for 'level' lines
+    try:
+        levels = set()
+        for line in readfile(game_source):
+            if line.startswith("level"):
+                try:
+                    lev = int(float(line.split()[1]))
+                    levels.add(lev)
+                except (IndexError, ValueError):
+                    pass
+        return max(levels) if levels else 0
+    except Exception:
+        return 0
+
+
+def get_game_levels(
+    game_source: str | "pygambit.gambit.Game",
+    level_scaling: float = 1.0,
+    sublevel_scaling: float = 1.0,
+) -> list[int]:
+    """
+    Return the sorted list of unique integer level values present in the game tree.
+
+    Unlike ``count_levels``, which returns only the maximum, this returns every
+    distinct level so the GUI can show only the options that actually exist.
+    The ``level_scaling`` and ``sublevel_scaling`` parameters must match those
+    used for rendering so that the returned values agree with what ends up in
+    the ``nodes`` dict during TikZ generation.
+
+    Args:
+        game_source: Path to the .ef or .efg file, or a pygambit.gambit.Game.
+        level_scaling: Level spacing multiplier (default 1.0).
+        sublevel_scaling: Sublevel spacing multiplier (default 1.0).
+
+    Returns:
+        Sorted list of unique integer level values, e.g. ``[0, 2, 4]`` or
+        ``[2, 6, 10]`` for a pygambit game with default scaling.  Falls back
+        to ``[0]`` if parsing fails.
+    """
+    if not isinstance(game_source, str):
+        try:
+            import pygambit
+            from .gambit_layout import determine_node_level
+            layout = pygambit.layout_tree(game_source)
+            levels = set()
+            for coords in layout.values():
+                lev = determine_node_level(
+                    coords.level,
+                    coords.sublevel,
+                    level_multiplier=level_scaling * 4,
+                    sublevel_multiplier=sublevel_scaling * 2,
+                )
+                levels.add(int(lev))
+            return sorted(levels) if levels else [0]
+        except Exception:
+            return [0]
+
+    if game_source.lower().endswith(".efg"):
+        try:
+            import pygambit
+            g = pygambit.read_efg(game_source)
+            return get_game_levels(g, level_scaling, sublevel_scaling)
+        except Exception:
+            return [0]
+
+    try:
+        levels = set()
+        for line in readfile(game_source):
+            if line.startswith("level"):
+                try:
+                    lev = int(float(line.split()[1]))
+                    levels.add(lev)
+                except (IndexError, ValueError):
+                    pass
+        return sorted(levels) if levels else [0]
+    except Exception:
+        return [0]
+
+
 def draw_tree(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
@@ -2403,7 +2716,7 @@ def draw_tree(
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
-    action_label_position: float = 0.5,
+    action_label_position: float | dict[int, float] = 0.5,
     font_family: str = "rmfamily",
     font_bold: bool = False,
     font_italic: bool = False,
@@ -2417,9 +2730,15 @@ def draw_tree(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
-    label_bg: bool = False,
+    label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    label_bg_by: str = "player",
+    label_bg_style: str = "player_bg",
+    vary_action_label_positions: bool = False,
+    action_label_position_by: str = "player",
+    vary_action_label_positions_by: str = "all",
+    vary_action_label_positions_choices: Optional[List[int]] = None,
 ) -> Optional[str]:
     """
     Generate TikZ code and display in Jupyter notebooks.
@@ -2488,6 +2807,12 @@ def draw_tree(
         label_bg=label_bg,
         label_bg_color=label_bg_color,
         label_bg_opacity=label_bg_opacity,
+        label_bg_by=label_bg_by,
+        label_bg_style=label_bg_style,
+        vary_action_label_positions=vary_action_label_positions,
+        action_label_position_by=action_label_position_by,
+        vary_action_label_positions_by=vary_action_label_positions_by,
+        vary_action_label_positions_choices=vary_action_label_positions_choices,
     )
 
     # Execute cell magic or return TikZ
@@ -2577,7 +2902,7 @@ def generate_tex(
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
-    action_label_position: float = 0.5,
+    action_label_position: float | dict[int, float] = 0.5,
     font_family: str = "rmfamily",
     font_bold: bool = False,
     font_italic: bool = False,
@@ -2591,9 +2916,15 @@ def generate_tex(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
-    label_bg: bool = False,
+    label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    label_bg_by: str = "player",
+    label_bg_style: str = "player_bg",
+    vary_action_label_positions: bool = False,
+    action_label_position_by: str = "player",
+    vary_action_label_positions_by: str = "all",
+    vary_action_label_positions_choices: Optional[List[int]] = None,
 ) -> str:
     """
     Generate a complete LaTeX document file directly from an extensive form (.ef) file.
@@ -2681,6 +3012,12 @@ def generate_tex(
         label_bg=label_bg,
         label_bg_color=label_bg_color,
         label_bg_opacity=label_bg_opacity,
+        label_bg_by=label_bg_by,
+        label_bg_style=label_bg_style,
+        vary_action_label_positions=vary_action_label_positions,
+        action_label_position_by=action_label_position_by,
+        vary_action_label_positions_by=vary_action_label_positions_by,
+        vary_action_label_positions_choices=vary_action_label_positions_choices,
     )
 
     # Wrap in complete LaTeX document
@@ -2705,7 +3042,7 @@ def generate_pdf(
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
-    action_label_position: float = 0.5,
+    action_label_position: float | dict[int, float] = 0.5,
     font_family: str = "rmfamily",
     font_bold: bool = False,
     font_italic: bool = False,
@@ -2719,9 +3056,15 @@ def generate_pdf(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
-    label_bg: bool = False,
+    label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    label_bg_by: str = "player",
+    label_bg_style: str = "player_bg",
+    vary_action_label_positions: bool = False,
+    action_label_position_by: str = "player",
+    vary_action_label_positions_by: str = "all",
+    vary_action_label_positions_choices: Optional[List[int]] = None,
 ) -> str:
     """
     Generate a PDF directly from an extensive form (.ef) file.
@@ -2841,6 +3184,12 @@ def generate_pdf(
         label_bg=label_bg,
         label_bg_color=label_bg_color,
         label_bg_opacity=label_bg_opacity,
+        label_bg_by=label_bg_by,
+        label_bg_style=label_bg_style,
+        vary_action_label_positions=vary_action_label_positions,
+        action_label_position_by=action_label_position_by,
+        vary_action_label_positions_by=vary_action_label_positions_by,
+        vary_action_label_positions_choices=vary_action_label_positions_choices,
     )
 
     # Create LaTeX wrapper document
@@ -2908,7 +3257,7 @@ def generate_png(
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
-    action_label_position: float = 0.5,
+    action_label_position: float | dict[int, float] = 0.5,
     dpi: int = 300,
     font_family: str = "rmfamily",
     font_bold: bool = False,
@@ -2923,9 +3272,15 @@ def generate_png(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
-    label_bg: bool = False,
+    label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    label_bg_by: str = "player",
+    label_bg_style: str = "player_bg",
+    vary_action_label_positions: bool = False,
+    action_label_position_by: str = "player",
+    vary_action_label_positions_by: str = "all",
+    vary_action_label_positions_choices: Optional[List[int]] = None,
 ) -> str:
     """
     Generate a PNG image directly from an extensive form (.ef) file.
@@ -3008,6 +3363,12 @@ def generate_png(
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                label_bg_by=label_bg_by,
+                label_bg_style=label_bg_style,
+                vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
 
             # Step 2: Convert PDF to PNG
@@ -3122,7 +3483,7 @@ def generate_svg(
     show_grid: bool = False,
     color_scheme: str = "default",
     edge_thickness: float = 1.0,
-    action_label_position: float = 0.5,
+    action_label_position: float | dict[int, float] = 0.5,
     responsive_sizing: bool = False,
     font_family: str = "rmfamily",
     font_bold: bool = False,
@@ -3137,9 +3498,15 @@ def generate_svg(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     node_size: float = 1.5,
-    label_bg: bool = False,
+    label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
     label_bg_opacity: float = 0.8,
+    label_bg_by: str = "player",
+    label_bg_style: str = "player_bg",
+    vary_action_label_positions: bool = False,
+    action_label_position_by: str = "player",
+    vary_action_label_positions_by: str = "all",
+    vary_action_label_positions_choices: Optional[List[int]] = None,
 ) -> str:
     """
     Generate an SVG image directly from an extensive form (.ef) file.
@@ -3215,6 +3582,12 @@ def generate_svg(
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
                 label_bg_opacity=label_bg_opacity,
+                label_bg_by=label_bg_by,
+                label_bg_style=label_bg_style,
+                vary_action_label_positions=vary_action_label_positions,
+                action_label_position_by=action_label_position_by,
+                vary_action_label_positions_by=vary_action_label_positions_by,
+                vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
 
             # Convert PDF to SVG using pdf2svg

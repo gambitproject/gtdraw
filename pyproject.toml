@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "draw_tree"
-version = "0.10.0"
+version = "0.11.0"
 description = "Game tree drawing tool for extensive form games"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -21,7 +21,7 @@ classifiers = [
 ]
 keywords = ["game theory", "tikz", "visualization", "trees", "economics"]
 
-dependencies = ["jupyter-tikz", "ipykernel", "distinctipy", "streamlit", "pygambit"]
+dependencies = ["jupyter-tikz", "ipykernel", "distinctipy", "streamlit", "pygambit", "pyyaml"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0.0", "pytest-cov", "jupyter-book>=2.0.0", "sphinx-thebe"]

@@ -652,6 +652,8 @@ class TestCommandlineArguments:
             label_bg,
             label_bg_color,
             label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -661,6 +663,10 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
+            action_label_position_by,
+            vary_action_label_positions_by,
+            vary_action_label_positions_choices,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -699,6 +705,8 @@ class TestCommandlineArguments:
             label_bg,
             label_bg_color,
             label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -708,6 +716,10 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
+            action_label_position_by,
+            vary_action_label_positions_by,
+            vary_action_label_positions_choices,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -746,6 +758,8 @@ class TestCommandlineArguments:
             label_bg,
             label_bg_color,
             label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -755,6 +769,10 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
+            action_label_position_by,
+            vary_action_label_positions_by,
+            vary_action_label_positions_choices,
         ) = result
         assert output_mode == "png"
         assert not pdf_requested
@@ -793,6 +811,8 @@ class TestCommandlineArguments:
             label_bg,
             label_bg_color,
             label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -802,6 +822,10 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
+            action_label_position_by,
+            vary_action_label_positions_by,
+            vary_action_label_positions_choices,
         ) = result
         assert output_mode == "pdf"
         assert pdf_requested
@@ -838,6 +862,8 @@ class TestCommandlineArguments:
             label_bg,
             label_bg_color,
             label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -847,6 +873,10 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
+            action_label_position_by,
+            vary_action_label_positions_by,
+            vary_action_label_positions_choices,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -885,6 +915,8 @@ class TestCommandlineArguments:
             label_bg,
             label_bg_color,
             label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -894,6 +926,10 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
+            action_label_position_by,
+            vary_action_label_positions_by,
+            vary_action_label_positions_choices,
         ) = result
         assert output_mode == "tex"
         assert not pdf_requested
@@ -931,6 +967,8 @@ class TestCommandlineArguments:
             label_bg,
             label_bg_color,
             label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -940,6 +978,10 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
+            action_label_position_by,
+            vary_action_label_positions_by,
+            vary_action_label_positions_choices,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -971,6 +1013,8 @@ class TestCommandlineArguments:
             label_bg,
             label_bg_color,
             label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -980,6 +1024,10 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
+            action_label_position_by,
+            vary_action_label_positions_by,
+            vary_action_label_positions_choices,
         ) = result
         assert dpi == 300  # Should default to 300 for out-of-range values
 
@@ -1012,6 +1060,8 @@ class TestCommandlineArguments:
             label_bg,
             label_bg_color,
             label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -1021,6 +1071,10 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
+            action_label_position_by,
+            vary_action_label_positions_by,
+            vary_action_label_positions_choices,
         ) = result
         assert dpi == 300  # Should default to 300 for invalid values
 
@@ -1051,6 +1105,8 @@ class TestCommandlineArguments:
             label_bg,
             label_bg_color,
             label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -1060,6 +1116,10 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
+            action_label_position_by,
+            vary_action_label_positions_by,
+            vary_action_label_positions_choices,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -1098,6 +1158,8 @@ class TestCommandlineArguments:
             label_bg,
             label_bg_color,
             label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
             color_scheme,
             edge_thickness,
             action_label_position,
@@ -1107,6 +1169,10 @@ class TestCommandlineArguments:
             shared_terminal_depth,
             to_efg,
             to_ef,
+            vary_action_label_positions,
+            action_label_position_by,
+            vary_action_label_positions_by,
+            vary_action_label_positions_choices,
         ) = result
         assert output_mode == "svg"
         assert not pdf_requested
@@ -1122,6 +1188,105 @@ def test_commandline_action_label_dist():
     """Test parsing of action label distance flag."""
     result = draw_tree.commandline(["draw_tree", "game.ef", "--action-label-dist=2.5"])
     assert result[15] == 2.5
+
+
+def test_commandline_action_label_position_by_player():
+    """Test that --action-label-position-by=player is parsed correctly (default)."""
+    result = draw_tree.commandline(
+        ["draw_tree", "game.ef", "--action-label-position-by=player"]
+    )
+    (
+        *_rest,
+        vary_action_label_positions,
+        action_label_position_by,
+        vary_action_label_positions_by,
+        vary_action_label_positions_choices,
+    ) = result
+    assert action_label_position_by == "player"
+
+
+def test_commandline_action_label_position_by_level():
+    """Test that --action-label-position-by=level is parsed correctly."""
+    result = draw_tree.commandline(
+        ["draw_tree", "game.ef", "--action-label-position-by=level"]
+    )
+    (
+        *_rest,
+        vary_action_label_positions,
+        action_label_position_by,
+        vary_action_label_positions_by,
+        vary_action_label_positions_choices,
+    ) = result
+    assert action_label_position_by == "level"
+
+
+def test_commandline_vary_action_label_positions_by_player():
+    """Test that --vary-action-label-positions-by=player is parsed correctly."""
+    result = draw_tree.commandline(
+        ["draw_tree", "game.ef", "--vary-action-label-positions", "--vary-action-label-positions-by=player"]
+    )
+    (
+        *_rest,
+        vary_action_label_positions,
+        action_label_position_by,
+        vary_action_label_positions_by,
+        vary_action_label_positions_choices,
+    ) = result
+    assert vary_action_label_positions is True
+    assert vary_action_label_positions_by == "player"
+
+
+def test_commandline_vary_action_label_positions_by_level():
+    """Test that --vary-action-label-positions-by=level is parsed correctly."""
+    result = draw_tree.commandline(
+        ["draw_tree", "game.ef", "--vary-action-label-positions", "--vary-action-label-positions-by=level"]
+    )
+    (
+        *_rest,
+        vary_action_label_positions,
+        action_label_position_by,
+        vary_action_label_positions_by,
+        vary_action_label_positions_choices,
+    ) = result
+    assert vary_action_label_positions is True
+    assert vary_action_label_positions_by == "level"
+
+
+def test_commandline_vary_action_label_positions_choices():
+    """Test that --vary-action-label-positions-choices parses a comma-separated list."""
+    result = draw_tree.commandline(
+        ["draw_tree", "game.ef", "--vary-action-label-positions",
+         "--vary-action-label-positions-by=player",
+         "--vary-action-label-positions-choices=0,1"]
+    )
+    (
+        *_rest,
+        vary_action_label_positions,
+        action_label_position_by,
+        vary_action_label_positions_by,
+        vary_action_label_positions_choices,
+    ) = result
+    assert vary_action_label_positions is True
+    assert vary_action_label_positions_by == "player"
+    assert vary_action_label_positions_choices == [0, 1]
+
+
+def test_commandline_vary_choices_level():
+    """Test --vary-action-label-positions-choices with level-based vary."""
+    result = draw_tree.commandline(
+        ["draw_tree", "game.ef", "--vary-action-label-positions",
+         "--vary-action-label-positions-by=level",
+         "--vary-action-label-positions-choices=2,3"]
+    )
+    (
+        *_rest,
+        vary_action_label_positions,
+        action_label_position_by,
+        vary_action_label_positions_by,
+        vary_action_label_positions_choices,
+    ) = result
+    assert vary_action_label_positions_by == "level"
+    assert vary_action_label_positions_choices == [2, 3]
 
 
 # ---------------------------------------------------------------------------
@@ -1622,7 +1787,7 @@ def test_commandline_color_scheme():
     result = draw_tree.commandline(
         ["draw_tree.py", "test.ef", "--color-scheme=distinctipy"]
     )
-    assert result[23] == "distinctipy"
+    assert result[25] == "distinctipy"
 
 
 def test_commandline_edge_and_label_options():
@@ -1635,8 +1800,8 @@ def test_commandline_edge_and_label_options():
             "--action-label-position=0.7",
         ]
     )
-    assert result[24] == 2.0
-    assert result[25] == 0.7
+    assert result[26] == 2.0
+    assert result[27] == 0.7
 
 
 def test_commandline_efg_scaling_options():
@@ -1651,10 +1816,10 @@ def test_commandline_efg_scaling_options():
             "--shared-terminal-depth",
         ]
     )
-    assert result[26] == 1.5
-    assert result[27] == 0.8
-    assert result[28] == 1.2
-    assert result[29] is True
+    assert result[28] == 1.5
+    assert result[29] == 0.8
+    assert result[30] == 1.2
+    assert result[31] is True
 
 
 class TestHorizontalLayout:
@@ -1873,13 +2038,45 @@ class TestHorizontalLayout:
             assert "right=0.5\\paydown" in result
             assert "below=0.5\\paydown" not in result
 
-            # Test with label background enabled
+            # Test with label background enabled (terminal payoffs should still lack a background and be comma-separated)
             result_bg = draw_tree.generate_tikz(ef_file_path, horizontal=True, label_bg=True)
-            # Payoffs should be separate nodes with 'right=0.5\paydown' and 'right=2.5\paydown'
+            assert "1, 2" in result_bg
             assert "right=0.5\\paydown" in result_bg
-            assert "right=2.5\\paydown" in result_bg
+            assert "right=2.5\\paydown" not in result_bg
             assert "below=0.5\\paydown" not in result_bg
             assert "below=2.5\\paydown" not in result_bg
+        finally:
+            os.unlink(ef_file_path)
+
+    def test_action_labels_centered_with_label_bg(self):
+        """Test that action labels are centered on edges when label backgrounds are on."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
+            f.write("player 1\n")
+            f.write("level 0 node root player 1\n")
+            f.write("level 1 node child from 0,root player 1 move MyAction payoffs 1 2\n")
+            ef_file_path = f.name
+
+        try:
+            # 1. Backgrounds off: should have positional offsets/sides (e.g. above/below/left/right/yshift/xshift)
+            res_no_bg = draw_tree.generate_tikz(ef_file_path, label_bg=False)
+            assert "MyAction" in res_no_bg
+            assert "xshift=" in res_no_bg or "yshift=" in res_no_bg
+
+            # 2. Backgrounds on: should NOT have positional offsets/sides and should be centered on edge
+            res_bg = draw_tree.generate_tikz(ef_file_path, label_bg=True)
+            assert "MyAction" in res_bg
+            # Because it is centered, there are no side or shift options in the action label node
+            action_lines = [line for line in res_bg.split("\n") if "MyAction" in line and not line.strip().startswith("%")]
+            assert len(action_lines) == 1
+            action_line = action_lines[0]
+            assert "xshift" not in action_line
+            assert "yshift" not in action_line
+            assert "above" not in action_line
+            assert "below" not in action_line
+            assert "left" not in action_line
+            assert "right" not in action_line
+            # It should have fill options
+            assert "fill=" in action_line
         finally:
             os.unlink(ef_file_path)
 
@@ -2274,9 +2471,14 @@ class TestConverter:
             font_italic, font_size, custom_colors, horizontal,
             mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
             node_size, label_bg, label_bg_color, label_bg_opacity,
+            label_bg_by, label_bg_style,
             color_scheme, edge_thickness, action_label_position,
             level_scaling, sublevel_scaling, width_scaling,
             shared_terminal_depth, to_efg, to_ef,
+            vary_action_label_positions,
+            action_label_position_by,
+            vary_action_label_positions_by,
+            vary_action_label_positions_choices,
         ) = result
         assert to_efg is True
         assert to_ef is False
@@ -2292,9 +2494,14 @@ class TestConverter:
             font_italic, font_size, custom_colors, horizontal,
             mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
             node_size, label_bg, label_bg_color, label_bg_opacity,
+            label_bg_by, label_bg_style,
             color_scheme, edge_thickness, action_label_position,
             level_scaling, sublevel_scaling, width_scaling,
             shared_terminal_depth, to_efg, to_ef,
+            vary_action_label_positions,
+            action_label_position_by,
+            vary_action_label_positions_by,
+            vary_action_label_positions_choices,
         ) = result
         assert to_efg is False
         assert to_ef is True
@@ -2380,9 +2587,14 @@ class TestLabelBackground:
             font_italic, font_size, custom_colors, horizontal,
             mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
             node_size, label_bg, label_bg_color, label_bg_opacity,
+            label_bg_by, label_bg_style,
             color_scheme, edge_thickness, action_label_position,
             level_scaling, sublevel_scaling, width_scaling,
             shared_terminal_depth, to_efg, to_ef,
+            vary_action_label_positions,
+            action_label_position_by,
+            vary_action_label_positions_by,
+            vary_action_label_positions_choices,
         ) = result
         assert label_bg is True
         assert label_bg_color == "#aabbcc"
@@ -2408,6 +2620,275 @@ class TestLabelBackground:
         code = generate_tikz(str(simple_ef), label_bg=True)
         assert "\\begin{pgfonlayer}{labels}" in code
         assert "\\end{pgfonlayer}" in code
+
+    def test_label_bg_per_player_dict_enabled(self, simple_ef):
+        # Player 1 enabled, player 2 not — fill should appear (player 1 label exists)
+        from draw_tree.core import generate_tikz
+
+        code = generate_tikz(str(simple_ef), label_bg={1: True, 2: False}, label_bg_by="player")
+        assert "fill opacity=" in code
+
+    def test_label_bg_per_player_dict_all_disabled(self, simple_ef):
+        # All players disabled — no fill
+        from draw_tree.core import generate_tikz
+
+        code = generate_tikz(str(simple_ef), label_bg={1: False, 2: False}, label_bg_by="player")
+        assert "fill opacity=" not in code
+
+    def test_label_bg_per_level_dict(self, simple_ef):
+        # Enable for level 0 only
+        from draw_tree.core import generate_tikz
+
+        code = generate_tikz(str(simple_ef), label_bg={0: True}, label_bg_by="level")
+        assert "fill opacity=" in code
+
+    def test_label_bg_white_bg_style(self, simple_ef):
+        # white_bg: fill=white and text= set to player color (not text=white)
+        from draw_tree.core import generate_tikz
+
+        code = generate_tikz(str(simple_ef), label_bg=True, label_bg_style="white_bg")
+        assert "fill=white" in code
+        assert "fill opacity=" in code
+        assert "text=white" not in code
+
+    def test_label_bg_player_bg_style_unchanged(self, simple_ef):
+        # player_bg: current behaviour — fill=player_color, text=white
+        from draw_tree.core import generate_tikz
+
+        code = generate_tikz(str(simple_ef), label_bg=True, label_bg_style="player_bg")
+        assert "fill opacity=" in code
+        assert "text=white" in code
+
+    def test_label_bg_dict_declares_layer(self, simple_ef):
+        # Even with a dict, the labels layer is declared if any value is True
+        from draw_tree.core import generate_tikz
+
+        code = generate_tikz(str(simple_ef), label_bg={1: True}, label_bg_by="player")
+        assert "\\pgfdeclarelayer{labels}" in code
+
+    def test_label_bg_dict_no_layer_all_false(self, simple_ef):
+        # Dict with all False — no layer declared
+        from draw_tree.core import generate_tikz
+
+        code = generate_tikz(str(simple_ef), label_bg={1: False, 2: False}, label_bg_by="player")
+        assert "\\pgfdeclarelayer" not in code
+
+    def test_cli_label_bg_per_player_indices(self):
+        from draw_tree.core import commandline
+
+        result = commandline(["draw_tree", "game.ef", "--label-bg=1,2", "--label-bg-by=player"])
+        (
+            output_mode, pdf_requested, png_requested, svg_requested,
+            tex_requested, output_file, dpi, font_family, font_bold,
+            font_italic, font_size, custom_colors, horizontal,
+            mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
+            node_size, label_bg, label_bg_color, label_bg_opacity,
+            label_bg_by, label_bg_style,
+            color_scheme, edge_thickness, action_label_position,
+            level_scaling, sublevel_scaling, width_scaling,
+            shared_terminal_depth, to_efg, to_ef,
+            vary_action_label_positions,
+            action_label_position_by,
+            vary_action_label_positions_by,
+            vary_action_label_positions_choices,
+        ) = result
+        assert label_bg == {1: True, 2: True}
+        assert label_bg_by == "player"
+
+    def test_cli_label_bg_style(self):
+        from draw_tree.core import commandline
+
+        result = commandline(["draw_tree", "game.ef", "--label-bg", "--label-bg-style=white_bg"])
+        (
+            output_mode, pdf_requested, png_requested, svg_requested,
+            tex_requested, output_file, dpi, font_family, font_bold,
+            font_italic, font_size, custom_colors, horizontal,
+            mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
+            node_size, label_bg, label_bg_color, label_bg_opacity,
+            label_bg_by, label_bg_style,
+            color_scheme, edge_thickness, action_label_position,
+            level_scaling, sublevel_scaling, width_scaling,
+            shared_terminal_depth, to_efg, to_ef,
+            vary_action_label_positions,
+            action_label_position_by,
+            vary_action_label_positions_by,
+            vary_action_label_positions_choices,
+        ) = result
+        assert label_bg is True
+        assert label_bg_style == "white_bg"
+
+
+class TestVaryActionLabelPositions:
+    """Tests for the vary_action_label_positions feature."""
+
+    def test_commandline_vary_action_label_positions_flag(self):
+        """Test parsing of the --vary-action-label-positions option."""
+        from draw_tree.core import commandline
+        result = commandline(["draw_tree.py", "test.ef", "--vary-action-label-positions"])
+        assert result[34] is True
+
+    def test_vary_action_label_positions_layout(self, tmp_path):
+        """Test that vary_action_label_positions=True staggers action labels for nodes with multiple children."""
+        ef_file = tmp_path / "game.ef"
+        ef_file.write_text(
+            "player 1\n"
+            "level 0 node root player 1\n"
+            "level 1 node 1 from 0,root move Left payoffs 1 0\n"
+            "level 1 node 2 from 0,root move Right payoffs 0 1\n"
+        )
+        result_default = draw_tree.generate_tikz(str(ef_file), vary_action_label_positions=False)
+        result_varied = draw_tree.generate_tikz(str(ef_file), vary_action_label_positions=True)
+        assert result_default != result_varied
+
+
+class TestPlayerActionLabelPositions:
+    """Tests for the player-by-player action label positions feature."""
+
+    def test_commandline_player_action_label_positions(self):
+        """Test parsing of dictionary-based --action-label-position settings."""
+        from draw_tree.core import commandline
+
+        # Dictionary format
+        result = commandline([
+            "draw_tree.py", "test.ef",
+            "--action-label-position=0:0.3,1:0.65"
+        ])
+        assert isinstance(result[27], dict)
+        assert result[27][0] == 0.3
+        assert result[27][1] == 0.65
+
+        # Invalid format falls back
+        result_invalid = commandline([
+            "draw_tree.py", "test.ef",
+            "--action-label-position=invalid"
+        ])
+        assert result_invalid[27] == 0.5
+
+    def test_player_action_label_positions_layout(self, tmp_path):
+        """Test that different player nodes apply different action label positions."""
+        ef_file = tmp_path / "game.ef"
+        ef_file.write_text(
+            "player 1 name Alice\n"
+            "player 2 name Bob\n"
+            "level 0 node root player 1\n"
+            "level 1 node child1 from 0,root player 2 move L1 payoffs 1 0\n"
+            "level 2 node child2 from 1,child1 player 1 move L2 payoffs 0 1\n"
+        )
+
+        positions = {1: 0.3, 2: 0.7}
+        result = draw_tree.generate_tikz(str(ef_file), action_label_position=positions)
+
+        result_global_0_3 = draw_tree.generate_tikz(str(ef_file), action_label_position=0.3)
+        result_global_0_7 = draw_tree.generate_tikz(str(ef_file), action_label_position=0.7)
+
+        assert result != result_global_0_3
+        assert result != result_global_0_7
+
+
+class TestLevelActionLabelPositions:
+    """Tests for level-based action label positions."""
+
+    def test_commandline_level_position_by(self):
+        """Test that --action-label-position-by=level is parsed correctly."""
+        from draw_tree.core import commandline
+
+        result = commandline([
+            "draw_tree.py", "test.ef",
+            "--action-label-position=0:0.3,1:0.7",
+            "--action-label-position-by=level",
+        ])
+        # action_label_position_by is at index 33
+        assert result[35] == "level"
+        assert isinstance(result[27], dict)
+
+    def test_level_action_label_positions_layout(self, tmp_path):
+        """Test that level-keyed positions produce different output than player-keyed ones."""
+        ef_file = tmp_path / "game.ef"
+        ef_file.write_text(
+            "player 1 name Alice\n"
+            "player 2 name Bob\n"
+            "level 0 node root player 1\n"
+            "level 1 node child1 from 0,root player 2 move L1 payoffs 1 0\n"
+            "level 2 node child2 from 1,child1 player 1 move L2 payoffs 0 1\n"
+        )
+
+        positions = {0: 0.3, 1: 0.7}
+        result_by_level = draw_tree.generate_tikz(
+            str(ef_file),
+            action_label_position=positions,
+            action_label_position_by="level",
+        )
+        result_by_player = draw_tree.generate_tikz(
+            str(ef_file),
+            action_label_position=positions,
+            action_label_position_by="player",
+        )
+        # The two modes address different keys so output must differ
+        assert result_by_level != result_by_player
+
+
+class TestSelectiveVaryActionLabelPositions:
+    """Tests for selective vary action label positions by player or level."""
+
+    def test_vary_by_player_selective(self, tmp_path):
+        """Test vary_action_label_positions_by='player' with selective choices."""
+        ef_file = tmp_path / "game.ef"
+        # Player 2 is at the root with two children; player 1 has no multi-child nodes.
+        # vary restricted to player 1 → no vary applied → output differs from full vary.
+        ef_file.write_text(
+            "player 1 name Alice\n"
+            "player 2 name Bob\n"
+            "level 0 node root player 2\n"
+            "level 1 node child1 from 0,root player 1 move L1 payoffs 1 0\n"
+            "level 1 node child2 from 0,root player 1 move R1 payoffs 0 1\n"
+        )
+
+        result_all = draw_tree.generate_tikz(
+            str(ef_file),
+            vary_action_label_positions=True,
+            vary_action_label_positions_by="all",
+        )
+        result_player1_only = draw_tree.generate_tikz(
+            str(ef_file),
+            vary_action_label_positions=True,
+            vary_action_label_positions_by="player",
+            vary_action_label_positions_choices=[1],
+        )
+        # Player 1 has no multi-child nodes in this game, so restricting to
+        # player 1 only suppresses the vary that would apply at the player 2 root.
+        assert result_all != result_player1_only
+
+    def test_vary_by_level_selective(self, tmp_path):
+        """Test vary_action_label_positions_by='level' with selective choices."""
+        ef_file = tmp_path / "game.ef"
+        ef_file.write_text(
+            "player 1 name Alice\n"
+            "level 0 node root player 1\n"
+            "level 1 node child1 from 0,root player 1 move L1 payoffs 1 0\n"
+            "level 1 node child2 from 0,root player 1 move R1 payoffs 0 1\n"
+        )
+
+        result_all = draw_tree.generate_tikz(
+            str(ef_file),
+            vary_action_label_positions=True,
+            vary_action_label_positions_by="all",
+        )
+        result_level0_only = draw_tree.generate_tikz(
+            str(ef_file),
+            vary_action_label_positions=True,
+            vary_action_label_positions_by="level",
+            vary_action_label_positions_choices=[0],
+        )
+        result_no_match = draw_tree.generate_tikz(
+            str(ef_file),
+            vary_action_label_positions=True,
+            vary_action_label_positions_by="level",
+            vary_action_label_positions_choices=[99],
+        )
+        # Varying only level 0 should match full vary (only one level anyway)
+        assert result_all == result_level0_only
+        # No matching level → no vary applied → differs from varied output
+        assert result_all != result_no_match
 
 
 if __name__ == "__main__":

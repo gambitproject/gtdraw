@@ -54,7 +54,11 @@ All `generate_*` functions and the main `draw_tree` function accept a variety of
 | | `mirror=True/False` | Mirror the tree left-to-right by flipping xshift values (default: False). |
 | | `legend_position="X"` | Corner for the colour legend: `"top-left"` (default), `"top-right"`, `"bottom-left"`, `"bottom-right"`. |
 | | `action_label_dist=X.X` | Distance of action labels from the edge (default: 1.0). |
-| | `action_label_position=X.X` | Position of action labels along the edge (0.0 to 1.0, default: 0.5). |
+| | `action_label_position=X` | Position of action labels along the edge. Accepts a single float (0.0 to 1.0, default: 0.5), a dictionary keyed by player index (e.g. `{0: 0.3, 1: 0.7}`), or a dictionary keyed by level index (e.g. `{0: 0.3, 1: 0.6}`). |
+| | `action_label_position_by=\"X\"` | Interpret a dictionary `action_label_position` as keyed by player index (`"player"`, default) or by tree level index (`"level"`). |
+| | `vary_action_label_positions=True/False`| Vary action label positions along child edges of a node to avoid clashes (default: False). |
+| | `vary_action_label_positions_by=\"X\"` | Apply vary logic to `"all"` nodes (default), or selectively to specific `"player"` or `"level"` indices. |
+| | `vary_action_label_positions_choices=[...]` | List of player or level indices to apply vary logic to (used with `vary_action_label_positions_by="player"` or `"level"`). `None` means all (default). |
 | | `level_scaling=X.X` | Level spacing multiplier (for pygambit, default: 1.0). |
 | | `sublevel_scaling=X.X` | Sublevel spacing multiplier (for pygambit, default: 1.0). |
 | | `width_scaling=X.X` | Width spacing multiplier (for pygambit, default: 1.0). |
@@ -62,8 +66,10 @@ All `generate_*` functions and the main `draw_tree` function accept a variety of
 | **Information Sets**| `iset_fill=True/False` | Fill information sets with player colors (default: False). |
 | | `iset_fill_opacity=X.X` | Opacity of information set fill (0.0-1.0, default: 0.2). |
 | | `iset_boundary="X"` | Boundary style: `"solid"`, `"dotted"`, `"none"` (default: `"solid"`). |
-| **Label Background** | `label_bg=True/False` | Add a filled background behind all label text to improve readability when labels overlap edges (default: False). |
-| | `label_bg_color="X"` | Colour of the label background. Accepts any named xcolor colour (e.g. `"white"`, `"yellow"`) or a hex string (e.g. `"#ffcc00"`) (default: `"white"`). |
+| **Label Background** | `label_bg=True/False` | Add a filled background behind all label text to improve readability. Also accepts a `dict[int, bool]` to enable per-player or per-level (use with `label_bg_by`, default: False). |
+| | `label_bg_by="X"` | Interpret a dictionary `label_bg` as keyed by player index (`"player"`, default) or by tree level index (`"level"`). |
+| | `label_bg_style="X"` | Background style: `"player_bg"` (player-colour background with white text, default) or `"white_bg"` (white background with player-colour text). |
+| | `label_bg_color="X"` | Fallback colour of the label background when no player colour applies. Accepts any named xcolor colour (e.g. `"white"`) or a hex string (e.g. `"#ffcc00"`) (default: `"white"`). |
 | | `label_bg_opacity=X.X` | Opacity of the label background (0.0-1.0, default: 0.8). |
 | **Aesthetics** | `color_scheme="X"` | Set color scheme (`"default"`, `"gambit"`, `"distinctipy"`, `"colorblind"`, `"custom"`). |
 | | `edge_thickness=X.X` | Set thickness of edges (default: 1.0). |
