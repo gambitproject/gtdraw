@@ -159,7 +159,6 @@ def _apply_yaml_to_session_state(settings: dict) -> None:
         "legend_position": "gui_legend_position",
         "label_bg_opacity": "gui_label_bg_opacity",
         "vary_action_label_positions": "gui_vary_alp",
-        "vary_action_label_positions_by": "gui_vary_alp_by",
     }
     for param, key in simple.items():
         if param in settings:
@@ -224,14 +223,20 @@ def _apply_yaml_to_session_state(settings: dict) -> None:
             "White (player colour text)" if s == "white_bg" else "Player colour (white text)"
         )
 
+    if "vary_action_label_positions_by" in settings:
+        _vby_map = {"all": "All", "player": "By Player", "level": "By Level"}
+        st.session_state["gui_vary_alp_by"] = _vby_map.get(
+            settings["vary_action_label_positions_by"], "All"
+        )
+
     if "vary_action_label_positions_choices" in settings:
         vpc = settings["vary_action_label_positions_choices"]
         if vpc:
             vby = settings.get("vary_action_label_positions_by", "all")
             if vby == "player":
-                st.session_state["st_vary_alp_players"] = list(vpc)
+                st.session_state["gui_vary_alp_players"] = list(vpc)
             elif vby == "level":
-                st.session_state["st_vary_alp_levels"] = list(vpc)
+                st.session_state["gui_vary_alp_levels"] = list(vpc)
 
 
 def run_app():
@@ -388,6 +393,13 @@ def run_app():
         if game_slug and _yaml.exists():
             _loaded = _effective_settings_for_game(_yaml, game_slug)
             _apply_yaml_to_session_state(_loaded)
+            # Pre-populate _last_saved_params with the loaded diff so the
+            # save-on-change block doesn't immediately overwrite the just-loaded settings
+            st.session_state["_last_saved_params"] = _settings_diff(_loaded)
+        else:
+            st.session_state.pop("_last_saved_params", None)
+        # Reset snapshot so undo tracking starts fresh for the new game
+        st.session_state.pop("_last_snap", None)
 
     # Sidebar: Configuration
     # Tree-specific layout options (not applicable to NFG)
