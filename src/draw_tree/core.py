@@ -91,6 +91,7 @@ _vary_action_label_positions: bool = False
 _vary_action_label_positions_by: str = "all"
 _vary_action_label_positions_choices: Optional[set[int]] = None
 parent_to_children: dict[str, list[str]] = {}
+ef_version: int = 3
 _iset_boundary: str = "solid"
 _node_size: float = 1.5
 _label_bg: bool | dict[int, bool] = False
@@ -930,7 +931,10 @@ def fromnode(words: List[str]) -> tuple[str, int]:
     if len(words) < 2:
         error("need node name after 'from'")
         return fromn, advance
-    s = cleannodeid(words[1])
+    if ef_version == 3:
+        s = words[1].strip()
+    else:
+        s = cleannodeid(words[1])
     if s not in nodes:
         error("node " + s + " after 'from' is not defined")
     else:
@@ -1182,6 +1186,28 @@ def cleannodeid(ns: str) -> str:
 # "inner" boolean: inner node, draw disk/square
 
 
+def _detect_ef_version(lines: List[str]) -> int:
+    """
+    Detect EF format version from file lines.
+
+    EF 3.0: ``from`` references are bare node identifier strings (no commas).
+    EF 2.x: ``from`` references use the composite ``level,nodeid`` form and
+    therefore always contain a comma.
+
+    If any ``from`` reference on a ``level`` line contains a comma the file is
+    treated as EF 2.x.  Otherwise EF 3.0 is assumed.
+
+    Returns 3 for EF 3.0, 2 for legacy EF 2.x.
+    """
+    for line in lines:
+        words = line.split()
+        if len(words) >= 4 and words[0] == "level" and "from" in words:
+            idx = words.index("from")
+            if idx + 1 < len(words) and "," in words[idx + 1]:
+                return 2
+    return 3
+
+
 def preparse_tree(lines: List[str]) -> None:
     """
     Pre-parse all level commands to build parent-to-children mapping.
@@ -1194,7 +1220,7 @@ def preparse_tree(lines: List[str]) -> None:
     """
     global parent_to_children
     parent_to_children.clear()
-    
+
     for line in lines:
         words = line.split()
         if len(words) > 0 and words[0] == "level":
@@ -1202,16 +1228,22 @@ def preparse_tree(lines: List[str]) -> None:
                 lev = float(words[1])
                 assert words[2] == "node"
                 name = words[3]
-                nodeid = setnodeid(lev, name)
+                if ef_version == 3:
+                    nodeid = name
+                else:
+                    nodeid = setnodeid(lev, name)
             except Exception:
                 continue
-            
+
             fromn = ""
             if "from" in words:
                 idx = words.index("from")
                 if idx + 1 < len(words):
-                    fromn = cleannodeid(words[idx + 1])
-            
+                    if ef_version == 3:
+                        fromn = words[idx + 1].strip()
+                    else:
+                        fromn = cleannodeid(words[idx + 1])
+
             if fromn:
                 if fromn not in parent_to_children:
                     parent_to_children[fromn] = []
@@ -1248,7 +1280,10 @@ def parse_isets_first(lines: List[str]) -> None:
                     except (ValueError, IndexError):
                         count += 1
                 else:
-                    nodeid = cleannodeid(words[count])
+                    if ef_version == 3:
+                        nodeid = words[count].strip()
+                    else:
+                        nodeid = cleannodeid(words[count])
                     nodes_in_iset.append(nodeid)
                     count += 1
 
@@ -1376,7 +1411,10 @@ def level(
     except Exception:
         error("Expected node name")
         return
-    nodeid = setnodeid(lev, s)
+    if ef_version == 3:
+        nodeid = s
+    else:
+        nodeid = setnodeid(lev, s)
     count = 4
     p = -1  # no player yet
     xs = 0  # no xshift yet
@@ -1706,7 +1744,10 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
             where = count
             count += advance
         else:
-            nodeid = cleannodeid(words[count])
+            if ef_version == 3:
+                nodeid = words[count].strip()
+            else:
+                nodeid = cleannodeid(words[count])
             if nodeid not in nodes:
                 error(" ".join(words) + " :", stream0)
                 error("Node '" + nodeid + "' in iset not defined", stream0)
@@ -2243,6 +2284,10 @@ def ef_to_tex(
 
         # Process the .ef file
         lines = readfile(ef_file)
+
+        # Detect EF format version before all other parsing
+        global ef_version
+        ef_version = _detect_ef_version(lines)
 
         # FIRST: Pre-parse all iset commands to build node-to-player mapping
         parse_isets_first(lines)
