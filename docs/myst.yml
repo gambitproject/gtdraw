@@ -2,7 +2,7 @@ version: 1
 project:
   title: DrawTree
   description: Game tree drawing tool for extensive form games
-  github: https://github.com/gambitproject/draw_tree
+  github: https://github.com/gambitproject/efgviz
   toc:
     - file: index.md
     - file: installation.md
@@ -21,6 +21,6 @@ site:
   options:
     logo: ../img/favicon_48x48_light green background.png
     favicon: ../img/favicon_48x48_light green background.png
-    repository: https://github.com/gambitproject/draw_tree
+    repository: https://github.com/gambitproject/efgviz
     branch: main
     path_to_book: docs

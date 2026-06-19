@@ -1,7 +1,7 @@
-# draw_tree GUI master settings
+# efgviz GUI master settings
 # Per-game overrides are written here automatically as you adjust settings.
 # Edit the defaults section to change settings that apply to all games.
-# Consult https://www.gambit-project.org/draw_tree/ for available settings.
+# Consult https://www.gambit-project.org/efgviz/ for available settings.
 
 defaults:
   color_scheme: colorblind

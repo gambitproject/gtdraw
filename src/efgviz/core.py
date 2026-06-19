@@ -75,10 +75,10 @@ allowcomments: bool = True
 outstream: List[str] = []
 stream0: List[str] = []
 
-# Module-level storage for custom colors (set by generate_tikz, cleared after)
+# Module-level storage for custom colors (set by tikz, cleared after)
 _custom_colors: Optional[dict] = None
 
-# Module-level font configuration (set by generate_tikz, cleared after)
+# Module-level font configuration (set by tikz, cleared after)
 _font_family: str = "rmfamily"
 _font_bold: bool = False
 _font_italic: bool = False
@@ -2360,7 +2360,7 @@ def ef_to_tex(
         _vary_action_label_positions_choices = None
 
 
-def generate_tikz(
+def tikz(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
     scale_factor: float = 1.0,
@@ -2749,7 +2749,7 @@ def get_game_levels(
         return [0]
 
 
-def draw_tree(
+def draw(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
     scale_factor: float = 1.0,
@@ -2815,7 +2815,7 @@ def draw_tree(
             try:
                 from IPython.display import Image, display
 
-                png_path = generate_png(game, save_to=save_to)
+                png_path = png(game, save_to=save_to)
                 display(Image(png_path))
                 return None
             except Exception:
@@ -2823,7 +2823,7 @@ def draw_tree(
         return latex_body
 
     # Generate TikZ code
-    tikz_code = generate_tikz(
+    tikz_code = tikz(
         game,
         save_to=save_to,
         scale_factor=scale_factor,
@@ -2935,7 +2935,7 @@ def latex_wrapper(tikz_code: str) -> str:
     return latex_document
 
 
-def generate_tex(
+def tex(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
     scale_factor: float = 1.0,
@@ -3027,8 +3027,8 @@ def generate_tex(
         else:
             output_tex = save_to
 
-    # Generate TikZ content using generate_tikz
-    tikz_code = generate_tikz(
+    # Generate TikZ content using tikz
+    tikz_code = tikz(
         game,
         save_to=save_to,
         scale_factor=scale_factor,
@@ -3075,7 +3075,7 @@ def generate_tex(
     return str(Path(output_tex).absolute())
 
 
-def generate_pdf(
+def pdf(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
     scale_factor: float = 1.0,
@@ -3199,8 +3199,8 @@ def generate_pdf(
         else:
             output_pdf = save_to
 
-    # Generate TikZ content using generate_tikz
-    tikz_code = generate_tikz(
+    # Generate TikZ content using tikz
+    tikz_code = tikz(
         game,
         save_to=save_to,
         scale_factor=scale_factor,
@@ -3290,7 +3290,7 @@ def generate_pdf(
             )
 
 
-def generate_png(
+def png(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
     scale_factor: float = 1.0,
@@ -3379,7 +3379,7 @@ def generate_png(
 
         try:
             # Generate PDF using existing function
-            generate_pdf(
+            pdf(
                 game=game,
                 save_to=temp_pdf,
                 scale_factor=scale_factor,
@@ -3516,7 +3516,7 @@ def generate_png(
             raise RuntimeError(f"PNG generation failed: {e}")
 
 
-def generate_svg(
+def svg(
     game: str | "pygambit.gambit.Game",
     save_to: Optional[str] = None,
     scale_factor: float = 1.0,
@@ -3598,7 +3598,7 @@ def generate_svg(
         temp_pdf = str(Path(temp_dir) / "temp_output.pdf")
 
         try:
-            generate_pdf(
+            pdf(
                 game=game,
                 save_to=temp_pdf,
                 scale_factor=scale_factor,

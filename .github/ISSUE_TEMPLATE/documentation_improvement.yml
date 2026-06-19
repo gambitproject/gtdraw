@@ -1,5 +1,5 @@
 name: Documentation Improvement
-description: Suggest a change to the draw_tree documentation.
+description: Suggest a change to the efgviz documentation.
 title: "[Documentation]: "
 labels: ["documentation"]
 body:

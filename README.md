@@ -1,6 +1,6 @@
 # DrawTree
 
-[![Tests](https://github.com/gambitproject/draw_tree/actions/workflows/test.yml/badge.svg)](https://github.com/gambitproject/draw_tree/actions/workflows/test.yml)
+[![Tests](https://github.com/gambitproject/efgviz/actions/workflows/test.yml/badge.svg)](https://github.com/gambitproject/efgviz/actions/workflows/test.yml)
 
 DrawTree is a game tree drawing tool for publication-ready extensive form games in Game Theory.
 It can generate TikZ code, LaTeX documents, PDFs, PNGs, and SVGs from game specifications.
@@ -11,13 +11,13 @@ It can generate TikZ code, LaTeX documents, PDFs, PNGs, and SVGs from game speci
 
 Comprehensive documentation covering installation, the `.ef` file format, Python API, and Developer guidelines is hosted via GitHub Pages:
 
-**👉 [Read the draw_tree Documentation](https://gambitproject.github.io/draw_tree/) 👈**
+**👉 [Read the efgviz Documentation](https://gambitproject.github.io/efgviz/) 👈**
 
 ## Quick Installation
 
 ```bash
-git clone https://github.com/gambitproject/draw_tree
-cd draw_tree
+git clone https://github.com/gambitproject/efgviz
+cd efgviz
 pip install .
 ```
 
@@ -25,4 +25,4 @@ pip install .
 
 🚨 **NOTE FOR POTENTIAL CONTRIBUTORS** 🚨
 
-This package is at an early stage of development. Please read the Gambit project's [contributor guidance](https://gambitproject.readthedocs.io/en/latest/developer.contributing.html) and check the [Developer Guide](https://gambitproject.github.io/draw_tree/developer/development.html) in the documentation before opening PRs.
+This package is at an early stage of development. Please read the Gambit project's [contributor guidance](https://gambitproject.readthedocs.io/en/latest/developer.contributing.html) and check the [Developer Guide](https://gambitproject.github.io/efgviz/developer/development.html) in the documentation before opening PRs.

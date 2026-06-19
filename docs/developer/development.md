@@ -5,8 +5,8 @@
 To set up the project for development, clone the repository and install it along with the `dev` extra dependencies:
 
 ```bash
-git clone https://github.com/gambitproject/draw_tree
-cd draw_tree
+git clone https://github.com/gambitproject/efgviz
+cd efgviz
 pip install -e ".[dev]"
 ```
 
@@ -21,15 +21,15 @@ pytest tests/ -v
 
 To run tests with coverage reporting:
 ```bash
-pytest tests/ --cov=draw_tree --cov-report=html
+pytest tests/ --cov=efgviz --cov-report=html
 ```
 
 ## Releases
 
-To release a new version of `draw_tree`:
+To release a new version of `efgviz`:
 
 1. Update the version number in `pyproject.toml`.
-2. Update the version number in `src/draw_tree/__init__.py`.
+2. Update the version number in `src/efgviz/__init__.py`.
 3. Create a pull request targeting the `main` branch with the changes.
 4. Once the pull request is approved and merged, update your local `main` branch:
 

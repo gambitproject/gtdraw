@@ -1,44 +1,44 @@
 #!/usr/bin/env python3
 """
-Command-line interface for draw_tree package.
+Command-line interface for EFGViz.
 """
 
 import sys
 from pathlib import Path
 from .core import (
     commandline,
-    draw_tree,
-    generate_pdf,
-    generate_png,
-    generate_svg,
-    generate_tex,
+    draw,
+    pdf,
+    png,
+    svg,
+    tex,
 )
 from .converter import ef_to_efg, efg_to_ef
 
 
 def main():
-    """Main entry point for the draw_tree CLI."""
+    """Main entry point for the draw CLI."""
     # Display help if no arguments provided
     if len(sys.argv) == 1:
-        print("DrawTree - Game tree drawing tool")
+        print("EFGViz - Game tree drawing tool for extensive form games")
         print()
         print("Usage:")
-        print("  draw_tree <file.ef> [options]           # Generate TikZ code")
+        print("  efgviz <file.ef> [options]           # Generate TikZ code")
         print(
-            "  draw_tree <file.ef> --pdf [options]     # Generate PDF (requires pdflatex)"
+            "  efgviz <file.ef> --pdf [options]     # Generate PDF (requires pdflatex)"
         )
         print(
-            "  draw_tree <file.ef> --png [options]     # Generate PNG (requires pdflatex + imagemagick/ghostscript)"
+            "  efgviz <file.ef> --png [options]     # Generate PNG (requires pdflatex + imagemagick/ghostscript)"
         )
         print(
-            "  draw_tree <file.ef> --svg [options]     # Generate SVG (requires pdflatex + pdf2svg)"
+            "  efgviz <file.ef> --svg [options]     # Generate SVG (requires pdflatex + pdf2svg)"
         )
-        print("  draw_tree <file.ef> --tex [options]     # Generate LaTeX document")
+        print("  efgviz <file.ef> --tex [options]     # Generate LaTeX document")
         print(
-            "  draw_tree <file.ef> --output=name.ext   # Generate with custom filename (.pdf, .png, .svg, or .tex)"
+            "  efgviz <file.ef> --output=name.ext   # Generate with custom filename (.pdf, .png, .svg, or .tex)"
         )
         print(
-            "  draw_tree --gui                         # Launch interactive GUI (requires streamlit)"
+            "  efgviz --gui                         # Launch interactive GUI (requires streamlit)"
         )
         print()
         print("Options:")
@@ -84,25 +84,25 @@ def main():
         print("  --shared-terminal-depth Enforce shared terminal node depth for .efg files")
         print()
         print("Normal form games (NFG):")
-        print("  draw_tree games/nfg/game.nfg            # Print \\begin{game}...\\end{game} body")
-        print("  draw_tree games/nfg/game.nfg --pdf      # Compile payoff table to PDF (requires sgame)")
-        print("  draw_tree games/nfg/game.nfg --png      # Compile payoff table to PNG")
+        print("  efgviz games/nfg/game.nfg            # Print \\begin{game}...\\end{game} body")
+        print("  efgviz games/nfg/game.nfg --pdf      # Compile payoff table to PDF (requires sgame)")
+        print("  efgviz games/nfg/game.nfg --png      # Compile payoff table to PNG")
         print()
         print("Format conversion:")
         print("  --to-efg     Convert .ef file to Gambit .efg format")
         print("  --to-ef      Convert .efg file to .ef format (requires pygambit)")
         print()
         print("Examples:")
-        print("  draw_tree games/example.ef --pdf")
-        print("  draw_tree games/example.ef --png --dpi=600")
-        print("  draw_tree games/example.ef --tex")
-        print("  draw_tree games/example.ef --output=mygame.tex scale=0.8")
-        print("  draw_tree games/example.ef --pdf --font=sans-serif --bold")
+        print("  efgviz games/example.ef --pdf")
+        print("  efgviz games/example.ef --png --dpi=600")
+        print("  efgviz games/example.ef --tex")
+        print("  efgviz games/example.ef --output=mygame.tex scale=0.8")
+        print("  efgviz games/example.ef --pdf --font=sans-serif --bold")
         print(
-            '  draw_tree games/example.ef --png --custom-colors="0:#FF0000,1:#0000FF"'
+            '  efgviz games/example.ef --png --custom-colors="0:#FF0000,1:#0000FF"'
         )
-        print("  draw_tree games/example.ef --to-efg")
-        print("  draw_tree games/efg/2s2x2x2.efg --to-ef")
+        print("  efgviz games/example.ef --to-efg")
+        print("  efgviz games/efg/2s2x2x2.efg --to-ef")
         print()
         print(
             "Note: PDF/PNG/SVG generation requires pdflatex. PNG also needs ImageMagick or Ghostscript. SVG needs pdf2svg."
@@ -201,7 +201,7 @@ def main():
                 print(f"Generating PDF: {output_file}")
             else:
                 print(f"Generating PDF: {output_file}.pdf")
-            pdf_path = generate_pdf(
+            pdf_path = pdf(
                 game=current_ef_file,
                 save_to=output_file,
                 scale_factor=current_scale,
@@ -243,7 +243,7 @@ def main():
                 print(f"Generating PNG: {output_file}")
             else:
                 print(f"Generating PNG: {output_file}.png")
-            png_path = generate_png(
+            png_path = png(
                 game=current_ef_file,
                 save_to=output_file,
                 scale_factor=current_scale,
@@ -286,7 +286,7 @@ def main():
                 print(f"Generating SVG: {output_file}")
             else:
                 print(f"Generating SVG: {output_file}.svg")
-            svg_path = generate_svg(
+            svg_path = svg(
                 game=current_ef_file,
                 save_to=output_file,
                 scale_factor=current_scale,
@@ -328,7 +328,7 @@ def main():
                 print(f"Generating LaTeX: {output_file}")
             else:
                 print(f"Generating LaTeX: {output_file}.tex")
-            tex_path = generate_tex(
+            tex_path = tex(
                 game=current_ef_file,
                 save_to=output_file,
                 scale_factor=current_scale,
@@ -367,7 +367,7 @@ def main():
 
         else:
             # Generate TikZ code (original behavior)
-            tikz_code = draw_tree(
+            tikz_code = draw(
                 game=current_ef_file,
                 scale_factor=current_scale,
                 show_grid=current_grid,

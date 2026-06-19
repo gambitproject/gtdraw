@@ -44,4 +44,4 @@ jobs:
         
     - name: Test CLI command
       run: |
-        draw_tree
+        efgviz

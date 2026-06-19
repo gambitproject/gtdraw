@@ -1,5 +1,5 @@
 """
-Test suite for draw_tree.gambit_layout module.
+Test suite for draw.gambit_layout module.
 
 Tests for determine_node_level() and gambit_layout_to_ef() covering:
 - Node level calculation with default and custom multipliers
@@ -20,7 +20,7 @@ import tempfile
 import pygambit
 import pytest
 
-from draw_tree.gambit_layout import determine_node_level, gambit_layout_to_ef
+from efgviz.gambit_layout import determine_node_level, gambit_layout_to_ef
 
 
 # ---------------------------------------------------------------------------
@@ -452,7 +452,7 @@ class TestChildLevelInvariant:
 
     def test_generated_ef_is_detected_as_v3(self):
         """gambit_layout_to_ef generates EF 3.0 files (no duplicate node names)."""
-        from draw_tree.core import _detect_ef_version
+        from efgviz.core import _detect_ef_version
         g = _asymmetric_game()
         ef = gambit_layout_to_ef(
             g,

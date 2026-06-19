@@ -13,12 +13,12 @@ warnings.filterwarnings("ignore")
 # Add src to path if running from local dev
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from draw_tree import (
-    generate_svg,
-    generate_tikz,
-    generate_tex,
-    generate_pdf,
-    generate_png,
+from efgviz import (
+    svg,
+    tikz,
+    tex,
+    pdf,
+    png,
     count_players,
     get_game_levels,
     ef_to_efg,
@@ -57,7 +57,7 @@ def _get_scheme_colors(color_scheme: str, num_players: int) -> dict[int, str]:
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
-# draw_tree library defaults — used to compute per-game YAML diffs
+# draw library defaults — used to compute per-game YAML diffs
 DRAW_TREE_DEFAULTS: dict = {
     "scale_factor": 1.0, "level_scaling": 1.0, "sublevel_scaling": 1.0,
     "width_scaling": 1.0, "horizontal": False, "mirror": False,
@@ -115,17 +115,17 @@ def _write_game_settings(path: "Path", game_slug: str, settings: dict) -> None:
         del data["overrides"][game_slug]
     try:
         with open(path, "w") as f:
-            f.write("# draw_tree GUI master settings\n")
+            f.write("# draw GUI master settings\n")
             f.write("# Per-game overrides are written here automatically as you adjust settings.\n")
             f.write("# Edit the defaults section to change settings that apply to all games.\n")
-            f.write("# Consult https://www.gambit-project.org/draw_tree/ for available settings.\n\n")
+            f.write("# Consult https://www.gambit-project.org/draw/ for available settings.\n\n")
             yaml.dump(data, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
     except Exception:
         pass
 
 
 def _effective_settings_for_game(path: "Path", game_slug: str | None) -> dict:
-    """Merge draw_tree defaults ← yaml defaults ← yaml overrides for game."""
+    """Merge draw defaults ← yaml defaults ← yaml overrides for game."""
     data = _read_yaml(path)
     merged = {**DRAW_TREE_DEFAULTS}
     merged.update(data["defaults"] or {})
@@ -135,7 +135,7 @@ def _effective_settings_for_game(path: "Path", game_slug: str | None) -> dict:
 
 
 def _settings_diff(current: dict) -> dict:
-    """Return only keys that differ from draw_tree library defaults."""
+    """Return only keys that differ from efgviz library defaults."""
     return {k: v for k, v in current.items() if v != DRAW_TREE_DEFAULTS.get(k)}
 
 
@@ -145,7 +145,7 @@ _FONT_SIZE_TO_KEY   = {"small": "Small", "normalsize": "Normal", "large": "Large
 
 
 def _apply_yaml_to_session_state(settings: dict) -> None:
-    """Map draw_tree param names from YAML onto GUI widget session-state keys."""
+    """Map draw param names from YAML onto GUI widget session-state keys."""
     simple = {
         "scale_factor": "gui_scale_factor", "level_scaling": "gui_level_scaling",
         "sublevel_scaling": "gui_sublevel_scaling", "width_scaling": "gui_width_scaling",
@@ -250,7 +250,7 @@ def run_app():
     if icon_path.exists():
         icon = str(icon_path)
 
-    st.set_page_config(page_title="DrawTree", layout="wide", page_icon=icon)
+    st.set_page_config(page_title="EFGViz", layout="wide", page_icon=icon)
 
     # Sidebar: Title and Input
     if icon_path.exists():
@@ -258,17 +258,17 @@ def run_app():
         with col1:
             st.image(str(icon_path), width=50)
         with col2:
-            st.title("DrawTree")
+            st.title("EFGViz")
     else:
-        st.sidebar.title("🎨 DrawTree")
+        st.sidebar.title("🎨 EFGViz")
     st.sidebar.markdown(
         "##### Part of the [Gambit project](https://www.gambit-project.org/)."
     )
     st.sidebar.markdown(
-        "📖 **[Documentation](https://www.gambit-project.org/draw_tree/)**"
+        "📖 **[Documentation](https://www.gambit-project.org/draw/)**"
     )
     st.sidebar.markdown(
-        "Welcome to DrawTree! Load a game in EF, EFG, or NFG format, then download your publication-ready image."
+        "Welcome to EFGViz! Load a game in EF, EFG, or NFG format, then download your publication-ready image."
     )
 
     # Try to find games directory
@@ -325,7 +325,7 @@ def run_app():
 
         help_text = (
             "**Catalog**: Games from Gambit's catalog.\n\n"
-            "**EF**: DrawTree .ef format games.\n\n"
+            "**EF**: EFGViz .ef format games.\n\n"
             "**EFG**: Gambit .efg files.\n\n"
             "**NFG**: Gambit .nfg normal form (strategic form) games."
         )
@@ -854,12 +854,12 @@ def run_app():
             with c1:
                 st.image(str(icon_path), width=80)
             with c2:
-                st.title("DrawTree")
+                st.title("EFGViz")
             st.markdown(
                 "### Part of the [Gambit project](https://www.gambit-project.org/)"
             )
         else:
-            st.title("🎨 DrawTree")
+            st.title("🎨 EFGViz")
             st.markdown(
                 "### Part of the [Gambit project](https://www.gambit-project.org/)"
             )
@@ -876,8 +876,8 @@ def run_app():
 
             if is_nfg:
                 # NFG: get the LaTeX body (always available, no pdflatex needed)
-                tikz_code = generate_tikz(game=game_source)
-                tex_path = generate_tex(game=game_source, save_to=output_base + ".tex")
+                tikz_code = tikz(game=game_source)
+                tex_path = tex(game=game_source, save_to=output_base + ".tex")
                 with open(tex_path, "r") as f:
                     tex_data = f.read()
 
@@ -887,7 +887,7 @@ def run_app():
                 nfg_render_error = None
                 try:
                     png_path = str(work_dir / f"{base_name}.png")
-                    generate_png(game=game_source, save_to=png_path)
+                    png(game=game_source, save_to=png_path)
                     with open(png_path, "rb") as f:
                         png_data = f.read()
                     import base64
@@ -899,7 +899,7 @@ def run_app():
                         f'object-fit:contain;display:block;margin:auto;" />',
                         unsafe_allow_html=True,
                     )
-                    pdf_path = generate_pdf(
+                    pdf_path = pdf(
                         game=game_source, save_to=output_base + ".pdf"
                     )
                     with open(pdf_path, "rb") as f:
@@ -960,7 +960,7 @@ def run_app():
 
             svg_path = str(work_dir / f"{base_name}.svg")
 
-            svg_code = generate_svg(
+            svg_code = svg(
                 game=game_source,
                 save_to=svg_path,
                 scale_factor=scale_factor,
@@ -1009,7 +1009,7 @@ def run_app():
             st.markdown(svg_content, unsafe_allow_html=True)
 
             # Pre-generate all download formats
-            tikz_code = generate_tikz(
+            tikz_code = tikz(
                 game=game_source,
                 save_to=output_base + ".tikz",
                 scale_factor=scale_factor,
@@ -1046,7 +1046,7 @@ def run_app():
                 vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
 
-            tex_path = generate_tex(
+            tex_path = tex(
                 game=game_source,
                 save_to=output_base + ".tex",
                 scale_factor=scale_factor,
@@ -1084,7 +1084,7 @@ def run_app():
             with open(tex_path, "r") as f:
                 tex_data = f.read()
 
-            pdf_path = generate_pdf(
+            pdf_path = pdf(
                 game=game_source,
                 save_to=output_base + ".pdf",
                 scale_factor=scale_factor,
@@ -1122,7 +1122,7 @@ def run_app():
             with open(pdf_path, "rb") as f:
                 pdf_data = f.read()
 
-            png_path = generate_png(
+            png_path = png(
                 game=game_source,
                 save_to=output_base + ".png",
                 scale_factor=scale_factor,

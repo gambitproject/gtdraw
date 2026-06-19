@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "draw_tree"
+name = "efgviz"
 version = "0.12.0"
 description = "Game tree drawing tool for extensive form games"
 readme = "README.md"
@@ -27,15 +27,15 @@ dependencies = ["jupyter-tikz", "ipykernel", "distinctipy", "streamlit", "pygamb
 dev = ["pytest>=7.0.0", "pytest-cov", "jupyter-book>=2.0.0", "sphinx-thebe"]
 
 [project.scripts]
-draw_tree = "draw_tree.cli:main"
+efgviz = "efgviz.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/gambitproject/draw_tree"
-Repository = "https://github.com/gambitproject/draw_tree"
-Issues = "https://github.com/gambitproject/draw_tree/issues"
+Homepage = "https://github.com/gambitproject/efgviz"
+Repository = "https://github.com/gambitproject/efgviz"
+Issues = "https://github.com/gambitproject/efgviz/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-draw_tree = ["*.ef"]
+efgviz = ["*.ef"]

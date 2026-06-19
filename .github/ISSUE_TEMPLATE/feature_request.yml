@@ -1,5 +1,5 @@
 name: Feature Request
-description: Suggest a new feature or improvement for draw_tree.
+description: Suggest a new feature or improvement for efgviz.
 labels: ["enhancement"]
 body:
   - type: markdown
