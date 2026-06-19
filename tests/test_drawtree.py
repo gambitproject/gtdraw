@@ -1329,11 +1329,11 @@ def _simple_ef_content():
 def _make_pygambit_game():
     """Create a small pygambit game for end-to-end tests."""
     g = pygambit.Game.new_tree(players=["Alice", "Bob"], title="integration_test")
-    g.append_move(g.root, g.players[0], ["Left", "Right"])
-    g.append_move(g.root.children[0], g.players[1], ["Up", "Down"])
-    g.set_outcome(g.root.children[0].children[0], g.add_outcome([1, 0]))
-    g.set_outcome(g.root.children[0].children[1], g.add_outcome([0, 1]))
-    g.set_outcome(g.root.children[1], g.add_outcome([2, 2]))
+    g.append_move(g.root, g.players["Alice"], ["Left", "Right"])
+    g.append_move(g.root.children["Left"], g.players["Bob"], ["Up", "Down"])
+    g.set_outcome(g.root.children["Left"].children["Up"], g.add_outcome([1, 0]))
+    g.set_outcome(g.root.children["Left"].children["Down"], g.add_outcome([0, 1]))
+    g.set_outcome(g.root.children["Right"], g.add_outcome([2, 2]))
     return g
 
 

@@ -31,20 +31,20 @@ from efgviz.gambit_layout import determine_node_level, gambit_layout_to_ef
 def _simple_game(title="test_game"):
     """Create a minimal 2-player game: Alice chooses Left/Right, terminal payoffs."""
     g = pygambit.Game.new_tree(players=["Alice", "Bob"], title=title)
-    g.append_move(g.root, g.players[0], ["Left", "Right"])
-    g.set_outcome(g.root.children[0], g.add_outcome([1, 0]))
-    g.set_outcome(g.root.children[1], g.add_outcome([0, 1]))
+    g.append_move(g.root, g.players["Alice"], ["Left", "Right"])
+    g.set_outcome(g.root.children["Left"], g.add_outcome([1, 0]))
+    g.set_outcome(g.root.children["Right"], g.add_outcome([0, 1]))
     return g
 
 
 def _asymmetric_game(title="asym_game"):
     """Alice chooses Left/Right; after Left Bob chooses Up/Down. Right is terminal."""
     g = pygambit.Game.new_tree(players=["Alice", "Bob"], title=title)
-    g.append_move(g.root, g.players[0], ["Left", "Right"])
-    g.append_move(g.root.children[0], g.players[1], ["Up", "Down"])
-    g.set_outcome(g.root.children[0].children[0], g.add_outcome([1, 0]))
-    g.set_outcome(g.root.children[0].children[1], g.add_outcome([0, 1]))
-    g.set_outcome(g.root.children[1], g.add_outcome([2, 2]))
+    g.append_move(g.root, g.players["Alice"], ["Left", "Right"])
+    g.append_move(g.root.children["Left"], g.players["Bob"], ["Up", "Down"])
+    g.set_outcome(g.root.children["Left"].children["Up"], g.add_outcome([1, 0]))
+    g.set_outcome(g.root.children["Left"].children["Down"], g.add_outcome([0, 1]))
+    g.set_outcome(g.root.children["Right"], g.add_outcome([2, 2]))
     return g
 
 
@@ -127,9 +127,9 @@ class TestGambitLayoutToEfContent:
 
     def test_player_names_spaces_replaced(self):
         g = pygambit.Game.new_tree(players=["Player One", "Player Two"], title="sp")
-        g.append_move(g.root, g.players[0], ["A", "B"])
-        g.set_outcome(g.root.children[0], g.add_outcome([1, 0]))
-        g.set_outcome(g.root.children[1], g.add_outcome([0, 1]))
+        g.append_move(g.root, g.players["Player One"], ["A", "B"])
+        g.set_outcome(g.root.children["A"], g.add_outcome([1, 0]))
+        g.set_outcome(g.root.children["B"], g.add_outcome([0, 1]))
         ef = gambit_layout_to_ef(
             g, save_to=os.path.join(tempfile.gettempdir(), "sp.ef")
         )
@@ -171,7 +171,7 @@ class TestGambitLayoutToEfContent:
 
     def test_terminal_without_outcome(self):
         g = pygambit.Game.new_tree(players=["Alice", "Bob"], title="noout")
-        g.append_move(g.root, g.players[0], ["L", "R"])
+        g.append_move(g.root, g.players["Alice"], ["L", "R"])
         ef = gambit_layout_to_ef(
             g, save_to=os.path.join(tempfile.gettempdir(), "no.ef")
         )
@@ -217,10 +217,10 @@ class TestChanceNodes:
         g = pygambit.Game.new_tree(players=["Alice", "Bob"], title="frac")
         g.append_move(g.root, g.players.chance, ["H", "T"])
         g.set_chance_probs(g.root.infoset, ["1/2", "1/2"])
-        g.append_move(g.root.children[0], g.players[0], ["A", "B"])
-        g.set_outcome(g.root.children[0].children[0], g.add_outcome([1, 0]))
-        g.set_outcome(g.root.children[0].children[1], g.add_outcome([0, 1]))
-        g.set_outcome(g.root.children[1], g.add_outcome([2, 2]))
+        g.append_move(g.root.children["H"], g.players["Alice"], ["A", "B"])
+        g.set_outcome(g.root.children["H"].children["A"], g.add_outcome([1, 0]))
+        g.set_outcome(g.root.children["H"].children["B"], g.add_outcome([0, 1]))
+        g.set_outcome(g.root.children["T"], g.add_outcome([2, 2]))
 
         ef = gambit_layout_to_ef(
             g, save_to=os.path.join(tempfile.gettempdir(), "fc.ef")
@@ -234,8 +234,8 @@ class TestChanceNodes:
         g = pygambit.Game.new_tree(players=["Alice"], title="whole")
         g.append_move(g.root, g.players.chance, ["X", "Y"])
         g.set_chance_probs(g.root.infoset, ["1", "0"])
-        g.set_outcome(g.root.children[0], g.add_outcome([5]))
-        g.set_outcome(g.root.children[1], g.add_outcome([0]))
+        g.set_outcome(g.root.children["X"], g.add_outcome([5]))
+        g.set_outcome(g.root.children["Y"], g.add_outcome([0]))
 
         ef = gambit_layout_to_ef(
             g, save_to=os.path.join(tempfile.gettempdir(), "wh.ef")
@@ -254,12 +254,12 @@ class TestChanceNodes:
 class TestInformationSets:
     def test_iset_line_generated(self):
         g = pygambit.Game.new_tree(players=["Alice", "Bob"], title="iset")
-        g.append_move(g.root, g.players[0], ["Left", "Right"])
-        g.append_move(g.root.children[0], g.players[1], ["Up", "Down"])
-        g.append_infoset(g.root.children[1], g.root.children[0].infoset)
+        g.append_move(g.root, g.players["Alice"], ["Left", "Right"])
+        g.append_move(g.root.children["Left"], g.players["Bob"], ["Up", "Down"])
+        g.append_infoset(g.root.children["Right"], g.root.children["Left"].infoset)
         for c in g.root.children:
-            g.set_outcome(c.children[0], g.add_outcome([1, 0]))
-            g.set_outcome(c.children[1], g.add_outcome([0, 1]))
+            g.set_outcome(c.children["Up"], g.add_outcome([1, 0]))
+            g.set_outcome(c.children["Down"], g.add_outcome([0, 1]))
 
         ef = gambit_layout_to_ef(
             g, save_to=os.path.join(tempfile.gettempdir(), "is.ef")
@@ -273,12 +273,12 @@ class TestInformationSets:
     def test_iset_nodes_have_no_inline_player(self):
         """Nodes in a multi-node infoset should NOT have 'player' on their own line."""
         g = pygambit.Game.new_tree(players=["Alice", "Bob"], title="isnp")
-        g.append_move(g.root, g.players[0], ["L", "R"])
-        g.append_move(g.root.children[0], g.players[1], ["U", "D"])
-        g.append_infoset(g.root.children[1], g.root.children[0].infoset)
+        g.append_move(g.root, g.players["Alice"], ["L", "R"])
+        g.append_move(g.root.children["L"], g.players["Bob"], ["U", "D"])
+        g.append_infoset(g.root.children["R"], g.root.children["L"].infoset)
         for c in g.root.children:
-            g.set_outcome(c.children[0], g.add_outcome([1, 0]))
-            g.set_outcome(c.children[1], g.add_outcome([0, 1]))
+            g.set_outcome(c.children["U"], g.add_outcome([1, 0]))
+            g.set_outcome(c.children["D"], g.add_outcome([0, 1]))
 
         ef = gambit_layout_to_ef(
             g, save_to=os.path.join(tempfile.gettempdir(), "inp.ef")

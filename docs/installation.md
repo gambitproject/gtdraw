@@ -3,7 +3,7 @@
 Clone the repo and install the package using `pip`:
 
 ```bash
-git clone https://github.com/gambitproject/efgviz
+git clone https://github.com/gambitproject/draw_tree
 cd efgviz
 pip install .
 ```

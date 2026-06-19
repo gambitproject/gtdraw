@@ -5,7 +5,7 @@
 To set up the project for development, clone the repository and install it along with the `dev` extra dependencies:
 
 ```bash
-git clone https://github.com/gambitproject/efgviz
+git clone https://github.com/gambitproject/draw_tree
 cd efgviz
 pip install -e ".[dev]"
 ```

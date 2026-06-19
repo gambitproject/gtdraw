@@ -1,6 +1,6 @@
 # DrawTree
 
-[![Tests](https://github.com/gambitproject/efgviz/actions/workflows/test.yml/badge.svg)](https://github.com/gambitproject/efgviz/actions/workflows/test.yml)
+[![Tests](https://github.com/gambitproject/draw_tree/actions/workflows/test.yml/badge.svg)](https://github.com/gambitproject/draw_tree/actions/workflows/test.yml)
 
 DrawTree is a game tree drawing tool for publication-ready extensive form games in Game Theory.
 It can generate TikZ code, LaTeX documents, PDFs, PNGs, and SVGs from game specifications.
@@ -16,7 +16,7 @@ Comprehensive documentation covering installation, the `.ef` file format, Python
 ## Quick Installation
 
 ```bash
-git clone https://github.com/gambitproject/efgviz
+git clone https://github.com/gambitproject/draw_tree
 cd efgviz
 pip install .
 ```
