@@ -271,9 +271,23 @@ def run_app():
         "Welcome to EFGViz! Load a game in EF, EFG, or NFG format, then download your publication-ready image."
     )
 
-    # Try to find games directory
-    base_path = Path(__file__).parent.parent.parent
-    example_dir = base_path / "games"
+    # Find the games directory by walking upward from this file.
+    # This handles both editable installs (src/efgviz/app.py) and
+    # regular installs (site-packages/efgviz/app.py) where the repo
+    # root is the current working directory.
+    def _find_games_dir() -> "Path | None":
+        current = Path(__file__).resolve().parent
+        for _ in range(6):
+            candidate = current / "games"
+            if candidate.is_dir():
+                return candidate
+            current = current.parent
+        candidate = Path.cwd() / "games"
+        return candidate if candidate.is_dir() else None
+
+    _games_dir = _find_games_dir()
+    base_path = _games_dir.parent if _games_dir else Path(__file__).parent
+    example_dir = _games_dir or (base_path / "games")
 
     game_source = None
     is_efg = False
