@@ -17,7 +17,7 @@ pip install .
 
 ## Installing LaTeX
 
-To use DrawTree, a working LaTeX installation is required. The below offers the minimal installation that has been tested to work on **Ubuntu**. Other Linux distributions have not been tested and the Mac/Windows options have only been tested with larger full LaTeX installations:
+To use EFGViz, a working LaTeX installation is required. The below offers the minimal installation that has been tested to work on **Ubuntu**. Other Linux distributions have not been tested and the Mac/Windows options have only been tested with larger full LaTeX installations:
 
 ```bash
 sudo apt-get install texlive-pictures texlive-latex-extra texlive-games

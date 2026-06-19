@@ -259,7 +259,7 @@ class TestGeometryFunctions:
         assert "arc(" in result
 
 
-class TestDrawTreeFunction:
+class TestEFGVizFunction:
     """Test the new streamlined draw function."""
 
     def test_draw_basic(self):
@@ -601,9 +601,7 @@ class TestTexGeneration:
             ef_file_path = ef_file.name
 
         try:
-            tex_path = core.tex(
-                ef_file_path, scale_factor=2.0, show_grid=True
-            )
+            tex_path = core.tex(ef_file_path, scale_factor=2.0, show_grid=True)
 
             # Verify the file was created
             assert os.path.exists(tex_path)
@@ -678,9 +676,7 @@ class TestCommandlineArguments:
 
     def test_commandline_png_with_dpi(self):
         """Test --png flag with --dpi option."""
-        result = core.commandline(
-            ["core.py", "test.ef", "--png", "--dpi=600"]
-        )
+        result = core.commandline(["core.py", "test.ef", "--png", "--dpi=600"])
         (
             output_mode,
             pdf_requested,
@@ -731,9 +727,7 @@ class TestCommandlineArguments:
 
     def test_commandline_png_output_file(self):
         """Test PNG output with custom filename."""
-        result = core.commandline(
-            ["core.py", "test.ef", "--output=custom.png"]
-        )
+        result = core.commandline(["core.py", "test.ef", "--output=custom.png"])
         (
             output_mode,
             pdf_requested,
@@ -784,9 +778,7 @@ class TestCommandlineArguments:
 
     def test_commandline_pdf_output_file(self):
         """Test PDF output with custom filename."""
-        result = core.commandline(
-            ["core.py", "test.ef", "--output=custom.pdf"]
-        )
+        result = core.commandline(["core.py", "test.ef", "--output=custom.pdf"])
         (
             output_mode,
             pdf_requested,
@@ -888,9 +880,7 @@ class TestCommandlineArguments:
 
     def test_commandline_tex_output_file(self):
         """Test LaTeX output with custom filename."""
-        result = core.commandline(
-            ["core.py", "test.ef", "--output=custom.tex"]
-        )
+        result = core.commandline(["core.py", "test.ef", "--output=custom.tex"])
         (
             output_mode,
             pdf_requested,
@@ -986,9 +976,7 @@ class TestCommandlineArguments:
         assert dpi == 300  # Should default to 300 for out-of-range values
 
         # Too high DPI should default to 300
-        result = core.commandline(
-            ["core.py", "test.ef", "--png", "--dpi=5000"]
-        )
+        result = core.commandline(["core.py", "test.ef", "--png", "--dpi=5000"])
         (
             output_mode,
             pdf_requested,
@@ -1033,9 +1021,7 @@ class TestCommandlineArguments:
 
     def test_commandline_invalid_dpi_string(self):
         """Test non-numeric DPI values."""
-        result = core.commandline(
-            ["core.py", "test.ef", "--png", "--dpi=high"]
-        )
+        result = core.commandline(["core.py", "test.ef", "--png", "--dpi=high"])
         (
             output_mode,
             pdf_requested,
@@ -1131,9 +1117,7 @@ class TestCommandlineArguments:
 
     def test_commandline_svg_output_file(self):
         """Test SVG output with custom filename."""
-        result = core.commandline(
-            ["core.py", "test.ef", "--output=custom.svg"]
-        )
+        result = core.commandline(["core.py", "test.ef", "--output=custom.svg"])
         (
             output_mode,
             pdf_requested,
@@ -1207,9 +1191,7 @@ def test_commandline_action_label_position_by_player():
 
 def test_commandline_action_label_position_by_level():
     """Test that --action-label-position-by=level is parsed correctly."""
-    result = core.commandline(
-        ["efgviz", "game.ef", "--action-label-position-by=level"]
-    )
+    result = core.commandline(["efgviz", "game.ef", "--action-label-position-by=level"])
     (
         *_rest,
         vary_action_label_positions,
@@ -1223,7 +1205,12 @@ def test_commandline_action_label_position_by_level():
 def test_commandline_vary_action_label_positions_by_player():
     """Test that --vary-action-label-positions-by=player is parsed correctly."""
     result = core.commandline(
-        ["efgviz", "game.ef", "--vary-action-label-positions", "--vary-action-label-positions-by=player"]
+        [
+            "efgviz",
+            "game.ef",
+            "--vary-action-label-positions",
+            "--vary-action-label-positions-by=player",
+        ]
     )
     (
         *_rest,
@@ -1239,7 +1226,12 @@ def test_commandline_vary_action_label_positions_by_player():
 def test_commandline_vary_action_label_positions_by_level():
     """Test that --vary-action-label-positions-by=level is parsed correctly."""
     result = core.commandline(
-        ["efgviz", "game.ef", "--vary-action-label-positions", "--vary-action-label-positions-by=level"]
+        [
+            "efgviz",
+            "game.ef",
+            "--vary-action-label-positions",
+            "--vary-action-label-positions-by=level",
+        ]
     )
     (
         *_rest,
@@ -1255,9 +1247,13 @@ def test_commandline_vary_action_label_positions_by_level():
 def test_commandline_vary_action_label_positions_choices():
     """Test that --vary-action-label-positions-choices parses a comma-separated list."""
     result = core.commandline(
-        ["efgviz", "game.ef", "--vary-action-label-positions",
-         "--vary-action-label-positions-by=player",
-         "--vary-action-label-positions-choices=0,1"]
+        [
+            "efgviz",
+            "game.ef",
+            "--vary-action-label-positions",
+            "--vary-action-label-positions-by=player",
+            "--vary-action-label-positions-choices=0,1",
+        ]
     )
     (
         *_rest,
@@ -1274,9 +1270,13 @@ def test_commandline_vary_action_label_positions_choices():
 def test_commandline_vary_choices_level():
     """Test --vary-action-label-positions-choices with level-based vary."""
     result = core.commandline(
-        ["efgviz", "game.ef", "--vary-action-label-positions",
-         "--vary-action-label-positions-by=level",
-         "--vary-action-label-positions-choices=2,3"]
+        [
+            "efgviz",
+            "game.ef",
+            "--vary-action-label-positions",
+            "--vary-action-label-positions-by=level",
+            "--vary-action-label-positions-choices=2,3",
+        ]
     )
     (
         *_rest,
@@ -1349,9 +1349,7 @@ class TestPdfGenerationIntegration:
     def test_pdf_from_ef_file(self, tmp_path):
         ef_file = tmp_path / "game.ef"
         ef_file.write_text(_simple_ef_content())
-        pdf_path = core.pdf(
-            str(ef_file), save_to=str(tmp_path / "out.pdf")
-        )
+        pdf_path = core.pdf(str(ef_file), save_to=str(tmp_path / "out.pdf"))
         assert os.path.isfile(pdf_path)
         assert os.path.getsize(pdf_path) > 0
         with open(pdf_path, "rb") as f:
@@ -1382,9 +1380,7 @@ class TestPdfGenerationIntegration:
         ef_file = GAMES_DIR / "x1.ef"
         if not ef_file.exists():
             pytest.skip("Repository game file not found")
-        pdf_path = core.pdf(
-            str(ef_file), save_to=str(tmp_path / "x1.pdf")
-        )
+        pdf_path = core.pdf(str(ef_file), save_to=str(tmp_path / "x1.pdf"))
         assert os.path.isfile(pdf_path)
         with open(pdf_path, "rb") as f:
             assert f.read(4) == b"%PDF"
@@ -1402,9 +1398,7 @@ class TestPngGenerationIntegration:
     def test_png_from_ef_file(self, tmp_path):
         ef_file = tmp_path / "game.ef"
         ef_file.write_text(_simple_ef_content())
-        png_path = core.png(
-            str(ef_file), save_to=str(tmp_path / "out.png")
-        )
+        png_path = core.png(str(ef_file), save_to=str(tmp_path / "out.png"))
         assert os.path.isfile(png_path)
         assert os.path.getsize(png_path) > 0
         with open(png_path, "rb") as f:
@@ -1432,9 +1426,7 @@ class TestSvgGenerationIntegration:
     def test_svg_from_ef_file(self, tmp_path):
         ef_file = tmp_path / "game.ef"
         ef_file.write_text(_simple_ef_content())
-        svg_path = core.svg(
-            str(ef_file), save_to=str(tmp_path / "out.svg")
-        )
+        svg_path = core.svg(str(ef_file), save_to=str(tmp_path / "out.svg"))
         assert os.path.isfile(svg_path)
         assert os.path.getsize(svg_path) > 0
         with open(svg_path) as f:
@@ -1521,9 +1513,7 @@ class TestGenerateTikzOptions:
         ef_file = GAMES_DIR / "x1.ef"
         if not ef_file.exists():
             pytest.skip("Repository game file not found")
-        result = core.tikz(
-            str(ef_file), edge_thickness=2.0, action_label_position=0.8
-        )
+        result = core.tikz(str(ef_file), edge_thickness=2.0, action_label_position=0.8)
         assert "\\treethickn2.0pt" in result
         assert "\\begin{tikzpicture}" in result
 
@@ -1589,6 +1579,7 @@ def test_pygambit_pdf_smoke(efg_path, tmp_path):
 # ---------------------------------------------------------------------------
 # NFG (Normal Form Game) rendering tests
 # ---------------------------------------------------------------------------
+
 
 def _find_nfg_files():
     """Return list of .nfg paths under games/nfg/."""
@@ -1784,9 +1775,7 @@ def test_commandline_horizontal_flag():
 
 def test_commandline_color_scheme():
     """Test parsing of the --color-scheme option."""
-    result = core.commandline(
-        ["core.py", "test.ef", "--color-scheme=distinctipy"]
-    )
+    result = core.commandline(["core.py", "test.ef", "--color-scheme=distinctipy"])
     assert result[25] == "distinctipy"
 
 
@@ -1873,9 +1862,7 @@ class TestHorizontalLayout:
             # Vertical legend (default)
             res_v = core.tikz(ef_file_path, color_scheme="gambit")
             # Horizontal legend
-            res_h = core.tikz(
-                ef_file_path, color_scheme="gambit", horizontal=True
-            )
+            res_h = core.tikz(ef_file_path, color_scheme="gambit", horizontal=True)
 
             assert "Player color legend" in res_v
             assert "Player color legend" in res_h
@@ -1913,6 +1900,7 @@ class TestHorizontalLayout:
             ef_file_path = f.name
 
         try:
+
             def get_scope_xy(tikz):
                 m = re.search(
                     r"\\begin{scope}\[scale=1,shift={\(([\d.-]+),([\d.-]+)\)}\]",
@@ -1921,10 +1909,18 @@ class TestHorizontalLayout:
                 assert m, f"No scope shift found in: {tikz}"
                 return float(m.group(1)), float(m.group(2))
 
-            res_tl = core.tikz(ef_file_path, color_scheme="gambit", legend_position="top-left")
-            res_tr = core.tikz(ef_file_path, color_scheme="gambit", legend_position="top-right")
-            res_bl = core.tikz(ef_file_path, color_scheme="gambit", legend_position="bottom-left")
-            res_br = core.tikz(ef_file_path, color_scheme="gambit", legend_position="bottom-right")
+            res_tl = core.tikz(
+                ef_file_path, color_scheme="gambit", legend_position="top-left"
+            )
+            res_tr = core.tikz(
+                ef_file_path, color_scheme="gambit", legend_position="top-right"
+            )
+            res_bl = core.tikz(
+                ef_file_path, color_scheme="gambit", legend_position="bottom-left"
+            )
+            res_br = core.tikz(
+                ef_file_path, color_scheme="gambit", legend_position="bottom-right"
+            )
 
             x_tl, y_tl = get_scope_xy(res_tl)
             x_tr, y_tr = get_scope_xy(res_tr)
@@ -1966,6 +1962,7 @@ class TestHorizontalLayout:
             ef_file_path = f.name
 
         try:
+
             def get_scope_xy(tikz):
                 m = re.search(
                     r"\\begin{scope}\[scale=1,shift={\(([\d.-]+),([\d.-]+)\)}, rotate=-90\]",
@@ -1974,10 +1971,30 @@ class TestHorizontalLayout:
                 assert m, f"No horizontal scope shift found in: {tikz}"
                 return float(m.group(1)), float(m.group(2))
 
-            res_tl = core.tikz(ef_file_path, color_scheme="gambit", horizontal=True, legend_position="top-left")
-            res_tr = core.tikz(ef_file_path, color_scheme="gambit", horizontal=True, legend_position="top-right")
-            res_bl = core.tikz(ef_file_path, color_scheme="gambit", horizontal=True, legend_position="bottom-left")
-            res_br = core.tikz(ef_file_path, color_scheme="gambit", horizontal=True, legend_position="bottom-right")
+            res_tl = core.tikz(
+                ef_file_path,
+                color_scheme="gambit",
+                horizontal=True,
+                legend_position="top-left",
+            )
+            res_tr = core.tikz(
+                ef_file_path,
+                color_scheme="gambit",
+                horizontal=True,
+                legend_position="top-right",
+            )
+            res_bl = core.tikz(
+                ef_file_path,
+                color_scheme="gambit",
+                horizontal=True,
+                legend_position="bottom-left",
+            )
+            res_br = core.tikz(
+                ef_file_path,
+                color_scheme="gambit",
+                horizontal=True,
+                legend_position="bottom-right",
+            )
 
             x_tl, y_tl = get_scope_xy(res_tl)
             x_tr, y_tr = get_scope_xy(res_tr)
@@ -2053,7 +2070,9 @@ class TestHorizontalLayout:
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
             f.write("player 1\n")
             f.write("level 0 node root player 1\n")
-            f.write("level 1 node child from 0,root player 1 move MyAction payoffs 1 2\n")
+            f.write(
+                "level 1 node child from 0,root player 1 move MyAction payoffs 1 2\n"
+            )
             ef_file_path = f.name
 
         try:
@@ -2066,7 +2085,11 @@ class TestHorizontalLayout:
             res_bg = core.tikz(ef_file_path, label_bg=True)
             assert "MyAction" in res_bg
             # Because it is centered, there are no side or shift options in the action label node
-            action_lines = [line for line in res_bg.split("\n") if "MyAction" in line and not line.strip().startswith("%")]
+            action_lines = [
+                line
+                for line in res_bg.split("\n")
+                if "MyAction" in line and not line.strip().startswith("%")
+            ]
             assert len(action_lines) == 1
             action_line = action_lines[0]
             assert "xshift" not in action_line
@@ -2094,7 +2117,9 @@ def test_chance_node_probability_with_long_label():
         path = f.name
     try:
         result = core.tikz(path)
-        assert "\\frac{1}{6}" in result, "Probability fraction must appear in TikZ output"
+        assert "\\frac{1}{6}" in result, (
+            "Probability fraction must appear in TikZ output"
+        )
     finally:
         os.unlink(path)
 
@@ -2131,9 +2156,7 @@ def test_action_label_dist():
         assert "xshift=1mm" in res2 or "xshift=-1mm" in res2
 
         # Horizontal dist=2.0 -> yshift 1mm
-        res3 = core.tikz(
-            ef_file_path, action_label_dist=2.0, horizontal=True
-        )
+        res3 = core.tikz(ef_file_path, action_label_dist=2.0, horizontal=True)
         assert "yshift=1mm" in res3 or "yshift=-1mm" in res3
     except Exception as e:
         raise e
@@ -2166,9 +2189,7 @@ def test_commandline_iset_options():
     result_dotted = core.commandline(["core.py", "test.ef", "--iset-dotted"])
     assert result_dotted[18] == "dotted"
 
-    result_none = core.commandline(
-        ["core.py", "test.ef", "--iset-boundary=none"]
-    )
+    result_none = core.commandline(["core.py", "test.ef", "--iset-boundary=none"])
     assert result_none[18] == "none"
 
 
@@ -2225,9 +2246,7 @@ class TestIsetStylingIntegration:
         assert "dotted" in iset_draw_dotted[0]
 
         # 4. None (invisible)
-        res_none = core.tikz(
-            ef_file_path, color_scheme="gambit", iset_boundary="none"
-        )
+        res_none = core.tikz(ef_file_path, color_scheme="gambit", iset_boundary="none")
         iset_draw_none = [
             line
             for line in res_none.split("\n")
@@ -2283,7 +2302,9 @@ class TestConverter:
         """Test basic EF to EFG conversion produces valid EFG output."""
         ef_file = "games/example.ef"
         if not os.path.exists(ef_file):
-            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+            ef_file = os.path.join(
+                os.path.dirname(__file__), "..", "games", "example.ef"
+            )
         if not os.path.exists(ef_file):
             pytest.skip("example.ef not found")
 
@@ -2303,7 +2324,9 @@ class TestConverter:
         """Test that save_to controls the output filename."""
         ef_file = "games/example.ef"
         if not os.path.exists(ef_file):
-            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+            ef_file = os.path.join(
+                os.path.dirname(__file__), "..", "games", "example.ef"
+            )
         if not os.path.exists(ef_file):
             pytest.skip("example.ef not found")
 
@@ -2316,7 +2339,9 @@ class TestConverter:
         """Test that .efg extension is added automatically if missing."""
         ef_file = "games/example.ef"
         if not os.path.exists(ef_file):
-            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+            ef_file = os.path.join(
+                os.path.dirname(__file__), "..", "games", "example.ef"
+            )
         if not os.path.exists(ef_file):
             pytest.skip("example.ef not found")
 
@@ -2329,7 +2354,9 @@ class TestConverter:
         """Test that custom title is used in the EFG prologue."""
         ef_file = "games/example.ef"
         if not os.path.exists(ef_file):
-            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+            ef_file = os.path.join(
+                os.path.dirname(__file__), "..", "games", "example.ef"
+            )
         if not os.path.exists(ef_file):
             pytest.skip("example.ef not found")
 
@@ -2343,7 +2370,9 @@ class TestConverter:
         """Test that payoff values survive EF to EFG conversion."""
         ef_file = "games/example.ef"
         if not os.path.exists(ef_file):
-            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+            ef_file = os.path.join(
+                os.path.dirname(__file__), "..", "games", "example.ef"
+            )
         if not os.path.exists(ef_file):
             pytest.skip("example.ef not found")
 
@@ -2361,7 +2390,9 @@ class TestConverter:
         """Test that the generated EFG file can be loaded by pygambit."""
         ef_file = "games/example.ef"
         if not os.path.exists(ef_file):
-            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+            ef_file = os.path.join(
+                os.path.dirname(__file__), "..", "games", "example.ef"
+            )
         if not os.path.exists(ef_file):
             pytest.skip("example.ef not found")
 
@@ -2466,15 +2497,40 @@ class TestConverter:
 
         result = commandline(["efgviz", "games/example.ef", "--to-efg"])
         (
-            output_mode, pdf_requested, png_requested, svg_requested,
-            tex_requested, output_file, dpi, font_family, font_bold,
-            font_italic, font_size, custom_colors, horizontal,
-            mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
-            node_size, label_bg, label_bg_color, label_bg_opacity,
-            label_bg_by, label_bg_style,
-            color_scheme, edge_thickness, action_label_position,
-            level_scaling, sublevel_scaling, width_scaling,
-            shared_terminal_depth, to_efg, to_ef,
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal,
+            mirror,
+            legend_position,
+            action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
+            color_scheme,
+            edge_thickness,
+            action_label_position,
+            level_scaling,
+            sublevel_scaling,
+            width_scaling,
+            shared_terminal_depth,
+            to_efg,
+            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -2489,15 +2545,40 @@ class TestConverter:
 
         result = commandline(["efgviz", "games/efg/test.efg", "--to-ef"])
         (
-            output_mode, pdf_requested, png_requested, svg_requested,
-            tex_requested, output_file, dpi, font_family, font_bold,
-            font_italic, font_size, custom_colors, horizontal,
-            mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
-            node_size, label_bg, label_bg_color, label_bg_opacity,
-            label_bg_by, label_bg_style,
-            color_scheme, edge_thickness, action_label_position,
-            level_scaling, sublevel_scaling, width_scaling,
-            shared_terminal_depth, to_efg, to_ef,
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal,
+            mirror,
+            legend_position,
+            action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
+            color_scheme,
+            edge_thickness,
+            action_label_position,
+            level_scaling,
+            sublevel_scaling,
+            width_scaling,
+            shared_terminal_depth,
+            to_efg,
+            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -2552,7 +2633,7 @@ class TestLabelBackground:
         # label_bg_color is a fallback; player colors still take precedence for labelled nodes
         result = core.tikz(simple_ef, label_bg=True, label_bg_color="yellow")
         assert "fill opacity=" in result  # fill is present (player colour used)
-        assert "text=white" in result    # text is always white when label_bg active
+        assert "text=white" in result  # text is always white when label_bg active
 
     def test_label_bg_custom_hex_color(self, simple_ef):
         # Hex fallback colour is still defined in preamble even though player colours take precedence
@@ -2577,20 +2658,50 @@ class TestLabelBackground:
     def test_cli_label_bg_flag(self):
         from efgviz.core import commandline
 
-        result = commandline([
-            "efgviz", "game.ef",
-            "--label-bg", "--label-bg-color=#aabbcc", "--label-bg-opacity=0.5",
-        ])
+        result = commandline(
+            [
+                "efgviz",
+                "game.ef",
+                "--label-bg",
+                "--label-bg-color=#aabbcc",
+                "--label-bg-opacity=0.5",
+            ]
+        )
         (
-            output_mode, pdf_requested, png_requested, svg_requested,
-            tex_requested, output_file, dpi, font_family, font_bold,
-            font_italic, font_size, custom_colors, horizontal,
-            mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
-            node_size, label_bg, label_bg_color, label_bg_opacity,
-            label_bg_by, label_bg_style,
-            color_scheme, edge_thickness, action_label_position,
-            level_scaling, sublevel_scaling, width_scaling,
-            shared_terminal_depth, to_efg, to_ef,
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal,
+            mirror,
+            legend_position,
+            action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
+            color_scheme,
+            edge_thickness,
+            action_label_position,
+            level_scaling,
+            sublevel_scaling,
+            width_scaling,
+            shared_terminal_depth,
+            to_efg,
+            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -2676,17 +2787,44 @@ class TestLabelBackground:
     def test_cli_label_bg_per_player_indices(self):
         from efgviz.core import commandline
 
-        result = commandline(["efgviz", "game.ef", "--label-bg=1,2", "--label-bg-by=player"])
+        result = commandline(
+            ["efgviz", "game.ef", "--label-bg=1,2", "--label-bg-by=player"]
+        )
         (
-            output_mode, pdf_requested, png_requested, svg_requested,
-            tex_requested, output_file, dpi, font_family, font_bold,
-            font_italic, font_size, custom_colors, horizontal,
-            mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
-            node_size, label_bg, label_bg_color, label_bg_opacity,
-            label_bg_by, label_bg_style,
-            color_scheme, edge_thickness, action_label_position,
-            level_scaling, sublevel_scaling, width_scaling,
-            shared_terminal_depth, to_efg, to_ef,
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal,
+            mirror,
+            legend_position,
+            action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
+            color_scheme,
+            edge_thickness,
+            action_label_position,
+            level_scaling,
+            sublevel_scaling,
+            width_scaling,
+            shared_terminal_depth,
+            to_efg,
+            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -2698,17 +2836,44 @@ class TestLabelBackground:
     def test_cli_label_bg_style(self):
         from efgviz.core import commandline
 
-        result = commandline(["efgviz", "game.ef", "--label-bg", "--label-bg-style=white_bg"])
+        result = commandline(
+            ["efgviz", "game.ef", "--label-bg", "--label-bg-style=white_bg"]
+        )
         (
-            output_mode, pdf_requested, png_requested, svg_requested,
-            tex_requested, output_file, dpi, font_family, font_bold,
-            font_italic, font_size, custom_colors, horizontal,
-            mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
-            node_size, label_bg, label_bg_color, label_bg_opacity,
-            label_bg_by, label_bg_style,
-            color_scheme, edge_thickness, action_label_position,
-            level_scaling, sublevel_scaling, width_scaling,
-            shared_terminal_depth, to_efg, to_ef,
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal,
+            mirror,
+            legend_position,
+            action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
+            color_scheme,
+            edge_thickness,
+            action_label_position,
+            level_scaling,
+            sublevel_scaling,
+            width_scaling,
+            shared_terminal_depth,
+            to_efg,
+            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -2724,6 +2889,7 @@ class TestVaryActionLabelPositions:
     def test_commandline_vary_action_label_positions_flag(self):
         """Test parsing of the --vary-action-label-positions option."""
         from efgviz.core import commandline
+
         result = commandline(["core.py", "test.ef", "--vary-action-label-positions"])
         assert result[34] is True
 
@@ -2749,19 +2915,17 @@ class TestPlayerActionLabelPositions:
         from efgviz.core import commandline
 
         # Dictionary format
-        result = commandline([
-            "core.py", "test.ef",
-            "--action-label-position=0:0.3,1:0.65"
-        ])
+        result = commandline(
+            ["core.py", "test.ef", "--action-label-position=0:0.3,1:0.65"]
+        )
         assert isinstance(result[27], dict)
         assert result[27][0] == 0.3
         assert result[27][1] == 0.65
 
         # Invalid format falls back
-        result_invalid = commandline([
-            "core.py", "test.ef",
-            "--action-label-position=invalid"
-        ])
+        result_invalid = commandline(
+            ["core.py", "test.ef", "--action-label-position=invalid"]
+        )
         assert result_invalid[27] == 0.5
 
     def test_player_action_label_positions_layout(self, tmp_path):
@@ -2792,11 +2956,14 @@ class TestLevelActionLabelPositions:
         """Test that --action-label-position-by=level is parsed correctly."""
         from efgviz.core import commandline
 
-        result = commandline([
-            "core.py", "test.ef",
-            "--action-label-position=0:0.3,1:0.7",
-            "--action-label-position-by=level",
-        ])
+        result = commandline(
+            [
+                "core.py",
+                "test.ef",
+                "--action-label-position=0:0.3,1:0.7",
+                "--action-label-position-by=level",
+            ]
+        )
         # action_label_position_by is at index 33
         assert result[35] == "level"
         assert isinstance(result[27], dict)
@@ -2923,7 +3090,11 @@ class TestEF3Format:
         path = self._get_ef_path("example.ef")
         if not os.path.exists(path):
             pytest.skip("example.ef not found")
-        lines = [l.strip() for l in open(path).read().splitlines() if l.strip() and not l.strip().startswith("%")]
+        lines = [
+            l.strip()
+            for l in open(path).read().splitlines()
+            if l.strip() and not l.strip().startswith("%")
+        ]
         assert core._detect_ef_version(lines) == 2
 
     def test_detect_ef_version_example_v3(self):
@@ -2931,12 +3102,17 @@ class TestEF3Format:
         path = self._get_ef_path("example_v3.ef")
         if not os.path.exists(path):
             pytest.skip("example_v3.ef not found")
-        lines = [l.strip() for l in open(path).read().splitlines() if l.strip() and not l.strip().startswith("%")]
+        lines = [
+            l.strip()
+            for l in open(path).read().splitlines()
+            if l.strip() and not l.strip().startswith("%")
+        ]
         assert core._detect_ef_version(lines) == 3
 
     def test_parse_ef_v3_node_ids_are_bare_strings(self, tmp_path):
         """Parsing an EF 3.0 file yields node IDs that are bare strings, not 'level,name'."""
         from efgviz.converter import parse_ef_file
+
         path = self._get_ef_path("example_v3.ef")
         if not os.path.exists(path):
             pytest.skip("example_v3.ef not found")
@@ -2950,6 +3126,7 @@ class TestEF3Format:
     def test_parse_ef_v3_parent_links(self, tmp_path):
         """Parent-child links are correctly built in EF 3.0 format."""
         from efgviz.converter import parse_ef_file
+
         path = self._get_ef_path("example_v3.ef")
         if not os.path.exists(path):
             pytest.skip("example_v3.ef not found")
@@ -2961,6 +3138,7 @@ class TestEF3Format:
     def test_parse_ef_v3_iset_assignment(self, tmp_path):
         """Information sets use bare node IDs in EF 3.0."""
         from efgviz.converter import parse_ef_file
+
         path = self._get_ef_path("example_v3.ef")
         if not os.path.exists(path):
             pytest.skip("example_v3.ef not found")
@@ -3015,13 +3193,14 @@ class TestEF3Format:
             pytest.skip("example.ef or example_v3.ef not found")
         result_v2 = core.tikz(v2_path)
         result_v3 = core.tikz(v3_path)
+
         # Strip comment lines (filename comment and source-echo %% lines) before comparing:
         # these differ between v2 and v3 due to different source text, but the rendering is identical.
         def strip_comments(s):
             return "\n".join(l for l in s.splitlines() if not l.startswith("%"))
+
         assert strip_comments(result_v2) == strip_comments(result_v3)
 
 
 if __name__ == "__main__":
     pytest.main([__file__])
-

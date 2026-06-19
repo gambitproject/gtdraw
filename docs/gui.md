@@ -2,7 +2,7 @@
 
 `efgviz` includes a lightweight, interactive GUI built with Streamlit. It allows you to upload `.ef` or `.efg` files and adjust drawing parameters in real-time, previewing changes visually. You can run the GUI locally or used our hosted version on the Streamlit Community Cloud:
 
-:::{card} 🚀 Try DrawTree Online!
+:::{card} 🚀 Try EFGViz Online!
 :link: https://drawtree.streamlit.app/
 
 **Visualize your game trees instantly.** No installation required.
