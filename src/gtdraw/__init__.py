@@ -1,5 +1,5 @@
 """
-EFGViz - Game tree drawing tool for extensive form games
+GTDraw - Game tree drawing tool for extensive form games
 
 This package provides functionality to generate TikZ code for game trees
 from extensive form (.ef) files, with support for Jupyter notebooks.

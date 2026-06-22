@@ -1,7 +1,7 @@
-# efgviz GUI master settings
+# gtdraw GUI master settings
 # Per-game overrides are written here automatically as you adjust settings.
 # Edit the defaults section to change settings that apply to all games.
-# Consult https://www.gambit-project.org/efgviz/ for available settings.
+# Consult https://www.gambit-project.org/gtdraw/ for available settings.
 
 defaults:
   color_scheme: colorblind

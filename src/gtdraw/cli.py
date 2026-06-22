@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Command-line interface for EFGViz.
+Command-line interface for GTDraw.
 """
 
 import sys
@@ -20,25 +20,25 @@ def main():
     """Main entry point for the draw CLI."""
     # Display help if no arguments provided
     if len(sys.argv) == 1:
-        print("EFGViz - Game tree drawing tool for extensive form games")
+        print("GTDraw - Game tree drawing tool for extensive form games")
         print()
         print("Usage:")
-        print("  efgviz <file.ef> [options]           # Generate TikZ code")
+        print("  gtdraw <file.ef> [options]           # Generate TikZ code")
         print(
-            "  efgviz <file.ef> --pdf [options]     # Generate PDF (requires pdflatex)"
+            "  gtdraw <file.ef> --pdf [options]     # Generate PDF (requires pdflatex)"
         )
         print(
-            "  efgviz <file.ef> --png [options]     # Generate PNG (requires pdflatex + imagemagick/ghostscript)"
+            "  gtdraw <file.ef> --png [options]     # Generate PNG (requires pdflatex + imagemagick/ghostscript)"
         )
         print(
-            "  efgviz <file.ef> --svg [options]     # Generate SVG (requires pdflatex + pdf2svg)"
+            "  gtdraw <file.ef> --svg [options]     # Generate SVG (requires pdflatex + pdf2svg)"
         )
-        print("  efgviz <file.ef> --tex [options]     # Generate LaTeX document")
+        print("  gtdraw <file.ef> --tex [options]     # Generate LaTeX document")
         print(
-            "  efgviz <file.ef> --output=name.ext   # Generate with custom filename (.pdf, .png, .svg, or .tex)"
+            "  gtdraw <file.ef> --output=name.ext   # Generate with custom filename (.pdf, .png, .svg, or .tex)"
         )
         print(
-            "  efgviz --gui                         # Launch interactive GUI (requires streamlit)"
+            "  gtdraw --gui                         # Launch interactive GUI (requires streamlit)"
         )
         print()
         print("Options:")
@@ -84,25 +84,25 @@ def main():
         print("  --shared-terminal-depth Enforce shared terminal node depth for .efg files")
         print()
         print("Normal form games (NFG):")
-        print("  efgviz games/nfg/game.nfg            # Print \\begin{game}...\\end{game} body")
-        print("  efgviz games/nfg/game.nfg --pdf      # Compile payoff table to PDF (requires sgame)")
-        print("  efgviz games/nfg/game.nfg --png      # Compile payoff table to PNG")
+        print("  gtdraw games/nfg/game.nfg            # Print \\begin{game}...\\end{game} body")
+        print("  gtdraw games/nfg/game.nfg --pdf      # Compile payoff table to PDF (requires sgame)")
+        print("  gtdraw games/nfg/game.nfg --png      # Compile payoff table to PNG")
         print()
         print("Format conversion:")
         print("  --to-efg     Convert .ef file to Gambit .efg format")
         print("  --to-ef      Convert .efg file to .ef format (requires pygambit)")
         print()
         print("Examples:")
-        print("  efgviz games/example.ef --pdf")
-        print("  efgviz games/example.ef --png --dpi=600")
-        print("  efgviz games/example.ef --tex")
-        print("  efgviz games/example.ef --output=mygame.tex scale=0.8")
-        print("  efgviz games/example.ef --pdf --font=sans-serif --bold")
+        print("  gtdraw games/example.ef --pdf")
+        print("  gtdraw games/example.ef --png --dpi=600")
+        print("  gtdraw games/example.ef --tex")
+        print("  gtdraw games/example.ef --output=mygame.tex scale=0.8")
+        print("  gtdraw games/example.ef --pdf --font=sans-serif --bold")
         print(
-            '  efgviz games/example.ef --png --custom-colors="0:#FF0000,1:#0000FF"'
+            '  gtdraw games/example.ef --png --custom-colors="0:#FF0000,1:#0000FF"'
         )
-        print("  efgviz games/example.ef --to-efg")
-        print("  efgviz games/efg/2s2x2x2.efg --to-ef")
+        print("  gtdraw games/example.ef --to-efg")
+        print("  gtdraw games/efg/2s2x2x2.efg --to-ef")
         print()
         print(
             "Note: PDF/PNG/SVG generation requires pdflatex. PNG also needs ImageMagick or Ghostscript. SVG needs pdf2svg."

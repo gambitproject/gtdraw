@@ -16,8 +16,8 @@ from unittest.mock import patch
 import pygambit
 
 # Import the module under test
-import efgviz.core as core
-from efgviz.converter import ef_to_efg, efg_to_ef
+import gtdraw.core as core
+from gtdraw.converter import ef_to_efg, efg_to_ef
 
 
 class TestUtilityFunctions:
@@ -107,7 +107,7 @@ class TestNodeOperations:
     def test_cleannodeid(self):
         """Test node ID standardization."""
         # Mock the error function to avoid output during tests
-        with patch("efgviz.core.error"):
+        with patch("gtdraw.core.error"):
             assert core.cleannodeid("1,test") == "1,test"
             assert core.cleannodeid("0.5,node") == "0.5,node"
             # Test error cases
@@ -133,7 +133,7 @@ class TestOutputRoutines:
 
     def test_comment(self):
         """Test comment output."""
-        with patch("efgviz.core.outs") as mock_outs:
+        with patch("gtdraw.core.outs") as mock_outs:
             core.comment("test comment")
             mock_outs.assert_called_with("%% test comment")
 
@@ -198,7 +198,7 @@ class TestCommandLineProcessing:
         """Test invalid scale argument handling."""
         original_scale = core.scale
         try:
-            with patch("efgviz.core.outs") as mock_outs:
+            with patch("gtdraw.core.outs") as mock_outs:
                 core.commandline(["core.py", "scale=invalid"])
                 # Should output error message
                 mock_outs.assert_called()
@@ -214,7 +214,7 @@ class TestPlayerHandling:
     def test_player_basic(self):
         """Test basic player parsing."""
         words = ["player", "1"]
-        with patch("efgviz.core.defout"):
+        with patch("gtdraw.core.defout"):
             p, advance = core.player(words)
             assert p == 1
             assert advance == 2
@@ -222,7 +222,7 @@ class TestPlayerHandling:
     def test_player_with_name(self):
         """Test player parsing with name."""
         words = ["player", "2", "name", "Alice"]
-        with patch("efgviz.core.defout"):
+        with patch("gtdraw.core.defout"):
             p, advance = core.player(words)
             assert p == 2
             assert advance == 4
@@ -231,7 +231,7 @@ class TestPlayerHandling:
     def test_player_invalid_number(self):
         """Test player parsing with invalid number."""
         words = ["player", "invalid"]
-        with patch("efgviz.core.error") as mock_error:
+        with patch("gtdraw.core.error") as mock_error:
             p, advance = core.player(words)
             assert p == -1
             mock_error.assert_called()
@@ -259,7 +259,7 @@ class TestGeometryFunctions:
         assert "arc(" in result
 
 
-class TestEFGVizFunction:
+class TestGTDrawFunction:
     """Test the new streamlined draw function."""
 
     def test_draw_basic(self):
@@ -327,7 +327,7 @@ class TestEFGVizFunction:
             # Case 1: extension already loaded
             em = DummyEM(loaded={"jupyter_tikz"})
             ip = DummyIP(em)
-            with patch("efgviz.core.get_ipython", return_value=ip):
+            with patch("gtdraw.core.get_ipython", return_value=ip):
                 res = core.draw(ef_file_path)
                 # Should call run_cell_magic and return its value
                 assert res == "MAGIC-RESULT"
@@ -335,7 +335,7 @@ class TestEFGVizFunction:
             # Case 2: extension not loaded -> run_line_magic should be called
             em2 = DummyEM(loaded=set())
             ip2 = DummyIP(em2)
-            with patch("efgviz.core.get_ipython", return_value=ip2):
+            with patch("gtdraw.core.get_ipython", return_value=ip2):
                 res2 = core.draw(ef_file_path)
                 assert res2 == "MAGIC-RESULT"
                 # run_line_magic should have been called to load the extension
@@ -399,7 +399,7 @@ class TestPngGeneration:
         with pytest.raises(FileNotFoundError):
             core.png("nonexistent.ef")
 
-    @patch("efgviz.core.subprocess.run")
+    @patch("gtdraw.core.subprocess.run")
     def test_png_pdflatex_not_found(self, mock_run):
         """Test PNG generation when pdflatex is not available."""
         # Mock pdflatex not being found
@@ -429,7 +429,7 @@ class TestPngGeneration:
 
         try:
             # Mock both pdflatex and convert being unavailable to test error handling
-            with patch("efgviz.core.subprocess.run") as mock_run:
+            with patch("gtdraw.core.subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError("Command not found")
 
                 with pytest.raises(RuntimeError):
@@ -448,7 +448,7 @@ class TestPngGeneration:
 
         try:
             # Test that custom DPI is handled properly
-            with patch("efgviz.core.subprocess.run") as mock_run:
+            with patch("gtdraw.core.subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError("Command not found")
 
                 with pytest.raises(RuntimeError):
@@ -466,7 +466,7 @@ class TestPngGeneration:
             ef_file_path = ef_file.name
 
         try:
-            with patch("efgviz.core.subprocess.run") as mock_run:
+            with patch("gtdraw.core.subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError("Command not found")
 
                 with pytest.raises(RuntimeError):
@@ -482,7 +482,7 @@ class TestSvgGeneration:
         with pytest.raises(FileNotFoundError):
             core.svg("nonexistent.ef")
 
-    @patch("efgviz.core.subprocess.run")
+    @patch("gtdraw.core.subprocess.run")
     def test_svg_pdflatex_not_found(self, mock_run):
         mock_run.side_effect = FileNotFoundError("pdflatex not found")
         with tempfile.NamedTemporaryFile(
@@ -505,7 +505,7 @@ class TestSvgGeneration:
             ef_file_path = ef_file.name
 
         try:
-            with patch("efgviz.core.subprocess.run") as mock_run:
+            with patch("gtdraw.core.subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError("Command not found")
                 with pytest.raises(RuntimeError):
                     core.svg(ef_file_path)
@@ -520,7 +520,7 @@ class TestSvgGeneration:
             ef_file_path = ef_file.name
 
         try:
-            with patch("efgviz.core.subprocess.run") as mock_run:
+            with patch("gtdraw.core.subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError("Command not found")
                 with pytest.raises(RuntimeError):
                     core.svg(ef_file_path, save_to="custom_name.svg")
@@ -1170,14 +1170,14 @@ class TestCommandlineArguments:
 
 def test_commandline_action_label_dist():
     """Test parsing of action label distance flag."""
-    result = core.commandline(["efgviz", "game.ef", "--action-label-dist=2.5"])
+    result = core.commandline(["gtdraw", "game.ef", "--action-label-dist=2.5"])
     assert result[15] == 2.5
 
 
 def test_commandline_action_label_position_by_player():
     """Test that --action-label-position-by=player is parsed correctly (default)."""
     result = core.commandline(
-        ["efgviz", "game.ef", "--action-label-position-by=player"]
+        ["gtdraw", "game.ef", "--action-label-position-by=player"]
     )
     (
         *_rest,
@@ -1191,7 +1191,7 @@ def test_commandline_action_label_position_by_player():
 
 def test_commandline_action_label_position_by_level():
     """Test that --action-label-position-by=level is parsed correctly."""
-    result = core.commandline(["efgviz", "game.ef", "--action-label-position-by=level"])
+    result = core.commandline(["gtdraw", "game.ef", "--action-label-position-by=level"])
     (
         *_rest,
         vary_action_label_positions,
@@ -1206,7 +1206,7 @@ def test_commandline_vary_action_label_positions_by_player():
     """Test that --vary-action-label-positions-by=player is parsed correctly."""
     result = core.commandline(
         [
-            "efgviz",
+            "gtdraw",
             "game.ef",
             "--vary-action-label-positions",
             "--vary-action-label-positions-by=player",
@@ -1227,7 +1227,7 @@ def test_commandline_vary_action_label_positions_by_level():
     """Test that --vary-action-label-positions-by=level is parsed correctly."""
     result = core.commandline(
         [
-            "efgviz",
+            "gtdraw",
             "game.ef",
             "--vary-action-label-positions",
             "--vary-action-label-positions-by=level",
@@ -1248,7 +1248,7 @@ def test_commandline_vary_action_label_positions_choices():
     """Test that --vary-action-label-positions-choices parses a comma-separated list."""
     result = core.commandline(
         [
-            "efgviz",
+            "gtdraw",
             "game.ef",
             "--vary-action-label-positions",
             "--vary-action-label-positions-by=player",
@@ -1271,7 +1271,7 @@ def test_commandline_vary_choices_level():
     """Test --vary-action-label-positions-choices with level-based vary."""
     result = core.commandline(
         [
-            "efgviz",
+            "gtdraw",
             "game.ef",
             "--vary-action-label-positions",
             "--vary-action-label-positions-by=level",
@@ -2493,9 +2493,9 @@ class TestConverter:
 
     def test_commandline_to_efg_flag(self):
         """Test that --to-efg flag is parsed correctly."""
-        from efgviz.core import commandline
+        from gtdraw.core import commandline
 
-        result = commandline(["efgviz", "games/example.ef", "--to-efg"])
+        result = commandline(["gtdraw", "games/example.ef", "--to-efg"])
         (
             output_mode,
             pdf_requested,
@@ -2541,9 +2541,9 @@ class TestConverter:
 
     def test_commandline_to_ef_flag(self):
         """Test that --to-ef flag is parsed correctly."""
-        from efgviz.core import commandline
+        from gtdraw.core import commandline
 
-        result = commandline(["efgviz", "games/efg/test.efg", "--to-ef"])
+        result = commandline(["gtdraw", "games/efg/test.efg", "--to-ef"])
         (
             output_mode,
             pdf_requested,
@@ -2656,11 +2656,11 @@ class TestLabelBackground:
         assert "fill opacity=0" in result
 
     def test_cli_label_bg_flag(self):
-        from efgviz.core import commandline
+        from gtdraw.core import commandline
 
         result = commandline(
             [
-                "efgviz",
+                "gtdraw",
                 "game.ef",
                 "--label-bg",
                 "--label-bg-color=#aabbcc",
@@ -2712,21 +2712,21 @@ class TestLabelBackground:
         assert label_bg_opacity == pytest.approx(0.5)
 
     def test_label_bg_declares_layer(self, simple_ef):
-        from efgviz.core import tikz
+        from gtdraw.core import tikz
 
         code = tikz(str(simple_ef), label_bg=True)
         assert "\\pgfdeclarelayer{labels}" in code
         assert "\\pgfsetlayers{main,labels}" in code
 
     def test_label_bg_no_layer_when_disabled(self, simple_ef):
-        from efgviz.core import tikz
+        from gtdraw.core import tikz
 
         code = tikz(str(simple_ef), label_bg=False)
         assert "\\pgfdeclarelayer" not in code
         assert "\\pgfsetlayers" not in code
 
     def test_label_bg_labels_in_foreground(self, simple_ef):
-        from efgviz.core import tikz
+        from gtdraw.core import tikz
 
         code = tikz(str(simple_ef), label_bg=True)
         assert "\\begin{pgfonlayer}{labels}" in code
@@ -2734,28 +2734,28 @@ class TestLabelBackground:
 
     def test_label_bg_per_player_dict_enabled(self, simple_ef):
         # Player 1 enabled, player 2 not — fill should appear (player 1 label exists)
-        from efgviz.core import tikz
+        from gtdraw.core import tikz
 
         code = tikz(str(simple_ef), label_bg={1: True, 2: False}, label_bg_by="player")
         assert "fill opacity=" in code
 
     def test_label_bg_per_player_dict_all_disabled(self, simple_ef):
         # All players disabled — no fill
-        from efgviz.core import tikz
+        from gtdraw.core import tikz
 
         code = tikz(str(simple_ef), label_bg={1: False, 2: False}, label_bg_by="player")
         assert "fill opacity=" not in code
 
     def test_label_bg_per_level_dict(self, simple_ef):
         # Enable for level 0 only
-        from efgviz.core import tikz
+        from gtdraw.core import tikz
 
         code = tikz(str(simple_ef), label_bg={0: True}, label_bg_by="level")
         assert "fill opacity=" in code
 
     def test_label_bg_white_bg_style(self, simple_ef):
         # white_bg: fill=white and text= set to player color (not text=white)
-        from efgviz.core import tikz
+        from gtdraw.core import tikz
 
         code = tikz(str(simple_ef), label_bg=True, label_bg_style="white_bg")
         assert "fill=white" in code
@@ -2764,7 +2764,7 @@ class TestLabelBackground:
 
     def test_label_bg_player_bg_style_unchanged(self, simple_ef):
         # player_bg: current behaviour — fill=player_color, text=white
-        from efgviz.core import tikz
+        from gtdraw.core import tikz
 
         code = tikz(str(simple_ef), label_bg=True, label_bg_style="player_bg")
         assert "fill opacity=" in code
@@ -2772,23 +2772,23 @@ class TestLabelBackground:
 
     def test_label_bg_dict_declares_layer(self, simple_ef):
         # Even with a dict, the labels layer is declared if any value is True
-        from efgviz.core import tikz
+        from gtdraw.core import tikz
 
         code = tikz(str(simple_ef), label_bg={1: True}, label_bg_by="player")
         assert "\\pgfdeclarelayer{labels}" in code
 
     def test_label_bg_dict_no_layer_all_false(self, simple_ef):
         # Dict with all False — no layer declared
-        from efgviz.core import tikz
+        from gtdraw.core import tikz
 
         code = tikz(str(simple_ef), label_bg={1: False, 2: False}, label_bg_by="player")
         assert "\\pgfdeclarelayer" not in code
 
     def test_cli_label_bg_per_player_indices(self):
-        from efgviz.core import commandline
+        from gtdraw.core import commandline
 
         result = commandline(
-            ["efgviz", "game.ef", "--label-bg=1,2", "--label-bg-by=player"]
+            ["gtdraw", "game.ef", "--label-bg=1,2", "--label-bg-by=player"]
         )
         (
             output_mode,
@@ -2834,10 +2834,10 @@ class TestLabelBackground:
         assert label_bg_by == "player"
 
     def test_cli_label_bg_style(self):
-        from efgviz.core import commandline
+        from gtdraw.core import commandline
 
         result = commandline(
-            ["efgviz", "game.ef", "--label-bg", "--label-bg-style=white_bg"]
+            ["gtdraw", "game.ef", "--label-bg", "--label-bg-style=white_bg"]
         )
         (
             output_mode,
@@ -2888,7 +2888,7 @@ class TestVaryActionLabelPositions:
 
     def test_commandline_vary_action_label_positions_flag(self):
         """Test parsing of the --vary-action-label-positions option."""
-        from efgviz.core import commandline
+        from gtdraw.core import commandline
 
         result = commandline(["core.py", "test.ef", "--vary-action-label-positions"])
         assert result[34] is True
@@ -2912,7 +2912,7 @@ class TestPlayerActionLabelPositions:
 
     def test_commandline_player_action_label_positions(self):
         """Test parsing of dictionary-based --action-label-position settings."""
-        from efgviz.core import commandline
+        from gtdraw.core import commandline
 
         # Dictionary format
         result = commandline(
@@ -2954,7 +2954,7 @@ class TestLevelActionLabelPositions:
 
     def test_commandline_level_position_by(self):
         """Test that --action-label-position-by=level is parsed correctly."""
-        from efgviz.core import commandline
+        from gtdraw.core import commandline
 
         result = commandline(
             [
@@ -3111,7 +3111,7 @@ class TestEF3Format:
 
     def test_parse_ef_v3_node_ids_are_bare_strings(self, tmp_path):
         """Parsing an EF 3.0 file yields node IDs that are bare strings, not 'level,name'."""
-        from efgviz.converter import parse_ef_file
+        from gtdraw.converter import parse_ef_file
 
         path = self._get_ef_path("example_v3.ef")
         if not os.path.exists(path):
@@ -3125,7 +3125,7 @@ class TestEF3Format:
 
     def test_parse_ef_v3_parent_links(self, tmp_path):
         """Parent-child links are correctly built in EF 3.0 format."""
-        from efgviz.converter import parse_ef_file
+        from gtdraw.converter import parse_ef_file
 
         path = self._get_ef_path("example_v3.ef")
         if not os.path.exists(path):
@@ -3137,7 +3137,7 @@ class TestEF3Format:
 
     def test_parse_ef_v3_iset_assignment(self, tmp_path):
         """Information sets use bare node IDs in EF 3.0."""
-        from efgviz.converter import parse_ef_file
+        from gtdraw.converter import parse_ef_file
 
         path = self._get_ef_path("example_v3.ef")
         if not os.path.exists(path):

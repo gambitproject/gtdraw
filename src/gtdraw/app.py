@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 # Add src to path if running from local dev
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from efgviz import (
+from gtdraw import (
     svg,
     tikz,
     tex,
@@ -135,7 +135,7 @@ def _effective_settings_for_game(path: "Path", game_slug: str | None) -> dict:
 
 
 def _settings_diff(current: dict) -> dict:
-    """Return only keys that differ from efgviz library defaults."""
+    """Return only keys that differ from gtdraw library defaults."""
     return {k: v for k, v in current.items() if v != DRAW_TREE_DEFAULTS.get(k)}
 
 
@@ -250,7 +250,7 @@ def run_app():
     if icon_path.exists():
         icon = str(icon_path)
 
-    st.set_page_config(page_title="EFGViz", layout="wide", page_icon=icon)
+    st.set_page_config(page_title="GTDraw", layout="wide", page_icon=icon)
 
     # Sidebar: Title and Input
     if icon_path.exists():
@@ -258,9 +258,9 @@ def run_app():
         with col1:
             st.image(str(icon_path), width=50)
         with col2:
-            st.title("EFGViz")
+            st.title("GTDraw")
     else:
-        st.sidebar.title("🎨 EFGViz")
+        st.sidebar.title("🎨 GTDraw")
     st.sidebar.markdown(
         "##### Part of the [Gambit project](https://www.gambit-project.org/)."
     )
@@ -268,12 +268,12 @@ def run_app():
         "📖 **[Documentation](https://www.gambit-project.org/draw/)**"
     )
     st.sidebar.markdown(
-        "Welcome to EFGViz! Load a game in EF, EFG, or NFG format, then download your publication-ready image."
+        "Welcome to GTDraw! Load a game in EF, EFG, or NFG format, then download your publication-ready image."
     )
 
     # Find the games directory by walking upward from this file.
-    # This handles both editable installs (src/efgviz/app.py) and
-    # regular installs (site-packages/efgviz/app.py) where the repo
+    # This handles both editable installs (src/gtdraw/app.py) and
+    # regular installs (site-packages/gtdraw/app.py) where the repo
     # root is the current working directory.
     def _find_games_dir() -> "Path | None":
         current = Path(__file__).resolve().parent
@@ -339,7 +339,7 @@ def run_app():
 
         help_text = (
             "**Catalog**: Games from Gambit's catalog.\n\n"
-            "**EF**: EFGViz .ef format games.\n\n"
+            "**EF**: GTDraw .ef format games.\n\n"
             "**EFG**: Gambit .efg files.\n\n"
             "**NFG**: Gambit .nfg normal form (strategic form) games."
         )
@@ -868,12 +868,12 @@ def run_app():
             with c1:
                 st.image(str(icon_path), width=80)
             with c2:
-                st.title("EFGViz")
+                st.title("GTDraw")
             st.markdown(
                 "### Part of the [Gambit project](https://www.gambit-project.org/)"
             )
         else:
-            st.title("🎨 EFGViz")
+            st.title("🎨 GTDraw")
             st.markdown(
                 "### Part of the [Gambit project](https://www.gambit-project.org/)"
             )

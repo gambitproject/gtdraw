@@ -20,7 +20,7 @@ import tempfile
 import pygambit
 import pytest
 
-from efgviz.gambit_layout import determine_node_level, gambit_layout_to_ef
+from gtdraw.gambit_layout import determine_node_level, gambit_layout_to_ef
 
 
 # ---------------------------------------------------------------------------
@@ -452,7 +452,7 @@ class TestChildLevelInvariant:
 
     def test_generated_ef_is_detected_as_v3(self):
         """gambit_layout_to_ef generates EF 3.0 files (no duplicate node names)."""
-        from efgviz.core import _detect_ef_version
+        from gtdraw.core import _detect_ef_version
         g = _asymmetric_game()
         ef = gambit_layout_to_ef(
             g,

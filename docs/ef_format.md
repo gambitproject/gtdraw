@@ -74,7 +74,7 @@ level 2 node 1 from 0,1 move Left
 level 2 node 2 from 0,1 move Right payoffs 1 0
 ```
 
-EFGViz automatically detects the format: if any `from` reference contains a comma (e.g. `from 2,1`), the file is treated as EF 2.x; otherwise EF 3.0 is assumed. All existing files continue to work without modification.
+GTDraw automatically detects the format: if any `from` reference contains a comma (e.g. `from 2,1`), the file is treated as EF 2.x; otherwise EF 3.0 is assumed. All existing files continue to work without modification.
 
 ## Parenting
 Specify the parent of a node using `from`, followed by the parent node's identifier.

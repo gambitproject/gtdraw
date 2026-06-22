@@ -1,23 +1,23 @@
 # Python API
 
-You can use `efgviz` as a Python library to generate game trees programmatically.
-When working in a Jupyter Notebook, you should use the `efgviz` function to display the game tree directly in the notebook output:
+You can use `gtdraw` as a Python library to generate game trees programmatically.
+When working in a Jupyter Notebook, you should use the `gtdraw` function to display the game tree directly in the notebook output:
 
 ```python
-from efgviz import efgviz
-efgviz('games/example.ef')
+from gtdraw import gtdraw
+gtdraw('games/example.ef')
 ```
 
 :::{warning}
 Images may not render correctly in notebooks opened in VSCode; we recommend opening notebooks in Jupyter Lab.
 :::
 
-To generate other output formats, use the `generate_tex`, `generate_pdf`, `generate_png`, and `generate_svg` functions, all of which (including `efgviz` above) accept the same keyword arguments (see below).
+To generate other output formats, use the `generate_tex`, `generate_pdf`, `generate_png`, and `generate_svg` functions, all of which (including `gtdraw` above) accept the same keyword arguments (see below).
 
 Example usage:
 
 ```python
-from efgviz import generate_tex, generate_pdf, generate_png, generate_svg
+from gtdraw import generate_tex, generate_pdf, generate_png, generate_svg
 
 generate_pdf(
     "game.ef",
@@ -42,7 +42,7 @@ generate_png(
 
 ## API Keyword Arguments
 
-All `generate_*` functions and the main `efgviz` function accept a variety of keyword arguments to customize the output.
+All `generate_*` functions and the main `gtdraw` function accept a variety of keyword arguments to customize the output.
 
 | Category | Argument | Description |
 | :--- | :--- | :--- |
@@ -83,16 +83,16 @@ All `generate_*` functions and the main `efgviz` function accept a variety of ke
 
 ## Interoperability with pygambit
 
-`efgviz` supports `pygambit` game objects directly. Check out the `pygambit` documentation which contains tutorials that use `efgviz` to render game trees. In particular, read [Tutorial 4) Creating publication-ready game images](https://gambitproject.readthedocs.io/en/latest/tutorials/04_creating_images.html).
+`gtdraw` supports `pygambit` game objects directly. Check out the `pygambit` documentation which contains tutorials that use `gtdraw` to render game trees. In particular, read [Tutorial 4) Creating publication-ready game images](https://gambitproject.readthedocs.io/en/latest/tutorials/04_creating_images.html).
 
 You can pass a `pygambit` game object to the drawing functions:
 
 ```python
 import pygambit as gbt
-from efgviz import efgviz, generate_tex, generate_pdf, generate_png, generate_svg
+from gtdraw import gtdraw, generate_tex, generate_pdf, generate_png, generate_svg
 
 g = gbt.read_efg('somegame.efg')
-efgviz(g)
+gtdraw(g)
 generate_tex(g)
 generate_pdf(g)
 generate_png(g)
@@ -102,7 +102,7 @@ generate_svg(g)
 Or pass the path to an `.efg` file directly:
 
 ```python
-from efgviz import generate_pdf
+from gtdraw import generate_pdf
 generate_pdf('somegame.efg')
 ```
 
@@ -112,10 +112,10 @@ Without setting the `save_to` parameter, the saved file will be based on the tit
 
 ## Format Conversion
 
-`efgviz` provides two functions for converting between `.ef` and `.efg` file formats:
+`gtdraw` provides two functions for converting between `.ef` and `.efg` file formats:
 
 ```python
-from efgviz import ef_to_efg, efg_to_ef
+from gtdraw import ef_to_efg, efg_to_ef
 
 # Convert EF to Gambit EFG
 ef_to_efg("game.ef")
@@ -149,15 +149,15 @@ Both functions return the path to the generated output file.
 
 ## Normal Form Games (NFG)
 
-`efgviz` also supports normal form (strategic form) games via pygambit:
+`gtdraw` also supports normal form (strategic form) games via pygambit:
 
 ```python
 import pygambit as gbt
-from efgviz import efgviz, generate_tex, generate_pdf, generate_png, generate_svg
+from gtdraw import gtdraw, generate_tex, generate_pdf, generate_png, generate_svg
 
 # From a pygambit NFG object
 g = gbt.read_nfg("games/nfg/example.nfg")
-efgviz(g)       # returns \begin{game}...\end{game} body; displays image in Jupyter
+gtdraw(g)       # returns \begin{game}...\end{game} body; displays image in Jupyter
 generate_pdf(g)    # compiles payoff table to PDF
 generate_png(g)    # compiles payoff table to PNG
 generate_svg(g)    # compiles payoff table to SVG

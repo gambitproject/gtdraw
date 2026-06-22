@@ -1,6 +1,6 @@
 version: 1
 project:
-  title: EFGViz
+  title: GTDraw
   description: Game tree drawing tool for extensive form games
   github: https://github.com/gambitproject/draw_tree
   toc:
