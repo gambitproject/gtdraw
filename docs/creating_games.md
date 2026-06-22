@@ -17,20 +17,29 @@ flowchart TD
 
     subgraph GTDraw
         direction TB
-        
+
         %% Conversion Layer
         EF <--> |"converter.py <br/> (ef_to_efg / efg_to_ef)"| EFG
-        
-        %% Processing Layer
-        EF --> |"core.py"| Gen[Generate]
-        EFG --> |"gambit_layout.py <br/> (to EF)"| Gen
-        
-        %% Output Layer
-        Gen --> |"tikz()"| TikZ[TikZ Code]
-        Gen --> |"tex()"| TeX[LaTeX Doc]
-        Gen --> |"svg()"| SVG[SVG Image]
-        Gen --> |"png()"| PNG[PNG Image]
-        Gen --> |"pdf()"| PDF[PDF Document]
+
+        %% core.py entry point
+        EF --> |"core.py"| tikz_fn["tikz()"]
+        EFG --> |"gambit_layout.py <br/> (to EF)"| tikz_fn
+
+        %% Functions that build directly on tikz()
+        tikz_fn --> draw_fn["draw()"]
+        tikz_fn --> tex_fn["tex()"]
+        tikz_fn --> pdf_fn["pdf()"]
+
+        %% Functions that build on pdf()
+        pdf_fn --> png_fn["png()"]
+        pdf_fn --> svg_fn["svg()"]
+
+        %% Output nodes
+        draw_fn --> OUT1["TikZ Code /<br/>Jupyter display"]
+        tex_fn  --> OUT2[LaTeX Doc]
+        pdf_fn  --> OUT3[PDF Document]
+        png_fn  --> OUT4[PNG Image]
+        svg_fn  --> OUT5[SVG Image]
     end
 
     %% Styling
@@ -38,13 +47,18 @@ flowchart TD
     style Gambit fill:#f9f,stroke:#333,stroke-width:2px
     style EF fill:#bbf,stroke:#333,stroke-width:2px
     style EFG fill:#bfb,stroke:#333,stroke-width:2px
-    style Gen fill:#f96,stroke:#333,stroke-width:2px
+    style tikz_fn fill:#f96,stroke:#333,stroke-width:2px
+    style draw_fn fill:#ffd,stroke:#333
+    style tex_fn fill:#ffd,stroke:#333
+    style pdf_fn fill:#ffd,stroke:#333
+    style png_fn fill:#ffd,stroke:#333
+    style svg_fn fill:#ffd,stroke:#333
     style GTDraw fill:#fff,stroke:#333,stroke-dasharray: 5 5
-    style TikZ fill:#eee,stroke:#333
-    style TeX fill:#eee,stroke:#333
-    style SVG fill:#eee,stroke:#333
-    style PNG fill:#eee,stroke:#333
-    style PDF fill:#eee,stroke:#333
+    style OUT1 fill:#eee,stroke:#333
+    style OUT2 fill:#eee,stroke:#333
+    style OUT3 fill:#eee,stroke:#333
+    style OUT4 fill:#eee,stroke:#333
+    style OUT5 fill:#eee,stroke:#333
 ```
 
 ## Data Flow
@@ -53,9 +67,9 @@ flowchart TD
    - **EF**: The native GTDraw format, optimized for manual layout and TikZ rendering.
    - **EFG**: The standard Gambit format.
 3. **Conversion**: The `converter.py` module provides robust two-way conversion between EF and EFG formats to ensure compatibility between different tools.
-4. **Generation**: GTDraw can natively ingest **either EF or EFG** files to generate output. 
+4. **Generation**: GTDraw can natively ingest **either EF or EFG** files to generate output.
    - **EFG files** are internally converted to an EF representation via `gambit_layout.py`.
-   - **Generation functions** in `core.py` then process the EF data to produce multiple formats including **TikZ**, **TeX**, **SVG**, **PNG**, and **PDF**.
+   - All drawing functions live in `core.py`. `tikz()` is the foundation — it produces raw TikZ code from the EF data. `draw()`, `tex()`, and `pdf()` each call `tikz()` internally; `png()` and `svg()` build on `pdf()`.
 
 ## Normal Form Games (NFG)
 
