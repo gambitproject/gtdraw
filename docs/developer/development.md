@@ -10,6 +10,8 @@ cd gtdraw
 pip install -e ".[dev]"
 ```
 
+You'll also need to follow the rest of the steps on the [installation](installation) page for LaTeX and other requirements.
+
 ## Testing
 
 The project includes a comprehensive test suite using `pytest`. 

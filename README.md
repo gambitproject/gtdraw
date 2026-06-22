@@ -16,9 +16,7 @@ Comprehensive documentation covering installation, the `.ef` file format, Python
 ## Quick Installation
 
 ```bash
-git clone https://github.com/gambitproject/gtdraw
-cd gtdraw
-pip install .
+pip install gtdraw
 ```
 
 ## Contributing
