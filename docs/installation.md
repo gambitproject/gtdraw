@@ -1,12 +1,12 @@
 # Installation
 
-Clone the repo and install the package using `pip`:
+Install GTDraw from PyPI:
 
 ```bash
-git clone https://github.com/gambitproject/gtdraw
-cd gtdraw
-pip install .
+pip install gtdraw
 ```
+
+See the [developer guide](developer/development.md) for developer installation.
 
 ## Requirements
 
