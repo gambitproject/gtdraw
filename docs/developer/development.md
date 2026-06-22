@@ -5,7 +5,7 @@
 To set up the project for development, clone the repository and install it along with the `dev` extra dependencies:
 
 ```bash
-git clone https://github.com/gambitproject/draw_tree
+git clone https://github.com/gambitproject/gtdraw
 cd gtdraw
 pip install -e ".[dev]"
 ```

@@ -30,9 +30,9 @@ dev = ["pytest>=7.0.0", "pytest-cov", "jupyter-book>=2.0.0", "sphinx-thebe"]
 gtdraw = "gtdraw.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/gambitproject/draw_tree"
-Repository = "https://github.com/gambitproject/draw_tree"
-Issues = "https://github.com/gambitproject/draw_tree/issues"
+Homepage = "https://github.com/gambitproject/gtdraw"
+Repository = "https://github.com/gambitproject/gtdraw"
+Issues = "https://github.com/gambitproject/gtdraw/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
