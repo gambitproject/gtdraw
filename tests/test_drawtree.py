@@ -2638,12 +2638,12 @@ class TestLabelBackground:
     def test_label_bg_custom_hex_color(self, simple_ef):
         # Hex fallback colour is still defined in preamble even though player colours take precedence
         result = core.tikz(simple_ef, label_bg=True, label_bg_color="#ffcc00")
-        assert "\\definecolor{drawtreedropbg}{HTML}{FFCC00}" in result
+        assert "\\definecolor{gtdrawdropbg}{HTML}{FFCC00}" in result
         assert "fill opacity=" in result
 
     def test_label_bg_hex_without_hash(self, simple_ef):
         result = core.tikz(simple_ef, label_bg=True, label_bg_color="ffcc00")
-        assert "\\definecolor{drawtreedropbg}{HTML}{FFCC00}" in result
+        assert "\\definecolor{gtdrawdropbg}{HTML}{FFCC00}" in result
 
     def test_label_bg_opacity_clamped_high(self, simple_ef):
         # opacity > 1 should be clamped to 1.0

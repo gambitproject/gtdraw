@@ -228,7 +228,7 @@ def _label_bg_color_name() -> str:
     """Return the LaTeX colour name for the label background."""
     m = _HEX_RE.match(_label_bg_color)
     if m:
-        return "drawtreedropbg"
+        return "gtdrawdropbg"
     return _label_bg_color
 
 
@@ -236,7 +236,7 @@ def _label_bg_definecolor() -> str:
     """Return a \\definecolor statement for a hex label-bg colour, or ''."""
     m = _HEX_RE.match(_label_bg_color)
     if m:
-        return f"\\definecolor{{drawtreedropbg}}{{HTML}}{{{m.group(1).upper()}}}"
+        return f"\\definecolor{{gtdrawdropbg}}{{HTML}}{{{m.group(1).upper()}}}"
     return ""
 
 
@@ -258,7 +258,9 @@ def _label_bg_active(player: int = -1, level: int = -1) -> bool:
     return True
 
 
-def _label_bg_node_opts(player_color: str = "", player: int = -1, level: int = -1) -> str:
+def _label_bg_node_opts(
+    player_color: str = "", player: int = -1, level: int = -1
+) -> str:
     """Return extra TikZ node options that add a filled background, or ''."""
     if not _label_bg_active(player, level):
         return ""
@@ -1211,10 +1213,10 @@ def _detect_ef_version(lines: List[str]) -> int:
 def preparse_tree(lines: List[str]) -> None:
     """
     Pre-parse all level commands to build parent-to-children mapping.
-    
+
     Used to vary the action label positions dynamically according to
     the number of edges coming out of a node.
-    
+
     Args:
         lines: All lines from the .ef file.
     """
@@ -1515,7 +1517,9 @@ def level(
     parent_player = -1
     parent_color = ""
     edge_color_style = ""
-    parent_level = int(nodes[fromn].get("level", 0)) if existsfrom and fromn in nodes else 0
+    parent_level = (
+        int(nodes[fromn].get("level", 0)) if existsfrom and fromn in nodes else 0
+    )
     if existsfrom and fromn in nodes:
         parent_player = nodes[fromn]["player"]
         parent_color = get_player_color(parent_player, color_scheme)
@@ -1531,7 +1535,9 @@ def level(
     show_label = (
         p >= 0 and playername[p] and not node_in_iset and color_scheme == "default"
     )
-    player_label_cmd = ""  # standalone draw command emitted in labels layer when _label_bg
+    player_label_cmd = (
+        ""  # standalone draw command emitted in labels layer when _label_bg
+    )
     if show_label:
         # Determine side and shifts based on layout
         if _horizontal:
@@ -1563,9 +1569,12 @@ def level(
         else:
             # Build standalone draw command to be emitted later in the labels layer
             player_label_cmd = (
-                "\\draw " + coord(xx, yy)
+                "\\draw "
+                + coord(xx, yy)
                 + f" node[{node_opts}]"
-                + "{\\" + playertexname[p] + "\\strut};"
+                + "{\\"
+                + playertexname[p]
+                + "\\strut};"
             )
     outs(s)
     if not _any_label_bg():
@@ -1576,10 +1585,18 @@ def level(
         if convex < 0:
             if isinstance(action_label_position, dict):
                 if action_label_position_by == "level":
-                    parent_level = nodes[fromn].get("level", 0) if (existsfrom and fromn in nodes) else 0
+                    parent_level = (
+                        nodes[fromn].get("level", 0)
+                        if (existsfrom and fromn in nodes)
+                        else 0
+                    )
                     pos = action_label_position.get(int(parent_level), 0.5)
                 else:
-                    parent_player = nodes[fromn]["player"] if (existsfrom and fromn in nodes) else -1
+                    parent_player = (
+                        nodes[fromn]["player"]
+                        if (existsfrom and fromn in nodes)
+                        else -1
+                    )
                     pos = action_label_position.get(parent_player, 0.5)
             else:
                 pos = action_label_position
@@ -1587,15 +1604,26 @@ def level(
                 apply_vary = True
                 if _vary_action_label_positions_by == "player":
                     if _vary_action_label_positions_choices is not None:
-                        parent_player = nodes[fromn]["player"] if (existsfrom and fromn in nodes) else -1
+                        parent_player = (
+                            nodes[fromn]["player"]
+                            if (existsfrom and fromn in nodes)
+                            else -1
+                        )
                         if parent_player not in _vary_action_label_positions_choices:
                             apply_vary = False
                 elif _vary_action_label_positions_by == "level":
                     if _vary_action_label_positions_choices is not None:
-                        parent_level = nodes[fromn].get("level", 0) if (existsfrom and fromn in nodes) else 0
-                        if int(parent_level) not in _vary_action_label_positions_choices:
+                        parent_level = (
+                            nodes[fromn].get("level", 0)
+                            if (existsfrom and fromn in nodes)
+                            else 0
+                        )
+                        if (
+                            int(parent_level)
+                            not in _vary_action_label_positions_choices
+                        ):
                             apply_vary = False
-                
+
                 if apply_vary:
                     children = parent_to_children[fromn]
                     if nodeid in children:
@@ -1649,7 +1677,9 @@ def level(
             opts = []
             if edge_color_style:
                 opts.append(edge_color_style)
-            bg_opts = _label_bg_node_opts(parent_color, player=parent_player, level=int(lev))
+            bg_opts = _label_bg_node_opts(
+                parent_color, player=parent_player, level=int(lev)
+            )
             if bg_opts.startswith(","):
                 bg_opts = bg_opts[1:]
             if bg_opts:
@@ -2235,7 +2265,10 @@ def ef_to_tex(
     global _iset_fill, _iset_fill_opacity, _iset_boundary, _node_size
     global _label_bg, _label_bg_by, _label_bg_style, _label_bg_color, _label_bg_opacity
     global _horizontal, _mirror, _legend_position, _action_label_dist
-    global _vary_action_label_positions, _vary_action_label_positions_by, _vary_action_label_positions_choices
+    global \
+        _vary_action_label_positions, \
+        _vary_action_label_positions_by, \
+        _vary_action_label_positions_choices
 
     # Save original state
     original_outstream = outstream.copy()
@@ -2280,7 +2313,11 @@ def ef_to_tex(
         _action_label_dist = action_label_dist
         _vary_action_label_positions = vary_action_label_positions
         _vary_action_label_positions_by = vary_action_label_positions_by
-        _vary_action_label_positions_choices = set(vary_action_label_positions_choices) if vary_action_label_positions_choices is not None else None
+        _vary_action_label_positions_choices = (
+            set(vary_action_label_positions_choices)
+            if vary_action_label_positions_choices is not None
+            else None
+        )
 
         # Process the .ef file
         lines = readfile(ef_file)
@@ -2310,7 +2347,12 @@ def ef_to_tex(
                 if words[0] == "player":
                     player(words)
                 elif words[0] == "level":
-                    level(words, color_scheme, action_label_position, action_label_position_by)
+                    level(
+                        words,
+                        color_scheme,
+                        action_label_position,
+                        action_label_position_by,
+                    )
                 elif words[0] == "iset":
                     isetgen(words, color_scheme)
 
@@ -2647,6 +2689,7 @@ def count_levels(
         try:
             import pygambit
             from .gambit_layout import determine_node_level
+
             layout = pygambit.layout_tree(game_source)
             levels = set()
             for coords in layout.values():
@@ -2665,6 +2708,7 @@ def count_levels(
     if game_source.lower().endswith(".efg"):
         try:
             import pygambit
+
             g = pygambit.read_efg(game_source)
             return count_levels(g, level_scaling, sublevel_scaling)
         except Exception:
@@ -2713,6 +2757,7 @@ def get_game_levels(
         try:
             import pygambit
             from .gambit_layout import determine_node_level
+
             layout = pygambit.layout_tree(game_source)
             levels = set()
             for coords in layout.values():
@@ -2730,6 +2775,7 @@ def get_game_levels(
     if game_source.lower().endswith(".efg"):
         try:
             import pygambit
+
             g = pygambit.read_efg(game_source)
             return get_game_levels(g, level_scaling, sublevel_scaling)
         except Exception:
