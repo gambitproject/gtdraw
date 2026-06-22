@@ -58,7 +58,7 @@ class Game:
     root_id: Optional[str] = None
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
-    version: int = 3
+    version: int = 1
 
 
 # ---------------------------------------------------------------------------
@@ -74,22 +74,22 @@ def _detect_ef_version(lines: List[str]) -> int:
     """
     Detect EF format version from file lines.
 
-    EF 3.0: ``from`` references are bare node identifier strings (no commas).
-    EF 2.x: ``from`` references use the composite ``level,nodeid`` form and
+    EF 1: ``from`` references are bare node identifier strings (no commas).
+    EF 0: ``from`` references use the composite ``level,nodeid`` form and
     therefore always contain a comma.
 
     If any ``from`` reference on a ``level`` line contains a comma the file is
-    treated as EF 2.x.  Otherwise EF 3.0 is assumed.
+    treated as EF 0.  Otherwise EF 1 is assumed.
 
-    Returns 3 for EF 3.0, 2 for legacy EF 2.x.
+    Returns 1 for EF 1, 0 for legacy EF 0.
     """
     for line in lines:
         words = line.split()
         if len(words) >= 4 and words[0] == "level" and "from" in words:
             idx = words.index("from")
             if idx + 1 < len(words) and "," in words[idx + 1]:
-                return 2
-    return 3
+                return 0
+    return 1
 
 
 def _parse_move_label(word: str) -> str:
@@ -189,13 +189,13 @@ def _parse_player_line(game: Game, words: List[str]) -> None:
         i += 1
 
 
-def _parse_level_line(game: Game, words: List[str], version: int = 2) -> None:
+def _parse_level_line(game: Game, words: List[str], version: int = 0) -> None:
     """
     Parse a ``level L node N [player P] [xshift X] [from REF] [move M] [payoffs ...]``
     line and create the corresponding Node.
 
-    In EF 3.0 (version=3) the node identifier is just the bare NAME string
-    (globally unique).  In EF 2.x (version=2) it is the composite
+    In EF 1 (version=1) the node identifier is just the bare NAME string
+    (globally unique).  In EF 0 (version=0) it is the composite
     ``"level,NAME"`` string.  ``from`` references follow the same rule.
     """
     try:
@@ -208,7 +208,7 @@ def _parse_level_line(game: Game, words: List[str], version: int = 2) -> None:
     except (IndexError, AssertionError):
         return
 
-    if version == 3:
+    if version == 1:
         nodeid = nodenum.strip()
     else:
         nodeid = _clean_nodeid(f"{int(lev) if lev == int(lev) else lev},{nodenum}")
@@ -227,7 +227,7 @@ def _parse_level_line(game: Game, words: List[str], version: int = 2) -> None:
             i += 2
         elif words[i] == "from":
             try:
-                if version == 3:
+                if version == 1:
                     node.parent_id = words[i + 1].strip()
                 else:
                     node.parent_id = _clean_nodeid(words[i + 1])
@@ -252,11 +252,11 @@ def _parse_level_line(game: Game, words: List[str], version: int = 2) -> None:
     game.nodes[nodeid] = node
 
 
-def _parse_iset_line(game: Game, words: List[str], version: int = 2) -> None:
+def _parse_iset_line(game: Game, words: List[str], version: int = 0) -> None:
     """Parse an ``iset REF1 REF2 ... player P`` line.
 
-    In EF 3.0 (version=3) references are bare node NAME strings.
-    In EF 2.x (version=2) they are ``level,NAME`` composite strings.
+    In EF 1 (version=1) references are bare node NAME strings.
+    In EF 0 (version=0) they are ``level,NAME`` composite strings.
     """
     p = -1
     node_ids: List[str] = []
@@ -270,7 +270,7 @@ def _parse_iset_line(game: Game, words: List[str], version: int = 2) -> None:
             except (IndexError, ValueError):
                 i += 1
         else:
-            if version == 3:
+            if version == 1:
                 node_ids.append(words[i].strip())
             else:
                 node_ids.append(_clean_nodeid(words[i]))
