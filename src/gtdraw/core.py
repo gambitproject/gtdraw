@@ -1492,7 +1492,7 @@ def level(
     yy = -lev
     if nodeid in nodes:
         # The TikZ output for the previous definition has already been
-        # emitted (drawtree streams as it parses), so we don't try to
+        # emitted (gtdraw streams as it parses), so we don't try to
         # undo it.  Just warn -- this is almost always a copy-paste bug
         # in the .ef file (e.g. two "level 4 node 1" lines under
         # different parents instead of "node 1" and "node 2").
