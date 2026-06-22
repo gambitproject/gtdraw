@@ -16,7 +16,7 @@ flowchart TD
     Gambit["Gambit <br/> (PyGambit, GUI, CLI)"] --> EFG((EFG))
 
     subgraph GTDraw
-        direction TB
+        direction LR
 
         %% Conversion Layer
         EF --> ef_to_efg_fn["ef_to_efg()"]
@@ -32,16 +32,14 @@ flowchart TD
         tikz_fn --> tex_fn["tex()"]
         tikz_fn --> pdf_fn["pdf()"]
 
-        %% Functions that build on pdf()
-        pdf_fn --> png_fn["png()"]
-        pdf_fn --> svg_fn["svg()"]
-
         %% Output nodes
         draw_fn --> OUT1["TikZ Code /<br/>Jupyter display"]
         tex_fn  --> OUT2[LaTeX Doc]
         pdf_fn  --> OUT3[PDF Document]
-        png_fn  --> OUT4[PNG Image]
-        svg_fn  --> OUT5[SVG Image]
+
+        %% Functions that build on pdf()
+        OUT3 --> png_fn["png()"] --> OUT4[PNG Image]
+        OUT3 --> svg_fn["svg()"] --> OUT5[SVG Image]
     end
 
     %% Styling
