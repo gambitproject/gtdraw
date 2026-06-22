@@ -1,0 +1,18 @@
+% Kuhn poker (EF 3.0 format with globally unique node identifiers)
+player 1 name I
+player 2 name II
+level 0 node 1 player 2
+level 2 node 2 player 1 xshift -a=2 from 1 move l
+level 2 node 3 xshift a from 1 move r payoffs ~
+level 4 node 4 xshift -b=2 from 2 move L
+level 4 node 5 xshift b from 2 move B
+level 6 node 6 xshift -c=1 from 4 move a payoffs ~
+level 7 node 7 xshift 1.5c from 4 move b
+level 6 node 8 xshift -c from 5 move a payoffs ~
+level 7 node 9 xshift 1.5c from 5 move b
+level 9 node 10 xshift -d=1 from 7 move c payoffs w
+level 9 node 11 xshift d from 7 move d payoffs ~
+level 9 node 12 xshift -d from 9 move c payoffs ~
+level 9 node 13 xshift d from 9 move d payoffs ~
+iset 4 5 player 2
+iset 7 9 player 2

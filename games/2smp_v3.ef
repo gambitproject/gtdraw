@@ -1,0 +1,39 @@
+% 2-stage matching pennies (EF 3.0 format with globally unique node identifiers)
+player 1 name Player~1
+player 2 name Player~2
+level 0 node 1 player 1
+level 2 node 2 xshift -3.58 from 1 move H
+level 2 node 3 xshift 3.58 from 1 move T
+level 6 node 4 player 1 xshift -1.9 from 3 move H
+level 6 node 5 player 1 xshift 1.9 from 3 move T
+level 8 node 6 xshift -0.90 from 5 move H
+level 8 node 7 xshift 0.90 from 5 move T
+level 13 node 8 xshift -0.45 from 7 move H payoffs -1 1
+level 13 node 9 xshift 0.45 from 7 move T payoffs 1 -1
+level 13 node 10 xshift -0.45 from 6 move H payoffs 1 -1
+level 13 node 11 xshift 0.45 from 6 move T payoffs -1 1
+level 9 node 12 xshift -0.90 from 4 move H
+level 9 node 13 xshift 0.90 from 4 move T
+level 13 node 14 xshift -0.45 from 13 move H payoffs -1 1
+level 13 node 15 xshift 0.45 from 13 move T payoffs 1 -1
+level 13 node 16 xshift -0.45 from 12 move H payoffs 1 -1
+level 13 node 17 xshift 0.45 from 12 move T payoffs -1 1
+level 6 node 18 player 1 xshift -1.9 from 2 move H
+level 6 node 19 player 1 xshift 1.9 from 2 move T
+level 11 node 20 xshift -0.90 from 19 move H
+level 11 node 21 xshift 0.90 from 19 move T
+level 13 node 22 xshift -0.45 from 21 move H payoffs -1 1
+level 13 node 23 xshift 0.45 from 21 move T payoffs 1 -1
+level 13 node 24 xshift -0.45 from 20 move H payoffs 1 -1
+level 13 node 25 xshift 0.45 from 20 move T payoffs -1 1
+level 10 node 26 xshift -0.90 from 18 move H
+level 10 node 27 xshift 0.90 from 18 move T
+level 13 node 28 xshift -0.45 from 27 move H payoffs -1 1
+level 13 node 29 xshift 0.45 from 27 move T payoffs 1 -1
+level 13 node 30 xshift -0.45 from 26 move H payoffs 1 -1
+level 13 node 31 xshift 0.45 from 26 move T payoffs -1 1
+iset 3 2 player 2
+iset 7 6 player 2
+iset 13 12 player 2
+iset 21 20 player 2
+iset 27 26 player 2

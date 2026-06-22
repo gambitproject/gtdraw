@@ -98,10 +98,11 @@ def gambit_layout_to_ef(
         gbt_highest_level = max(node_coords.level, gbt_highest_level)
         gbt_highest_sublevel = max(node_coords.sublevel, gbt_highest_sublevel)
 
-    # For each node, determine its level and node count within that level
-    # Also collect offsets for normalisation
-    levels_nodecount = {}
+    # For each node, determine its level and globally unique node ID.
+    # Also collect offsets for normalisation.
     node_levels = {}
+    node_global_ids = {}
+    global_counter = 0
     offsets = []
     for node, node_coords in layout.items():
 
@@ -118,13 +119,11 @@ def gambit_layout_to_ef(
             if level_multiplier > 0:
                 while level <= parent_level:
                     level += level_multiplier
-        
-        # Track node counts per level
-        if level not in levels_nodecount:
-            levels_nodecount[level] = 1
-        else:
-            levels_nodecount[level] += 1
-        node_levels[node] = (level, levels_nodecount[level])
+
+        # Assign globally unique node ID (EF 3.0)
+        global_counter += 1
+        node_levels[node] = level
+        node_global_ids[node] = global_counter
 
         # Collect offsets for normalisation
         offsets.append(node_coords.offset)
@@ -147,17 +146,17 @@ def gambit_layout_to_ef(
                 player = "0"
             else:
                 player = player_ids[node.player]
-        
-        # Add the level and node count
-        # This is effectively the node ID in .ef format
-        level, nodecount = node_levels[node]
-        ef += f"level {level} node {nodecount} "
+
+        # Add the level and globally unique node ID (EF 3.0)
+        level = node_levels[node]
+        node_id = node_global_ids[node]
+        ef += f"level {level} node {node_id} "
 
         # Add player if applicable to this node
         # Do not add player if in infoset with multiple nodes (will be defined by `iset` later)
         if player and len(infoset_groups[node.infoset]) == 1:
             ef += f"player {player} "
-        
+
         # Calculate xshift and add to .ef string not root node
         if level > 0:
             xshift = nodes_with_normalised_offsets[node] - (
@@ -167,8 +166,8 @@ def gambit_layout_to_ef(
 
         # Determine where the node comes from (its parent and prior action)
         if node.parent:
-            parent_level, parent_nodecount = node_levels[node.parent]
-            ef += f"from {parent_level},{parent_nodecount} "
+            parent_id = node_global_ids[node.parent]
+            ef += f"from {parent_id} "
             if not hide_action_labels:
                 prior_action_label = node.prior_action.label.replace(" ", "~")
                 ef += f"move {prior_action_label}"
@@ -184,7 +183,7 @@ def gambit_layout_to_ef(
                     # Throw error for unexpected probability format
                     raise ValueError(f"Unexpected probability format: {node.prior_action.prob}")
             ef += " "
-        
+
         # Add payoffs to terminal nodes, if applicable
         if node.is_terminal:
             ef += "payoffs "
@@ -198,8 +197,7 @@ def gambit_layout_to_ef(
         if len(nodes) > 1:
             ef += "iset "
             for node in nodes:
-                level, nodecount = node_levels[node]
-                ef += f"{level},{nodecount} "
+                ef += f"{node_global_ids[node]} "
             ef += f"player {player_ids[node.player]} "
             ef += "\n"
 

@@ -430,17 +430,56 @@ class TestChildLevelInvariant:
         )
         content = _read_ef(ef)
         os.unlink(ef)
-        # Parse level/node and from level/node to verify
+        # Build a map from node ID → level from all level lines (EF 3.0: bare node IDs)
+        node_id_to_level = {}
+        for line in content.splitlines():
+            if not line.startswith("level"):
+                continue
+            parts = line.split()
+            node_id_to_level[parts[3]] = float(parts[1])
+        # Verify every child level exceeds its parent level
         for line in content.splitlines():
             if "from" not in line:
                 continue
             parts = line.split()
             child_level = float(parts[1])
             from_idx = parts.index("from")
-            parent_ref = parts[from_idx + 1]
-            parent_level = float(parent_ref.split(",")[0])
+            parent_id = parts[from_idx + 1]
+            parent_level = node_id_to_level[parent_id]
             assert child_level > parent_level, (
                 f"Child level {child_level} <= parent level {parent_level}"
+            )
+
+    def test_generated_ef_is_detected_as_v3(self):
+        """gambit_layout_to_ef generates EF 3.0 files (no duplicate node names)."""
+        from draw_tree.core import _detect_ef_version
+        g = _asymmetric_game()
+        ef = gambit_layout_to_ef(
+            g,
+            save_to=os.path.join(tempfile.gettempdir(), "v3chk.ef"),
+        )
+        content = _read_ef(ef)
+        os.unlink(ef)
+        lines = [l.strip() for l in content.splitlines() if l.strip() and not l.strip().startswith("%")]
+        assert _detect_ef_version(lines) == 3
+
+    def test_generated_ef_from_references_are_bare(self):
+        """EF 3.0 output uses bare node IDs in 'from' references (no commas)."""
+        g = _asymmetric_game()
+        ef = gambit_layout_to_ef(
+            g,
+            save_to=os.path.join(tempfile.gettempdir(), "bare.ef"),
+        )
+        content = _read_ef(ef)
+        os.unlink(ef)
+        for line in content.splitlines():
+            if "from" not in line:
+                continue
+            parts = line.split()
+            from_idx = parts.index("from")
+            parent_ref = parts[from_idx + 1]
+            assert "," not in parent_ref, (
+                f"Expected bare node ID in 'from' reference, got: {parent_ref}"
             )
 
 
