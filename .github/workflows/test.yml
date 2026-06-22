@@ -44,4 +44,4 @@ jobs:
         
     - name: Test CLI command
       run: |
-        efgviz
+        gtdraw
