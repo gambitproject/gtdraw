@@ -6,7 +6,7 @@ It can generate TikZ code, LaTeX documents, PDFs, PNGs, and SVGs from game speci
 > GTDraw was originally developed by [Bernhard von Stengel](https://www.lse.ac.uk/people/bernhard-von-stengel) at the London School of Economics. It is being developed further as part of the [Gambit project](https://www.gambit-project.org) out of The Alan Turing Institute.
 
 :::{card} 🚀 Try GTDraw Online!
-:link: https://drawtree.streamlit.app/
+:link: https://gtdraw.streamlit.app/
 
 **Visualize your game trees instantly.** No installation required.
 
