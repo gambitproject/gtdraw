@@ -3,7 +3,7 @@
 Clone the repo and install the package using `pip`:
 
 ```bash
-git clone https://github.com/gambitproject/draw_tree
+git clone https://github.com/gambitproject/gtdraw
 cd gtdraw
 pip install .
 ```
