@@ -8,9 +8,9 @@ project:
     - file: installation.md
     - file: creating_games.md
     - file: ef_format.md
+    - file: gui.md
     - file: cli.md
     - file: python_api.md
-    - file: gui.md
     - title: Developer Guide
       children:
         - file: developer/development.md
