@@ -13,12 +13,12 @@ warnings.filterwarnings("ignore")
 # Add src to path if running from local dev
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from draw_tree import (
-    generate_svg,
-    generate_tikz,
-    generate_tex,
-    generate_pdf,
-    generate_png,
+from gtdraw import (
+    svg,
+    tikz,
+    tex,
+    pdf,
+    png,
     count_players,
     get_game_levels,
     ef_to_efg,
@@ -31,13 +31,19 @@ def _get_scheme_colors(color_scheme: str, num_players: int) -> dict[int, str]:
     CHANCE = "#759138"
     if color_scheme == "gambit":
         palette = {
-            0: CHANCE, 1: "#EA3323", 2: "#0000FF", 3: "#FF7F00",
-            4: "#800080", 5: "#00FFFF", 6: "#FF00FF",
+            0: CHANCE,
+            1: "#EA3323",
+            2: "#0000FF",
+            3: "#FF7F00",
+            4: "#800080",
+            5: "#00FFFF",
+            6: "#FF00FF",
         }
         return {k: v for k, v in palette.items() if k <= num_players}
     if color_scheme in ("distinctipy", "colorblind"):
         try:
             import distinctipy
+
             colorblind_type = "Deuteranomaly" if color_scheme == "colorblind" else None
             chance_rgb = (117 / 255, 145 / 255, 56 / 255)
             colors = distinctipy.get_colors(
@@ -48,7 +54,9 @@ def _get_scheme_colors(color_scheme: str, num_players: int) -> dict[int, str]:
             )
             result = {0: CHANCE}
             for i, (r, g, b) in enumerate(colors):
-                result[i + 1] = f"#{int(r * 255):02X}{int(g * 255):02X}{int(b * 255):02X}"
+                result[i + 1] = (
+                    f"#{int(r * 255):02X}{int(g * 255):02X}{int(b * 255):02X}"
+                )
             return result
         except Exception:
             return {i: "#000000" for i in range(num_players + 1)}
@@ -57,24 +65,42 @@ def _get_scheme_colors(color_scheme: str, num_players: int) -> dict[int, str]:
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
-# draw_tree library defaults — used to compute per-game YAML diffs
-DRAW_TREE_DEFAULTS: dict = {
-    "scale_factor": 1.0, "level_scaling": 1.0, "sublevel_scaling": 1.0,
-    "width_scaling": 1.0, "horizontal": False, "mirror": False,
-    "shared_terminal_depth": False, "color_scheme": "default",
-    "edge_thickness": 1.0, "action_label_position": 0.5,
-    "action_label_position_by": "player", "font_family": "rmfamily",
-    "font_bold": False, "font_italic": False, "font_size": "normalsize",
-    "custom_colors": None, "legend_position": "top-left",
-    "action_label_dist": 1.0, "iset_fill": False, "iset_fill_opacity": 0.2,
-    "iset_boundary": "solid", "node_size": 1.5, "label_bg": False,
-    "label_bg_by": "player", "label_bg_style": "player_bg",
-    "label_bg_color": "white", "label_bg_opacity": 0.8,
-    "vary_action_label_positions": False, "vary_action_label_positions_by": "all",
+# draw library defaults — used to compute per-game YAML diffs
+GTDRAW_DEFAULTS: dict = {
+    "scale_factor": 1.0,
+    "level_scaling": 1.0,
+    "sublevel_scaling": 1.0,
+    "width_scaling": 1.0,
+    "horizontal": False,
+    "mirror": False,
+    "shared_terminal_depth": False,
+    "color_scheme": "default",
+    "edge_thickness": 1.0,
+    "action_label_position": 0.5,
+    "action_label_position_by": "player",
+    "font_family": "rmfamily",
+    "font_bold": False,
+    "font_italic": False,
+    "font_size": "normalsize",
+    "custom_colors": None,
+    "legend_position": "top-left",
+    "action_label_dist": 1.0,
+    "iset_fill": False,
+    "iset_fill_opacity": 0.2,
+    "iset_boundary": "solid",
+    "node_size": 1.5,
+    "label_bg": False,
+    "label_bg_by": "player",
+    "label_bg_style": "player_bg",
+    "label_bg_color": "white",
+    "label_bg_opacity": 0.8,
+    "vary_action_label_positions": False,
+    "vary_action_label_positions_by": "all",
     "vary_action_label_positions_choices": None,
 }
 
 # ── Session-state snapshot helpers ───────────────────────────────────────────
+
 
 def _snapshot_settings() -> dict:
     """Capture all layout/aesthetics widget session-state values."""
@@ -93,6 +119,7 @@ def _apply_snapshot(snap: dict) -> None:
 
 # ── YAML helpers ─────────────────────────────────────────────────────────────
 
+
 def _yaml_path(base_path: "Path") -> "Path":
     return base_path / "gui_settings.yaml"
 
@@ -101,7 +128,10 @@ def _read_yaml(path: "Path") -> dict:
     try:
         with open(path) as f:
             data = yaml.safe_load(f) or {}
-        return {"defaults": data.get("defaults") or {}, "overrides": data.get("overrides") or {}}
+        return {
+            "defaults": data.get("defaults") or {},
+            "overrides": data.get("overrides") or {},
+        }
     except Exception:
         return {"defaults": {}, "overrides": {}}
 
@@ -115,19 +145,27 @@ def _write_game_settings(path: "Path", game_slug: str, settings: dict) -> None:
         del data["overrides"][game_slug]
     try:
         with open(path, "w") as f:
-            f.write("# draw_tree GUI master settings\n")
-            f.write("# Per-game overrides are written here automatically as you adjust settings.\n")
-            f.write("# Edit the defaults section to change settings that apply to all games.\n")
-            f.write("# Consult https://www.gambit-project.org/draw_tree/ for available settings.\n\n")
-            yaml.dump(data, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+            f.write("# draw GUI master settings\n")
+            f.write(
+                "# Per-game overrides are written here automatically as you adjust settings.\n"
+            )
+            f.write(
+                "# Edit the defaults section to change settings that apply to all games.\n"
+            )
+            f.write(
+                "# Consult https://www.gambit-project.org/draw/ for available settings.\n\n"
+            )
+            yaml.dump(
+                data, f, default_flow_style=False, sort_keys=False, allow_unicode=True
+            )
     except Exception:
         pass
 
 
 def _effective_settings_for_game(path: "Path", game_slug: str | None) -> dict:
-    """Merge draw_tree defaults ← yaml defaults ← yaml overrides for game."""
+    """Merge draw defaults ← yaml defaults ← yaml overrides for game."""
     data = _read_yaml(path)
-    merged = {**DRAW_TREE_DEFAULTS}
+    merged = {**GTDRAW_DEFAULTS}
     merged.update(data["defaults"] or {})
     if game_slug:
         merged.update((data["overrides"] or {}).get(game_slug, {}))
@@ -135,27 +173,42 @@ def _effective_settings_for_game(path: "Path", game_slug: str | None) -> dict:
 
 
 def _settings_diff(current: dict) -> dict:
-    """Return only keys that differ from draw_tree library defaults."""
-    return {k: v for k, v in current.items() if v != DRAW_TREE_DEFAULTS.get(k)}
+    """Return only keys that differ from gtdraw library defaults."""
+    return {k: v for k, v in current.items() if v != GTDRAW_DEFAULTS.get(k)}
 
 
 # Font/size display-label ↔ internal-value maps used by YAML loading
-_FONT_FAMILY_TO_KEY = {"rmfamily": "Serif", "sffamily": "Sans-Serif", "ttfamily": "Monospace"}
-_FONT_SIZE_TO_KEY   = {"small": "Small", "normalsize": "Normal", "large": "Large", "Large": "Huge"}
+_FONT_FAMILY_TO_KEY = {
+    "rmfamily": "Serif",
+    "sffamily": "Sans-Serif",
+    "ttfamily": "Monospace",
+}
+_FONT_SIZE_TO_KEY = {
+    "small": "Small",
+    "normalsize": "Normal",
+    "large": "Large",
+    "Large": "Huge",
+}
 
 
 def _apply_yaml_to_session_state(settings: dict) -> None:
-    """Map draw_tree param names from YAML onto GUI widget session-state keys."""
+    """Map draw param names from YAML onto GUI widget session-state keys."""
     simple = {
-        "scale_factor": "gui_scale_factor", "level_scaling": "gui_level_scaling",
-        "sublevel_scaling": "gui_sublevel_scaling", "width_scaling": "gui_width_scaling",
-        "horizontal": "gui_horizontal", "mirror": "gui_mirror",
+        "scale_factor": "gui_scale_factor",
+        "level_scaling": "gui_level_scaling",
+        "sublevel_scaling": "gui_sublevel_scaling",
+        "width_scaling": "gui_width_scaling",
+        "horizontal": "gui_horizontal",
+        "mirror": "gui_mirror",
         "shared_terminal_depth": "gui_shared_terminal_depth",
-        "edge_thickness": "gui_edge_thickness", "node_size": "gui_node_size",
+        "edge_thickness": "gui_edge_thickness",
+        "node_size": "gui_node_size",
         "action_label_dist": "gui_action_label_dist",
-        "iset_fill": "gui_iset_fill", "iset_fill_opacity": "gui_iset_fill_opacity",
+        "iset_fill": "gui_iset_fill",
+        "iset_fill_opacity": "gui_iset_fill_opacity",
         "iset_boundary": "gui_iset_boundary",
-        "font_bold": "gui_font_bold", "font_italic": "gui_font_italic",
+        "font_bold": "gui_font_bold",
+        "font_italic": "gui_font_italic",
         "legend_position": "gui_legend_position",
         "label_bg_opacity": "gui_label_bg_opacity",
         "vary_action_label_positions": "gui_vary_alp",
@@ -165,9 +218,13 @@ def _apply_yaml_to_session_state(settings: dict) -> None:
             st.session_state[key] = settings[param]
 
     if "font_family" in settings:
-        st.session_state["gui_font_family"] = _FONT_FAMILY_TO_KEY.get(settings["font_family"], "Serif")
+        st.session_state["gui_font_family"] = _FONT_FAMILY_TO_KEY.get(
+            settings["font_family"], "Serif"
+        )
     if "font_size" in settings:
-        st.session_state["gui_font_size"] = _FONT_SIZE_TO_KEY.get(settings["font_size"], "Normal")
+        st.session_state["gui_font_size"] = _FONT_SIZE_TO_KEY.get(
+            settings["font_size"], "Normal"
+        )
 
     if "color_scheme" in settings:
         st.session_state["scheme_selector"] = settings["color_scheme"]
@@ -213,14 +270,18 @@ def _apply_yaml_to_session_state(settings: dict) -> None:
         elif isinstance(lb, dict):
             lb_by = settings.get("label_bg_by", "player")
             st.session_state["gui_label_bg_enabled"] = True
-            st.session_state["gui_label_bg_scope"] = "By Player" if lb_by == "player" else "By Level"
+            st.session_state["gui_label_bg_scope"] = (
+                "By Player" if lb_by == "player" else "By Level"
+            )
             key = "lbg_players" if lb_by == "player" else "lbg_levels"
             st.session_state[key] = [k for k, v in lb.items() if v]
 
     if "label_bg_style" in settings:
         s = settings["label_bg_style"]
         st.session_state["gui_label_bg_style"] = (
-            "White (player colour text)" if s == "white_bg" else "Player colour (white text)"
+            "White (player colour text)"
+            if s == "white_bg"
+            else "Player colour (white text)"
         )
 
     if "vary_action_label_positions_by" in settings:
@@ -250,7 +311,7 @@ def run_app():
     if icon_path.exists():
         icon = str(icon_path)
 
-    st.set_page_config(page_title="DrawTree", layout="wide", page_icon=icon)
+    st.set_page_config(page_title="GTDraw", layout="wide", page_icon=icon)
 
     # Sidebar: Title and Input
     if icon_path.exists():
@@ -258,22 +319,34 @@ def run_app():
         with col1:
             st.image(str(icon_path), width=50)
         with col2:
-            st.title("DrawTree")
+            st.title("GTDraw")
     else:
-        st.sidebar.title("🎨 DrawTree")
+        st.sidebar.title("🎨 GTDraw")
     st.sidebar.markdown(
         "##### Part of the [Gambit project](https://www.gambit-project.org/)."
     )
+    st.sidebar.markdown("📖 **[Documentation](https://www.gambit-project.org/draw/)**")
     st.sidebar.markdown(
-        "📖 **[Documentation](https://www.gambit-project.org/draw_tree/)**"
-    )
-    st.sidebar.markdown(
-        "Welcome to DrawTree! Load a game in EF, EFG, or NFG format, then download your publication-ready image."
+        "Welcome to GTDraw! Load a game in EF, EFG, or NFG format, then download your publication-ready image."
     )
 
-    # Try to find games directory
-    base_path = Path(__file__).parent.parent.parent
-    example_dir = base_path / "games"
+    # Find the games directory by walking upward from this file.
+    # This handles both editable installs (src/gtdraw/app.py) and
+    # regular installs (site-packages/gtdraw/app.py) where the repo
+    # root is the current working directory.
+    def _find_games_dir() -> "Path | None":
+        current = Path(__file__).resolve().parent
+        for _ in range(6):
+            candidate = current / "games"
+            if candidate.is_dir():
+                return candidate
+            current = current.parent
+        candidate = Path.cwd() / "games"
+        return candidate if candidate.is_dir() else None
+
+    _games_dir = _find_games_dir()
+    base_path = _games_dir.parent if _games_dir else Path(__file__).parent
+    example_dir = _games_dir or (base_path / "games")
 
     game_source = None
     is_efg = False
@@ -325,7 +398,7 @@ def run_app():
 
         help_text = (
             "**Catalog**: Games from Gambit's catalog.\n\n"
-            "**EF**: DrawTree .ef format games.\n\n"
+            "**EF**: GTDraw .ef format games.\n\n"
             "**EFG**: Gambit .efg files.\n\n"
             "**NFG**: Gambit .nfg normal form (strategic form) games."
         )
@@ -432,26 +505,39 @@ def run_app():
     if not is_nfg:
         _col_undo, _col_redo, _col_reset = st.sidebar.columns(3)
         with _col_undo:
-            if st.button("↩ Undo", disabled=not st.session_state.get("undo_stack"),
-                         use_container_width=True, help="Undo last settings change"):
+            if st.button(
+                "↩ Undo",
+                disabled=not st.session_state.get("undo_stack"),
+                use_container_width=True,
+                help="Undo last settings change",
+            ):
                 _redo_snap = _snapshot_settings()
                 _apply_snapshot(st.session_state["undo_stack"].pop())
                 st.session_state.setdefault("redo_stack", []).append(_redo_snap)
                 st.session_state["_last_snap"] = _snapshot_settings()
                 st.rerun()
         with _col_redo:
-            if st.button("↪ Redo", disabled=not st.session_state.get("redo_stack"),
-                         use_container_width=True, help="Redo last undone change"):
+            if st.button(
+                "↪ Redo",
+                disabled=not st.session_state.get("redo_stack"),
+                use_container_width=True,
+                help="Redo last undone change",
+            ):
                 _undo_snap = _snapshot_settings()
                 _apply_snapshot(st.session_state["redo_stack"].pop())
                 st.session_state.setdefault("undo_stack", []).append(_undo_snap)
                 st.session_state["_last_snap"] = _snapshot_settings()
                 st.rerun()
         with _col_reset:
-            if st.button("↺ Reset", use_container_width=True,
-                         help="Restore defaults from gui_settings.yaml",
-                         disabled=not game_slug):
-                st.session_state.setdefault("undo_stack", []).append(_snapshot_settings())
+            if st.button(
+                "↺ Reset",
+                use_container_width=True,
+                help="Restore defaults from gui_settings.yaml",
+                disabled=not game_slug,
+            ):
+                st.session_state.setdefault("undo_stack", []).append(
+                    _snapshot_settings()
+                )
                 st.session_state["redo_stack"] = []
                 _write_game_settings(_yaml, game_slug, {})
                 _loaded = _effective_settings_for_game(_yaml, game_slug)
@@ -476,8 +562,9 @@ def run_app():
             )
 
             if is_efg:
-                shared_terminal_depth = st.checkbox("Shared Terminal Node Depth", False,
-                                                     key="gui_shared_terminal_depth")
+                shared_terminal_depth = st.checkbox(
+                    "Shared Terminal Node Depth", False, key="gui_shared_terminal_depth"
+                )
 
             scale_factor = st.slider(
                 "Scale factor",
@@ -490,12 +577,15 @@ def run_app():
             )
 
             if is_efg:
-                level_scaling = st.slider("Level Spacing", 0.0, 5.0, 1.0, 0.05,
-                                          key="gui_level_scaling")
-                sublevel_scaling = st.slider("Sublevel Spacing", 0.0, 5.0, 1.0, 0.05,
-                                             key="gui_sublevel_scaling")
-                width_scaling = st.slider("Width Spacing", 0.0, 5.0, 1.0, 0.05,
-                                          key="gui_width_scaling")
+                level_scaling = st.slider(
+                    "Level Spacing", 0.0, 5.0, 1.0, 0.05, key="gui_level_scaling"
+                )
+                sublevel_scaling = st.slider(
+                    "Sublevel Spacing", 0.0, 5.0, 1.0, 0.05, key="gui_sublevel_scaling"
+                )
+                width_scaling = st.slider(
+                    "Width Spacing", 0.0, 5.0, 1.0, 0.05, key="gui_width_scaling"
+                )
 
     # Defaults used when aesthetics expander is hidden (NFG path)
     color_scheme = "colorblind"
@@ -528,7 +618,10 @@ def run_app():
                 for _pnum in range(_num_p + 1):
                     _pk = "cp_chance" if _pnum == 0 else f"cp_p{_pnum}"
                     _val = st.session_state.get(_pk)
-                    if _val is not None and _val.upper() != _defs.get(_pnum, "#000000").upper():
+                    if (
+                        _val is not None
+                        and _val.upper() != _defs.get(_pnum, "#000000").upper()
+                    ):
                         st.session_state["scheme_selector"] = "custom"
                         break
 
@@ -572,7 +665,10 @@ def run_app():
                 # Determine rendering scheme and custom_colors
                 if color_scheme != "custom":
                     _rdefs = _get_scheme_colors(color_scheme, _num_p)
-                    if all(_picked[k].upper() == _rdefs.get(k, "#000000").upper() for k in _picked):
+                    if all(
+                        _picked[k].upper() == _rdefs.get(k, "#000000").upper()
+                        for k in _picked
+                    ):
                         custom_colors = None  # unchanged — use named scheme
                     else:
                         color_scheme = "custom"
@@ -621,7 +717,15 @@ def run_app():
             st.markdown("##### Label Styling")
 
             num_players = count_players(game_source) if game_source else 2
-            game_levels = get_game_levels(game_source, level_scaling=level_scaling, sublevel_scaling=sublevel_scaling) if game_source else list(range(5))
+            game_levels = (
+                get_game_levels(
+                    game_source,
+                    level_scaling=level_scaling,
+                    sublevel_scaling=sublevel_scaling,
+                )
+                if game_source
+                else list(range(5))
+            )
 
             label_bg_enabled = st.checkbox(
                 "Enable Label Background",
@@ -670,9 +774,19 @@ def run_app():
                     help="Player colour background with white text, or white background with player-colour text.",
                     key="gui_label_bg_style",
                 )
-                label_bg_style = "white_bg" if label_bg_style_name.startswith("White") else "player_bg"
-                label_bg_opacity = st.slider("Background Opacity", 0.0, 1.0, 0.8, 0.05,
-                                             key="gui_label_bg_opacity")
+                label_bg_style = (
+                    "white_bg"
+                    if label_bg_style_name.startswith("White")
+                    else "player_bg"
+                )
+                label_bg_opacity = st.slider(
+                    "Background Opacity",
+                    0.0,
+                    1.0,
+                    0.8,
+                    0.05,
+                    key="gui_label_bg_opacity",
+                )
             label_bg_color = "white"  # fallback; player colors used automatically
 
             st.markdown("---")
@@ -693,7 +807,11 @@ def run_app():
                     help="Apply varying positions to all nodes, or selectively to specific players or levels.",
                     key="gui_vary_alp_by",
                 )
-                vary_action_label_positions_by = {"All": "all", "By Player": "player", "By Level": "level"}[vary_by]
+                vary_action_label_positions_by = {
+                    "All": "all",
+                    "By Player": "player",
+                    "By Level": "level",
+                }[vary_by]
                 if vary_by == "By Player":
                     selected_players = st.multiselect(
                         "Apply vary to players",
@@ -789,23 +907,37 @@ def run_app():
 
             st.markdown("---")
             st.markdown("##### Edge & Node Styling")
-            edge_thickness = st.slider("Edge Thickness", 0.1, 5.0, 1.0, 0.1,
-                                       key="gui_edge_thickness")
+            edge_thickness = st.slider(
+                "Edge Thickness", 0.1, 5.0, 1.0, 0.1, key="gui_edge_thickness"
+            )
             node_size = st.slider(
-                "Node Size", 0.5, 5.0, 1.5, 0.1, help="Size of player nodes in mm.",
+                "Node Size",
+                0.5,
+                5.0,
+                1.5,
+                0.1,
+                help="Size of player nodes in mm.",
                 key="gui_node_size",
             )
 
             st.markdown("---")
             st.markdown("##### Information Sets")
-            iset_fill = st.checkbox("Fill Information Sets", value=False,
-                                    key="gui_iset_fill")
+            iset_fill = st.checkbox(
+                "Fill Information Sets", value=False, key="gui_iset_fill"
+            )
             iset_fill_opacity = st.slider(
-                "Fill Opacity", 0.0, 1.0, 0.2, 0.05, disabled=not iset_fill,
+                "Fill Opacity",
+                0.0,
+                1.0,
+                0.2,
+                0.05,
+                disabled=not iset_fill,
                 key="gui_iset_fill_opacity",
             )
             iset_boundary = st.selectbox(
-                "Boundary Style", ["solid", "dotted", "none"], index=0,
+                "Boundary Style",
+                ["solid", "dotted", "none"],
+                index=0,
                 key="gui_iset_boundary",
             )
 
@@ -824,20 +956,32 @@ def run_app():
 
         if game_slug and _yaml.exists():
             _current_params = {
-                "scale_factor": scale_factor, "level_scaling": level_scaling,
-                "sublevel_scaling": sublevel_scaling, "width_scaling": width_scaling,
-                "horizontal": horizontal, "mirror": mirror,
+                "scale_factor": scale_factor,
+                "level_scaling": level_scaling,
+                "sublevel_scaling": sublevel_scaling,
+                "width_scaling": width_scaling,
+                "horizontal": horizontal,
+                "mirror": mirror,
                 "shared_terminal_depth": shared_terminal_depth,
-                "color_scheme": color_scheme, "custom_colors": custom_colors,
-                "edge_thickness": edge_thickness, "action_label_position": action_label_position,
+                "color_scheme": color_scheme,
+                "custom_colors": custom_colors,
+                "edge_thickness": edge_thickness,
+                "action_label_position": action_label_position,
                 "action_label_position_by": action_label_position_by,
-                "font_family": font_family, "font_bold": font_bold,
-                "font_italic": font_italic, "font_size": font_size,
-                "legend_position": legend_position, "action_label_dist": action_label_dist,
-                "iset_fill": iset_fill, "iset_fill_opacity": iset_fill_opacity,
-                "iset_boundary": iset_boundary, "node_size": node_size,
-                "label_bg": label_bg, "label_bg_by": label_bg_by,
-                "label_bg_style": label_bg_style, "label_bg_opacity": label_bg_opacity,
+                "font_family": font_family,
+                "font_bold": font_bold,
+                "font_italic": font_italic,
+                "font_size": font_size,
+                "legend_position": legend_position,
+                "action_label_dist": action_label_dist,
+                "iset_fill": iset_fill,
+                "iset_fill_opacity": iset_fill_opacity,
+                "iset_boundary": iset_boundary,
+                "node_size": node_size,
+                "label_bg": label_bg,
+                "label_bg_by": label_bg_by,
+                "label_bg_style": label_bg_style,
+                "label_bg_opacity": label_bg_opacity,
                 "vary_action_label_positions": vary_action_label_positions,
                 "vary_action_label_positions_by": vary_action_label_positions_by,
                 "vary_action_label_positions_choices": vary_action_label_positions_choices,
@@ -854,12 +998,12 @@ def run_app():
             with c1:
                 st.image(str(icon_path), width=80)
             with c2:
-                st.title("DrawTree")
+                st.title("GTDraw")
             st.markdown(
                 "### Part of the [Gambit project](https://www.gambit-project.org/)"
             )
         else:
-            st.title("🎨 DrawTree")
+            st.title("🎨 GTDraw")
             st.markdown(
                 "### Part of the [Gambit project](https://www.gambit-project.org/)"
             )
@@ -876,8 +1020,8 @@ def run_app():
 
             if is_nfg:
                 # NFG: get the LaTeX body (always available, no pdflatex needed)
-                tikz_code = generate_tikz(game=game_source)
-                tex_path = generate_tex(game=game_source, save_to=output_base + ".tex")
+                tikz_code = tikz(game=game_source)
+                tex_path = tex(game=game_source, save_to=output_base + ".tex")
                 with open(tex_path, "r") as f:
                     tex_data = f.read()
 
@@ -887,7 +1031,7 @@ def run_app():
                 nfg_render_error = None
                 try:
                     png_path = str(work_dir / f"{base_name}.png")
-                    generate_png(game=game_source, save_to=png_path)
+                    png(game=game_source, save_to=png_path)
                     with open(png_path, "rb") as f:
                         png_data = f.read()
                     import base64
@@ -899,9 +1043,7 @@ def run_app():
                         f'object-fit:contain;display:block;margin:auto;" />',
                         unsafe_allow_html=True,
                     )
-                    pdf_path = generate_pdf(
-                        game=game_source, save_to=output_base + ".pdf"
-                    )
+                    pdf_path = pdf(game=game_source, save_to=output_base + ".pdf")
                     with open(pdf_path, "rb") as f:
                         pdf_data = f.read()
                 except RuntimeError as e:
@@ -960,7 +1102,7 @@ def run_app():
 
             svg_path = str(work_dir / f"{base_name}.svg")
 
-            svg_code = generate_svg(
+            svg_code = svg(
                 game=game_source,
                 save_to=svg_path,
                 scale_factor=scale_factor,
@@ -1009,7 +1151,7 @@ def run_app():
             st.markdown(svg_content, unsafe_allow_html=True)
 
             # Pre-generate all download formats
-            tikz_code = generate_tikz(
+            tikz_code = tikz(
                 game=game_source,
                 save_to=output_base + ".tikz",
                 scale_factor=scale_factor,
@@ -1046,7 +1188,7 @@ def run_app():
                 vary_action_label_positions_choices=vary_action_label_positions_choices,
             )
 
-            tex_path = generate_tex(
+            tex_path = tex(
                 game=game_source,
                 save_to=output_base + ".tex",
                 scale_factor=scale_factor,
@@ -1084,7 +1226,7 @@ def run_app():
             with open(tex_path, "r") as f:
                 tex_data = f.read()
 
-            pdf_path = generate_pdf(
+            pdf_path = pdf(
                 game=game_source,
                 save_to=output_base + ".pdf",
                 scale_factor=scale_factor,
@@ -1122,7 +1264,7 @@ def run_app():
             with open(pdf_path, "rb") as f:
                 pdf_data = f.read()
 
-            png_path = generate_png(
+            png_path = png(
                 game=game_source,
                 save_to=output_base + ".png",
                 scale_factor=scale_factor,

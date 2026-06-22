@@ -1,10 +1,10 @@
 # CLI
 
-By default, `draw_tree` generates TikZ code and prints it to standard output.
+By default, `gtdraw` generates TikZ code and prints it to standard output.
 There are also options to generate a complete LaTeX document, an SVG, PDF or a PNG directly, either by specifying the desired format or by using the output filename extension:
 
 ```bash
-draw_tree games/example.ef --pdf
+gtdraw games/example.ef --pdf
 ```
 
 :::{note}
@@ -58,13 +58,13 @@ The CLI also supports converting between `.ef` and `.efg` formats without render
 
 ```bash
 # Convert EF to Gambit EFG
-draw_tree games/example.ef --to-efg
+gtdraw games/example.ef --to-efg
 
 # Convert EFG to EF
-draw_tree games/efg/example.efg --to-ef
+gtdraw games/efg/example.efg --to-ef
 
 # Specify output filename
-draw_tree games/example.ef --to-efg --output=my_game.efg
+gtdraw games/example.ef --to-efg --output=my_game.efg
 ```
 
 ## Normal Form Games (NFG)
@@ -73,14 +73,14 @@ draw_tree games/example.ef --to-efg --output=my_game.efg
 
 ```bash
 # Print \begin{game}...\end{game} body to stdout
-draw_tree games/nfg/example.nfg
+gtdraw games/nfg/example.nfg
 
 # Compile payoff table to PDF
-draw_tree games/nfg/example.nfg --pdf
+gtdraw games/nfg/example.nfg --pdf
 
 # Compile payoff table to PNG
-draw_tree games/nfg/example.nfg --png
+gtdraw games/nfg/example.nfg --png
 
 # Compile payoff table to SVG with custom output name
-draw_tree games/nfg/example.nfg --svg --output=battle_of_sexes.svg
+gtdraw games/nfg/example.nfg --svg --output=battle_of_sexes.svg
 ```

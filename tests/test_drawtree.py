@@ -1,5 +1,5 @@
 """
-Test suite for draw_tree module.
+Test suite for draw module.
 
 This module contains comprehensive tests for the game tree drawing functionality,
 including unit tests for utility functions, integration tests for file processing,
@@ -16,8 +16,8 @@ from unittest.mock import patch
 import pygambit
 
 # Import the module under test
-import draw_tree.core as draw_tree
-from draw_tree.converter import ef_to_efg, efg_to_ef
+import gtdraw.core as core
+from gtdraw.converter import ef_to_efg, efg_to_ef
 
 
 class TestUtilityFunctions:
@@ -25,58 +25,58 @@ class TestUtilityFunctions:
 
     def test_fformat_default_places(self):
         """Test fformat with default 3 decimal places."""
-        assert draw_tree.fformat(3.14159) == "3.142"
-        assert draw_tree.fformat(3.0) == "3"
-        assert draw_tree.fformat(3.100) == "3.1"
+        assert core.fformat(3.14159) == "3.142"
+        assert core.fformat(3.0) == "3"
+        assert core.fformat(3.100) == "3.1"
 
     def test_fformat_custom_places(self):
         """Test fformat with custom decimal places."""
-        assert draw_tree.fformat(3.14159, 2) == "3.14"
-        assert draw_tree.fformat(3.14159, 0) == "3"
-        assert draw_tree.fformat(3.14159, 5) == "3.14159"
+        assert core.fformat(3.14159, 2) == "3.14"
+        assert core.fformat(3.14159, 0) == "3"
+        assert core.fformat(3.14159, 5) == "3.14159"
 
     def test_fformat_trailing_zeros(self):
         """Test fformat removes trailing zeros."""
-        assert draw_tree.fformat(2.5000) == "2.5"
-        assert draw_tree.fformat(2.0000) == "2"
+        assert core.fformat(2.5000) == "2.5"
+        assert core.fformat(2.0000) == "2"
 
     def test_coord(self):
         """Test coordinate pair formatting."""
-        assert draw_tree.coord(1.0, 2.0) == "(1,2)"
-        assert draw_tree.coord(3.14, 2.71) == "(3.14,2.71)"
-        assert draw_tree.coord(-1.5, 0.0) == "(-1.5,0)"
+        assert core.coord(1.0, 2.0) == "(1,2)"
+        assert core.coord(3.14, 2.71) == "(3.14,2.71)"
+        assert core.coord(-1.5, 0.0) == "(-1.5,0)"
 
     def test_twonorm(self):
         """Test Euclidean length calculation."""
-        assert draw_tree.twonorm([3, 4]) == 5.0
-        assert draw_tree.twonorm([1, 0]) == 1.0
-        assert draw_tree.twonorm([0, 0]) == 0.0
+        assert core.twonorm([3, 4]) == 5.0
+        assert core.twonorm([1, 0]) == 1.0
+        assert core.twonorm([0, 0]) == 0.0
 
     def test_aeq(self):
         """Test almost equal comparison."""
-        assert draw_tree.aeq(1e-10, 0)  # Very small number should be considered zero
-        assert draw_tree.aeq(1.0, 1.0)
-        assert not draw_tree.aeq(1.0, 2.0)
-        assert draw_tree.aeq(1.0, 1.0 + 1e-10)  # Numbers within epsilon should be equal
+        assert core.aeq(1e-10, 0)  # Very small number should be considered zero
+        assert core.aeq(1.0, 1.0)
+        assert not core.aeq(1.0, 2.0)
+        assert core.aeq(1.0, 1.0 + 1e-10)  # Numbers within epsilon should be equal
 
     def test_degrees(self):
         """Test angle calculation in degrees."""
-        assert abs(draw_tree.degrees([1, 0]) - 0) < 1e-6
-        assert abs(draw_tree.degrees([0, 1]) - 90) < 1e-6
-        assert abs(draw_tree.degrees([-1, 0]) - 180) < 1e-6
-        assert abs(draw_tree.degrees([0, -1]) - (-90)) < 1e-6
+        assert abs(core.degrees([1, 0]) - 0) < 1e-6
+        assert abs(core.degrees([0, 1]) - 90) < 1e-6
+        assert abs(core.degrees([-1, 0]) - 180) < 1e-6
+        assert abs(core.degrees([0, -1]) - (-90)) < 1e-6
 
     def test_stretch(self):
         """Test vector stretching to desired length."""
-        result = draw_tree.stretch([3, 4], 10)
-        assert abs(draw_tree.twonorm(result) - 10) < 1e-6
+        result = core.stretch([3, 4], 10)
+        assert abs(core.twonorm(result) - 10) < 1e-6
         assert abs(result[0] - 6) < 1e-6
         assert abs(result[1] - 8) < 1e-6
 
     def test_det(self):
         """Test determinant calculation."""
-        assert draw_tree.det(1, 2, 3, 4) == (1 * 4 - 2 * 3)
-        assert draw_tree.det(2, 0, 0, 3) == 6
+        assert core.det(1, 2, 3, 4) == (1 * 4 - 2 * 3)
+        assert core.det(2, 0, 0, 3) == 6
 
 
 class TestStringParsing:
@@ -84,16 +84,16 @@ class TestStringParsing:
 
     def test_splitnumtext_basic(self):
         """Test basic number-text splitting."""
-        assert draw_tree.splitnumtext("2a") == (2.0, "a")
-        assert draw_tree.splitnumtext(".3xyz") == (0.3, "xyz")
-        assert draw_tree.splitnumtext("a") == (1, "a")
-        assert draw_tree.splitnumtext("22.2xyz") == (22.2, "xyz")
+        assert core.splitnumtext("2a") == (2.0, "a")
+        assert core.splitnumtext(".3xyz") == (0.3, "xyz")
+        assert core.splitnumtext("a") == (1, "a")
+        assert core.splitnumtext("22.2xyz") == (22.2, "xyz")
 
     def test_splitnumtext_edge_cases(self):
         """Test edge cases for number-text splitting."""
-        assert draw_tree.splitnumtext("") == (1, "")
-        assert draw_tree.splitnumtext("123") == (123.0, "")
-        assert draw_tree.splitnumtext(".") == (1, "")
+        assert core.splitnumtext("") == (1, "")
+        assert core.splitnumtext("123") == (123.0, "")
+        assert core.splitnumtext(".") == (1, "")
 
 
 class TestNodeOperations:
@@ -101,18 +101,18 @@ class TestNodeOperations:
 
     def test_setnodeid(self):
         """Test node ID creation."""
-        assert draw_tree.setnodeid(1.0, "test") == "1,test"
-        assert draw_tree.setnodeid(0.5, "node") == "0.5,node"
+        assert core.setnodeid(1.0, "test") == "1,test"
+        assert core.setnodeid(0.5, "node") == "0.5,node"
 
     def test_cleannodeid(self):
         """Test node ID standardization."""
         # Mock the error function to avoid output during tests
-        with patch("draw_tree.core.error"):
-            assert draw_tree.cleannodeid("1,test") == "1,test"
-            assert draw_tree.cleannodeid("0.5,node") == "0.5,node"
+        with patch("gtdraw.core.error"):
+            assert core.cleannodeid("1,test") == "1,test"
+            assert core.cleannodeid("0.5,node") == "0.5,node"
             # Test error cases
-            draw_tree.cleannodeid("invalid")  # Should handle gracefully
-            draw_tree.cleannodeid("x,test")  # Invalid level
+            core.cleannodeid("invalid")  # Should handle gracefully
+            core.cleannodeid("x,test")  # Invalid level
 
 
 class TestOutputRoutines:
@@ -122,19 +122,19 @@ class TestOutputRoutines:
         """Test output stream printing."""
         test_stream = ["line1", "line2", "line3"]
         with patch("builtins.print") as mock_print:
-            draw_tree.outall(test_stream)
+            core.outall(test_stream)
             assert mock_print.call_count == 3
 
     def test_outs(self):
         """Test single string output."""
         test_stream = []
-        draw_tree.outs("test", test_stream)
+        core.outs("test", test_stream)
         assert test_stream == ["test"]
 
     def test_comment(self):
         """Test comment output."""
-        with patch("draw_tree.core.outs") as mock_outs:
-            draw_tree.comment("test comment")
+        with patch("gtdraw.core.outs") as mock_outs:
+            core.comment("test comment")
             mock_outs.assert_called_with("%% test comment")
 
 
@@ -151,7 +151,7 @@ class TestFileOperations:
             temp_filename = f.name
 
         try:
-            result = draw_tree.readfile(temp_filename)
+            result = core.readfile(temp_filename)
             expected = ["line 1", "line 2 with spaces", "line 3"]
             assert result == expected
         finally:
@@ -160,7 +160,7 @@ class TestFileOperations:
     def test_readfile_nonexistent(self):
         """Test file reading with non-existent file."""
         with pytest.raises(FileNotFoundError):
-            draw_tree.readfile("nonexistent_file.txt")
+            core.readfile("nonexistent_file.txt")
 
 
 class TestCommandLineProcessing:
@@ -168,44 +168,44 @@ class TestCommandLineProcessing:
 
     def test_commandline_scale(self):
         """Test scale argument processing."""
-        original_scale = draw_tree.scale
+        original_scale = core.scale
         try:
-            draw_tree.commandline(["draw_tree.py", "scale=2.5"])
-            assert draw_tree.scale == 2.5
+            core.commandline(["core.py", "scale=2.5"])
+            assert core.scale == 2.5
         finally:
-            draw_tree.scale = original_scale
+            core.scale = original_scale
 
     def test_commandline_grid(self):
         """Test grid argument processing."""
-        original_grid = draw_tree.grid
+        original_grid = core.grid
         try:
-            draw_tree.commandline(["draw_tree.py", "grid"])
-            assert draw_tree.grid is True
+            core.commandline(["core.py", "grid"])
+            assert core.grid is True
         finally:
-            draw_tree.grid = original_grid
+            core.grid = original_grid
 
     def test_commandline_file(self):
         """Test file argument processing."""
-        original_ef_file = getattr(draw_tree, "ef_file", None)
+        original_ef_file = getattr(core, "ef_file", None)
         try:
-            draw_tree.commandline(["draw_tree.py", "test_game.ef"])
-            assert draw_tree.ef_file == "test_game.ef"
+            core.commandline(["core.py", "test_game.ef"])
+            assert core.ef_file == "test_game.ef"
         finally:
             if original_ef_file is not None:
-                draw_tree.ef_file = original_ef_file
+                core.ef_file = original_ef_file
 
     def test_commandline_invalid_scale(self):
         """Test invalid scale argument handling."""
-        original_scale = draw_tree.scale
+        original_scale = core.scale
         try:
-            with patch("draw_tree.core.outs") as mock_outs:
-                draw_tree.commandline(["draw_tree.py", "scale=invalid"])
+            with patch("gtdraw.core.outs") as mock_outs:
+                core.commandline(["core.py", "scale=invalid"])
                 # Should output error message
                 mock_outs.assert_called()
                 # Scale should remain unchanged
-                assert draw_tree.scale == original_scale
+                assert core.scale == original_scale
         finally:
-            draw_tree.scale = original_scale
+            core.scale = original_scale
 
 
 class TestPlayerHandling:
@@ -214,25 +214,25 @@ class TestPlayerHandling:
     def test_player_basic(self):
         """Test basic player parsing."""
         words = ["player", "1"]
-        with patch("draw_tree.core.defout"):
-            p, advance = draw_tree.player(words)
+        with patch("gtdraw.core.defout"):
+            p, advance = core.player(words)
             assert p == 1
             assert advance == 2
 
     def test_player_with_name(self):
         """Test player parsing with name."""
         words = ["player", "2", "name", "Alice"]
-        with patch("draw_tree.core.defout"):
-            p, advance = draw_tree.player(words)
+        with patch("gtdraw.core.defout"):
+            p, advance = core.player(words)
             assert p == 2
             assert advance == 4
-            assert draw_tree.playername[2] == "Alice"
+            assert core.playername[2] == "Alice"
 
     def test_player_invalid_number(self):
         """Test player parsing with invalid number."""
         words = ["player", "invalid"]
-        with patch("draw_tree.core.error") as mock_error:
-            p, advance = draw_tree.player(words)
+        with patch("gtdraw.core.error") as mock_error:
+            p, advance = core.player(words)
             assert p == -1
             mock_error.assert_called()
 
@@ -243,27 +243,27 @@ class TestGeometryFunctions:
     def test_isonlineseg_basic(self):
         """Test point-on-line-segment detection."""
         # Point on line segment
-        assert draw_tree.isonlineseg([0, 0], [1, 1], [2, 2]) is True
+        assert core.isonlineseg([0, 0], [1, 1], [2, 2]) is True
         # Point on line segment (slope 2)
-        assert draw_tree.isonlineseg([0, 0], [1, 2], [2, 4]) is True
+        assert core.isonlineseg([0, 0], [1, 2], [2, 4]) is True
         # Point not on line segment
-        assert draw_tree.isonlineseg([0, 0], [1, 3], [2, 4]) is False
+        assert core.isonlineseg([0, 0], [1, 3], [2, 4]) is False
         # Point at endpoint
-        assert draw_tree.isonlineseg([0, 0], [0, 0], [1, 1]) is True
+        assert core.isonlineseg([0, 0], [0, 0], [1, 1]) is True
 
     def test_makearc_basic(self):
         """Test arc generation."""
         # Test with simple coordinates
-        result = draw_tree.makearc([0, 0], [1, 0], [2, 0])
+        result = core.makearc([0, 0], [1, 0], [2, 0])
         assert isinstance(result, str)
         assert "arc(" in result
 
 
-class TestDrawTreeFunction:
-    """Test the new streamlined draw_tree function."""
+class TestGTDrawFunction:
+    """Test the new streamlined draw function."""
 
-    def test_draw_tree_basic(self):
-        """Test basic draw_tree functionality."""
+    def test_draw_basic(self):
+        """Test basic draw functionality."""
         # Create a simple .ef file for testing
         with tempfile.NamedTemporaryFile(
             mode="w", delete=False, suffix=".ef"
@@ -274,7 +274,7 @@ class TestDrawTreeFunction:
             ef_file_path = ef_file.name
 
         try:
-            result = draw_tree.generate_tikz(ef_file_path)
+            result = core.tikz(ef_file_path)
 
             # Verify the result contains expected components
             assert isinstance(result, str)
@@ -292,8 +292,8 @@ class TestDrawTreeFunction:
         finally:
             os.unlink(ef_file_path)
 
-    def test_draw_tree_calls_ipython_magic_when_available(self):
-        """When IPython is available, draw_tree should load the jupyter_tikz
+    def test_draw_calls_ipython_magic_when_available(self):
+        """When IPython is available, draw should load the jupyter_tikz
         extension if needed and call the tikz cell magic with the generated code.
         """
         # Create a simple .ef file for testing
@@ -327,16 +327,16 @@ class TestDrawTreeFunction:
             # Case 1: extension already loaded
             em = DummyEM(loaded={"jupyter_tikz"})
             ip = DummyIP(em)
-            with patch("draw_tree.core.get_ipython", return_value=ip):
-                res = draw_tree.draw_tree(ef_file_path)
+            with patch("gtdraw.core.get_ipython", return_value=ip):
+                res = core.draw(ef_file_path)
                 # Should call run_cell_magic and return its value
                 assert res == "MAGIC-RESULT"
 
             # Case 2: extension not loaded -> run_line_magic should be called
             em2 = DummyEM(loaded=set())
             ip2 = DummyIP(em2)
-            with patch("draw_tree.core.get_ipython", return_value=ip2):
-                res2 = draw_tree.draw_tree(ef_file_path)
+            with patch("gtdraw.core.get_ipython", return_value=ip2):
+                res2 = core.draw(ef_file_path)
                 assert res2 == "MAGIC-RESULT"
                 # run_line_magic should have been called to load the extension
                 assert ("load_ext", "jupyter_tikz") in ip2._loaded_magics
@@ -344,8 +344,8 @@ class TestDrawTreeFunction:
         finally:
             os.unlink(ef_file_path)
 
-    def test_draw_tree_with_options(self):
-        """Test draw_tree with different options."""
+    def test_draw_with_options(self):
+        """Test draw with different options."""
         # Create a simple .ef file for testing
         with tempfile.NamedTemporaryFile(
             mode="w", delete=False, suffix=".ef"
@@ -356,25 +356,25 @@ class TestDrawTreeFunction:
 
         try:
             # Test with scale
-            result_scaled = draw_tree.generate_tikz(ef_file_path, scale_factor=2.0)
+            result_scaled = core.tikz(ef_file_path, scale_factor=2.0)
             assert "scale=1.6" in result_scaled  # 2 * 0.8
 
             # Test with grid
-            result_grid = draw_tree.generate_tikz(ef_file_path, show_grid=True)
+            result_grid = core.tikz(ef_file_path, show_grid=True)
             assert "\\draw [help lines, color=green]" in result_grid
 
             # Test without grid (default)
-            result_no_grid = draw_tree.generate_tikz(ef_file_path, show_grid=False)
+            result_no_grid = core.tikz(ef_file_path, show_grid=False)
             assert "% \\draw [help lines, color=green]" in result_no_grid
 
         finally:
             os.unlink(ef_file_path)
 
-    def test_draw_tree_missing_files(self):
-        """Test draw_tree with missing files."""
+    def test_draw_missing_files(self):
+        """Test draw with missing files."""
         # Test with missing .ef file
         with pytest.raises(FileNotFoundError):
-            draw_tree.generate_tikz("nonexistent.ef")
+            core.tikz("nonexistent.ef")
 
         # Test with valid .ef file (should work with built-in macros)
         with tempfile.NamedTemporaryFile(
@@ -384,7 +384,7 @@ class TestDrawTreeFunction:
             ef_file_path = ef_file.name
 
         try:
-            result = draw_tree.generate_tikz(ef_file_path)
+            result = core.tikz(ef_file_path)
             # Should work with built-in macros
             assert "\\begin{tikzpicture}" in result
         finally:
@@ -394,13 +394,13 @@ class TestDrawTreeFunction:
 class TestPngGeneration:
     """Test PNG generation functionality."""
 
-    def test_generate_png_missing_file(self):
+    def test_png_missing_file(self):
         """Test PNG generation with missing .ef file."""
         with pytest.raises(FileNotFoundError):
-            draw_tree.generate_png("nonexistent.ef")
+            core.png("nonexistent.ef")
 
-    @patch("draw_tree.core.subprocess.run")
-    def test_generate_png_pdflatex_not_found(self, mock_run):
+    @patch("gtdraw.core.subprocess.run")
+    def test_png_pdflatex_not_found(self, mock_run):
         """Test PNG generation when pdflatex is not available."""
         # Mock pdflatex not being found
         mock_run.side_effect = FileNotFoundError("pdflatex not found")
@@ -414,11 +414,11 @@ class TestPngGeneration:
 
         try:
             with pytest.raises(RuntimeError, match="pdflatex not found"):
-                draw_tree.generate_png(ef_file_path)
+                core.png(ef_file_path)
         finally:
             os.unlink(ef_file_path)
 
-    def test_generate_png_default_parameters(self):
+    def test_png_default_parameters(self):
         """Test PNG generation with default parameters."""
         # Create a temporary .ef file
         with tempfile.NamedTemporaryFile(
@@ -429,15 +429,15 @@ class TestPngGeneration:
 
         try:
             # Mock both pdflatex and convert being unavailable to test error handling
-            with patch("draw_tree.core.subprocess.run") as mock_run:
+            with patch("gtdraw.core.subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError("Command not found")
 
                 with pytest.raises(RuntimeError):
-                    draw_tree.generate_png(ef_file_path)
+                    core.png(ef_file_path)
         finally:
             os.unlink(ef_file_path)
 
-    def test_generate_png_custom_dpi(self):
+    def test_png_custom_dpi(self):
         """Test PNG generation with custom DPI setting."""
         # Create a temporary .ef file
         with tempfile.NamedTemporaryFile(
@@ -448,15 +448,15 @@ class TestPngGeneration:
 
         try:
             # Test that custom DPI is handled properly
-            with patch("draw_tree.core.subprocess.run") as mock_run:
+            with patch("gtdraw.core.subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError("Command not found")
 
                 with pytest.raises(RuntimeError):
-                    draw_tree.generate_png(ef_file_path, dpi=600)
+                    core.png(ef_file_path, dpi=600)
         finally:
             os.unlink(ef_file_path)
 
-    def test_generate_png_output_filename(self):
+    def test_png_output_filename(self):
         """Test PNG generation with custom output filename."""
         # Create a temporary .ef file
         with tempfile.NamedTemporaryFile(
@@ -466,11 +466,11 @@ class TestPngGeneration:
             ef_file_path = ef_file.name
 
         try:
-            with patch("draw_tree.core.subprocess.run") as mock_run:
+            with patch("gtdraw.core.subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError("Command not found")
 
                 with pytest.raises(RuntimeError):
-                    draw_tree.generate_png(ef_file_path, save_to="custom_name.png")
+                    core.png(ef_file_path, save_to="custom_name.png")
         finally:
             os.unlink(ef_file_path)
 
@@ -478,12 +478,12 @@ class TestPngGeneration:
 class TestSvgGeneration:
     """Test SVG generation functionality."""
 
-    def test_generate_svg_missing_file(self):
+    def test_svg_missing_file(self):
         with pytest.raises(FileNotFoundError):
-            draw_tree.generate_svg("nonexistent.ef")
+            core.svg("nonexistent.ef")
 
-    @patch("draw_tree.core.subprocess.run")
-    def test_generate_svg_pdflatex_not_found(self, mock_run):
+    @patch("gtdraw.core.subprocess.run")
+    def test_svg_pdflatex_not_found(self, mock_run):
         mock_run.side_effect = FileNotFoundError("pdflatex not found")
         with tempfile.NamedTemporaryFile(
             mode="w", delete=False, suffix=".ef"
@@ -493,11 +493,11 @@ class TestSvgGeneration:
 
         try:
             with pytest.raises(RuntimeError, match="pdflatex not found"):
-                draw_tree.generate_svg(ef_file_path)
+                core.svg(ef_file_path)
         finally:
             os.unlink(ef_file_path)
 
-    def test_generate_svg_default_parameters(self):
+    def test_svg_default_parameters(self):
         with tempfile.NamedTemporaryFile(
             mode="w", delete=False, suffix=".ef"
         ) as ef_file:
@@ -505,14 +505,14 @@ class TestSvgGeneration:
             ef_file_path = ef_file.name
 
         try:
-            with patch("draw_tree.core.subprocess.run") as mock_run:
+            with patch("gtdraw.core.subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError("Command not found")
                 with pytest.raises(RuntimeError):
-                    draw_tree.generate_svg(ef_file_path)
+                    core.svg(ef_file_path)
         finally:
             os.unlink(ef_file_path)
 
-    def test_generate_svg_output_filename(self):
+    def test_svg_output_filename(self):
         with tempfile.NamedTemporaryFile(
             mode="w", delete=False, suffix=".ef"
         ) as ef_file:
@@ -520,10 +520,10 @@ class TestSvgGeneration:
             ef_file_path = ef_file.name
 
         try:
-            with patch("draw_tree.core.subprocess.run") as mock_run:
+            with patch("gtdraw.core.subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError("Command not found")
                 with pytest.raises(RuntimeError):
-                    draw_tree.generate_svg(ef_file_path, save_to="custom_name.svg")
+                    core.svg(ef_file_path, save_to="custom_name.svg")
         finally:
             os.unlink(ef_file_path)
 
@@ -531,12 +531,12 @@ class TestSvgGeneration:
 class TestTexGeneration:
     """Test LaTeX document generation functionality."""
 
-    def test_generate_tex_missing_file(self):
+    def test_tex_missing_file(self):
         """Test LaTeX generation with missing .ef file."""
         with pytest.raises(FileNotFoundError):
-            draw_tree.generate_tex("nonexistent.ef")
+            core.tex("nonexistent.ef")
 
-    def test_generate_tex_default_parameters(self):
+    def test_tex_default_parameters(self):
         """Test LaTeX generation with default parameters."""
         # Create a temporary .ef file
         with tempfile.NamedTemporaryFile(
@@ -547,7 +547,7 @@ class TestTexGeneration:
 
         try:
             # Generate LaTeX file
-            tex_path = draw_tree.generate_tex(ef_file_path)
+            tex_path = core.tex(ef_file_path)
 
             # Verify the file was created and contains expected content
             assert os.path.exists(tex_path)
@@ -568,7 +568,7 @@ class TestTexGeneration:
         finally:
             os.unlink(ef_file_path)
 
-    def test_generate_tex_custom_filename(self):
+    def test_tex_custom_filename(self):
         """Test LaTeX generation with custom output filename."""
         # Create a temporary .ef file
         with tempfile.NamedTemporaryFile(
@@ -579,7 +579,7 @@ class TestTexGeneration:
 
         try:
             custom_filename = "custom_output.tex"
-            tex_path = draw_tree.generate_tex(ef_file_path, save_to=custom_filename)
+            tex_path = core.tex(ef_file_path, save_to=custom_filename)
 
             # Verify the custom filename was used
             assert tex_path.endswith(custom_filename)
@@ -591,7 +591,7 @@ class TestTexGeneration:
         finally:
             os.unlink(ef_file_path)
 
-    def test_generate_tex_with_scale_and_grid(self):
+    def test_tex_with_scale_and_grid(self):
         """Test LaTeX generation with scale and grid options."""
         # Create a temporary .ef file
         with tempfile.NamedTemporaryFile(
@@ -601,9 +601,7 @@ class TestTexGeneration:
             ef_file_path = ef_file.name
 
         try:
-            tex_path = draw_tree.generate_tex(
-                ef_file_path, scale_factor=2.0, show_grid=True
-            )
+            tex_path = core.tex(ef_file_path, scale_factor=2.0, show_grid=True)
 
             # Verify the file was created
             assert os.path.exists(tex_path)
@@ -627,7 +625,7 @@ class TestCommandlineArguments:
 
     def test_commandline_png_flag(self):
         """Test --png flag parsing."""
-        result = draw_tree.commandline(["draw_tree.py", "test.ef", "--png"])
+        result = core.commandline(["core.py", "test.ef", "--png"])
         (
             output_mode,
             pdf_requested,
@@ -678,9 +676,7 @@ class TestCommandlineArguments:
 
     def test_commandline_png_with_dpi(self):
         """Test --png flag with --dpi option."""
-        result = draw_tree.commandline(
-            ["draw_tree.py", "test.ef", "--png", "--dpi=600"]
-        )
+        result = core.commandline(["core.py", "test.ef", "--png", "--dpi=600"])
         (
             output_mode,
             pdf_requested,
@@ -731,9 +727,7 @@ class TestCommandlineArguments:
 
     def test_commandline_png_output_file(self):
         """Test PNG output with custom filename."""
-        result = draw_tree.commandline(
-            ["draw_tree.py", "test.ef", "--output=custom.png"]
-        )
+        result = core.commandline(["core.py", "test.ef", "--output=custom.png"])
         (
             output_mode,
             pdf_requested,
@@ -784,9 +778,7 @@ class TestCommandlineArguments:
 
     def test_commandline_pdf_output_file(self):
         """Test PDF output with custom filename."""
-        result = draw_tree.commandline(
-            ["draw_tree.py", "test.ef", "--output=custom.pdf"]
-        )
+        result = core.commandline(["core.py", "test.ef", "--output=custom.pdf"])
         (
             output_mode,
             pdf_requested,
@@ -837,7 +829,7 @@ class TestCommandlineArguments:
 
     def test_commandline_tex_flag(self):
         """Test --tex flag parsing."""
-        result = draw_tree.commandline(["draw_tree.py", "test.ef", "--tex"])
+        result = core.commandline(["core.py", "test.ef", "--tex"])
         (
             output_mode,
             pdf_requested,
@@ -888,9 +880,7 @@ class TestCommandlineArguments:
 
     def test_commandline_tex_output_file(self):
         """Test LaTeX output with custom filename."""
-        result = draw_tree.commandline(
-            ["draw_tree.py", "test.ef", "--output=custom.tex"]
-        )
+        result = core.commandline(["core.py", "test.ef", "--output=custom.tex"])
         (
             output_mode,
             pdf_requested,
@@ -942,7 +932,7 @@ class TestCommandlineArguments:
     def test_commandline_invalid_dpi(self):
         """Test invalid DPI values."""
         # Too low DPI should default to 300
-        result = draw_tree.commandline(["draw_tree.py", "test.ef", "--png", "--dpi=50"])
+        result = core.commandline(["core.py", "test.ef", "--png", "--dpi=50"])
         (
             output_mode,
             pdf_requested,
@@ -986,9 +976,7 @@ class TestCommandlineArguments:
         assert dpi == 300  # Should default to 300 for out-of-range values
 
         # Too high DPI should default to 300
-        result = draw_tree.commandline(
-            ["draw_tree.py", "test.ef", "--png", "--dpi=5000"]
-        )
+        result = core.commandline(["core.py", "test.ef", "--png", "--dpi=5000"])
         (
             output_mode,
             pdf_requested,
@@ -1033,9 +1021,7 @@ class TestCommandlineArguments:
 
     def test_commandline_invalid_dpi_string(self):
         """Test non-numeric DPI values."""
-        result = draw_tree.commandline(
-            ["draw_tree.py", "test.ef", "--png", "--dpi=high"]
-        )
+        result = core.commandline(["core.py", "test.ef", "--png", "--dpi=high"])
         (
             output_mode,
             pdf_requested,
@@ -1080,7 +1066,7 @@ class TestCommandlineArguments:
 
     def test_commandline_svg_flag(self):
         """Test --svg flag parsing."""
-        result = draw_tree.commandline(["draw_tree.py", "test.ef", "--svg"])
+        result = core.commandline(["core.py", "test.ef", "--svg"])
         (
             output_mode,
             pdf_requested,
@@ -1131,9 +1117,7 @@ class TestCommandlineArguments:
 
     def test_commandline_svg_output_file(self):
         """Test SVG output with custom filename."""
-        result = draw_tree.commandline(
-            ["draw_tree.py", "test.ef", "--output=custom.svg"]
-        )
+        result = core.commandline(["core.py", "test.ef", "--output=custom.svg"])
         (
             output_mode,
             pdf_requested,
@@ -1186,14 +1170,14 @@ class TestCommandlineArguments:
 
 def test_commandline_action_label_dist():
     """Test parsing of action label distance flag."""
-    result = draw_tree.commandline(["draw_tree", "game.ef", "--action-label-dist=2.5"])
+    result = core.commandline(["gtdraw", "game.ef", "--action-label-dist=2.5"])
     assert result[15] == 2.5
 
 
 def test_commandline_action_label_position_by_player():
     """Test that --action-label-position-by=player is parsed correctly (default)."""
-    result = draw_tree.commandline(
-        ["draw_tree", "game.ef", "--action-label-position-by=player"]
+    result = core.commandline(
+        ["gtdraw", "game.ef", "--action-label-position-by=player"]
     )
     (
         *_rest,
@@ -1207,9 +1191,7 @@ def test_commandline_action_label_position_by_player():
 
 def test_commandline_action_label_position_by_level():
     """Test that --action-label-position-by=level is parsed correctly."""
-    result = draw_tree.commandline(
-        ["draw_tree", "game.ef", "--action-label-position-by=level"]
-    )
+    result = core.commandline(["gtdraw", "game.ef", "--action-label-position-by=level"])
     (
         *_rest,
         vary_action_label_positions,
@@ -1222,8 +1204,13 @@ def test_commandline_action_label_position_by_level():
 
 def test_commandline_vary_action_label_positions_by_player():
     """Test that --vary-action-label-positions-by=player is parsed correctly."""
-    result = draw_tree.commandline(
-        ["draw_tree", "game.ef", "--vary-action-label-positions", "--vary-action-label-positions-by=player"]
+    result = core.commandline(
+        [
+            "gtdraw",
+            "game.ef",
+            "--vary-action-label-positions",
+            "--vary-action-label-positions-by=player",
+        ]
     )
     (
         *_rest,
@@ -1238,8 +1225,13 @@ def test_commandline_vary_action_label_positions_by_player():
 
 def test_commandline_vary_action_label_positions_by_level():
     """Test that --vary-action-label-positions-by=level is parsed correctly."""
-    result = draw_tree.commandline(
-        ["draw_tree", "game.ef", "--vary-action-label-positions", "--vary-action-label-positions-by=level"]
+    result = core.commandline(
+        [
+            "gtdraw",
+            "game.ef",
+            "--vary-action-label-positions",
+            "--vary-action-label-positions-by=level",
+        ]
     )
     (
         *_rest,
@@ -1254,10 +1246,14 @@ def test_commandline_vary_action_label_positions_by_level():
 
 def test_commandline_vary_action_label_positions_choices():
     """Test that --vary-action-label-positions-choices parses a comma-separated list."""
-    result = draw_tree.commandline(
-        ["draw_tree", "game.ef", "--vary-action-label-positions",
-         "--vary-action-label-positions-by=player",
-         "--vary-action-label-positions-choices=0,1"]
+    result = core.commandline(
+        [
+            "gtdraw",
+            "game.ef",
+            "--vary-action-label-positions",
+            "--vary-action-label-positions-by=player",
+            "--vary-action-label-positions-choices=0,1",
+        ]
     )
     (
         *_rest,
@@ -1273,10 +1269,14 @@ def test_commandline_vary_action_label_positions_choices():
 
 def test_commandline_vary_choices_level():
     """Test --vary-action-label-positions-choices with level-based vary."""
-    result = draw_tree.commandline(
-        ["draw_tree", "game.ef", "--vary-action-label-positions",
-         "--vary-action-label-positions-by=level",
-         "--vary-action-label-positions-choices=2,3"]
+    result = core.commandline(
+        [
+            "gtdraw",
+            "game.ef",
+            "--vary-action-label-positions",
+            "--vary-action-label-positions-by=level",
+            "--vary-action-label-positions-choices=2,3",
+        ]
     )
     (
         *_rest,
@@ -1329,11 +1329,11 @@ def _simple_ef_content():
 def _make_pygambit_game():
     """Create a small pygambit game for end-to-end tests."""
     g = pygambit.Game.new_tree(players=["Alice", "Bob"], title="integration_test")
-    g.append_move(g.root, g.players[0], ["Left", "Right"])
-    g.append_move(g.root.children[0], g.players[1], ["Up", "Down"])
-    g.set_outcome(g.root.children[0].children[0], g.add_outcome([1, 0]))
-    g.set_outcome(g.root.children[0].children[1], g.add_outcome([0, 1]))
-    g.set_outcome(g.root.children[1], g.add_outcome([2, 2]))
+    g.append_move(g.root, g.players["Alice"], ["Left", "Right"])
+    g.append_move(g.root.children["Left"], g.players["Bob"], ["Up", "Down"])
+    g.set_outcome(g.root.children["Left"].children["Up"], g.add_outcome([1, 0]))
+    g.set_outcome(g.root.children["Left"].children["Down"], g.add_outcome([0, 1]))
+    g.set_outcome(g.root.children["Right"], g.add_outcome([2, 2]))
     return g
 
 
@@ -1346,45 +1346,41 @@ class TestPdfGenerationIntegration:
     """Integration tests that actually compile LaTeX to PDF."""
 
     @requires_pdflatex
-    def test_generate_pdf_from_ef_file(self, tmp_path):
+    def test_pdf_from_ef_file(self, tmp_path):
         ef_file = tmp_path / "game.ef"
         ef_file.write_text(_simple_ef_content())
-        pdf_path = draw_tree.generate_pdf(
-            str(ef_file), save_to=str(tmp_path / "out.pdf")
-        )
+        pdf_path = core.pdf(str(ef_file), save_to=str(tmp_path / "out.pdf"))
         assert os.path.isfile(pdf_path)
         assert os.path.getsize(pdf_path) > 0
         with open(pdf_path, "rb") as f:
             assert f.read(4) == b"%PDF"
 
     @requires_pdflatex
-    def test_generate_pdf_save_to_custom_path(self, tmp_path):
+    def test_pdf_save_to_custom_path(self, tmp_path):
         ef_file = tmp_path / "game.ef"
         ef_file.write_text(_simple_ef_content())
         custom = str(tmp_path / "subdir" / "custom.pdf")
         os.makedirs(os.path.dirname(custom), exist_ok=True)
-        pdf_path = draw_tree.generate_pdf(str(ef_file), save_to=custom)
+        pdf_path = core.pdf(str(ef_file), save_to=custom)
         assert pdf_path == str(Path(custom).absolute())
         assert os.path.isfile(pdf_path)
 
     @requires_pdflatex
-    def test_generate_pdf_from_pygambit_game(self, tmp_path):
+    def test_pdf_from_pygambit_game(self, tmp_path):
         """End-to-end: pygambit Game → .ef → .tex → .pdf"""
         g = _make_pygambit_game()
-        pdf_path = draw_tree.generate_pdf(g, save_to=str(tmp_path / "pygambit.pdf"))
+        pdf_path = core.pdf(g, save_to=str(tmp_path / "pygambit.pdf"))
         assert os.path.isfile(pdf_path)
         with open(pdf_path, "rb") as f:
             assert f.read(4) == b"%PDF"
 
     @requires_pdflatex
-    def test_generate_pdf_from_repo_ef_file(self, tmp_path):
+    def test_pdf_from_repo_ef_file(self, tmp_path):
         """Test with a real game file from the repository."""
         ef_file = GAMES_DIR / "x1.ef"
         if not ef_file.exists():
             pytest.skip("Repository game file not found")
-        pdf_path = draw_tree.generate_pdf(
-            str(ef_file), save_to=str(tmp_path / "x1.pdf")
-        )
+        pdf_path = core.pdf(str(ef_file), save_to=str(tmp_path / "x1.pdf"))
         assert os.path.isfile(pdf_path)
         with open(pdf_path, "rb") as f:
             assert f.read(4) == b"%PDF"
@@ -1399,22 +1395,20 @@ class TestPngGenerationIntegration:
     """Integration tests that actually generate PNG images."""
 
     @requires_pdf_to_png
-    def test_generate_png_from_ef_file(self, tmp_path):
+    def test_png_from_ef_file(self, tmp_path):
         ef_file = tmp_path / "game.ef"
         ef_file.write_text(_simple_ef_content())
-        png_path = draw_tree.generate_png(
-            str(ef_file), save_to=str(tmp_path / "out.png")
-        )
+        png_path = core.png(str(ef_file), save_to=str(tmp_path / "out.png"))
         assert os.path.isfile(png_path)
         assert os.path.getsize(png_path) > 0
         with open(png_path, "rb") as f:
             assert f.read(4) == b"\x89PNG"
 
     @requires_pdf_to_png
-    def test_generate_png_from_pygambit_game(self, tmp_path):
+    def test_png_from_pygambit_game(self, tmp_path):
         """End-to-end: pygambit Game → .ef → .tex → .pdf → .png"""
         g = _make_pygambit_game()
-        png_path = draw_tree.generate_png(g, save_to=str(tmp_path / "pygambit.png"))
+        png_path = core.png(g, save_to=str(tmp_path / "pygambit.png"))
         assert os.path.isfile(png_path)
         with open(png_path, "rb") as f:
             assert f.read(4) == b"\x89PNG"
@@ -1429,12 +1423,10 @@ class TestSvgGenerationIntegration:
     """Integration tests that actually generate SVG files."""
 
     @requires_pdf2svg
-    def test_generate_svg_from_ef_file(self, tmp_path):
+    def test_svg_from_ef_file(self, tmp_path):
         ef_file = tmp_path / "game.ef"
         ef_file.write_text(_simple_ef_content())
-        svg_path = draw_tree.generate_svg(
-            str(ef_file), save_to=str(tmp_path / "out.svg")
-        )
+        svg_path = core.svg(str(ef_file), save_to=str(tmp_path / "out.svg"))
         assert os.path.isfile(svg_path)
         assert os.path.getsize(svg_path) > 0
         with open(svg_path) as f:
@@ -1442,21 +1434,21 @@ class TestSvgGenerationIntegration:
         assert "<svg" in content
 
     @requires_pdf2svg
-    def test_generate_svg_from_pygambit_game(self, tmp_path):
+    def test_svg_from_pygambit_game(self, tmp_path):
         """End-to-end: pygambit Game → .ef → .tex → .pdf → .svg"""
         g = _make_pygambit_game()
-        svg_path = draw_tree.generate_svg(g, save_to=str(tmp_path / "pygambit.svg"))
+        svg_path = core.svg(g, save_to=str(tmp_path / "pygambit.svg"))
         assert os.path.isfile(svg_path)
         with open(svg_path) as f:
             content = f.read()
         assert "<svg" in content
 
     @requires_pdf2svg
-    def test_generate_svg_responsive(self, tmp_path):
+    def test_svg_responsive(self, tmp_path):
         """Verify that responsive_sizing=True modifies the SVG content."""
         ef_file = tmp_path / "game.ef"
         ef_file.write_text(_simple_ef_content())
-        svg_path = draw_tree.generate_svg(
+        svg_path = core.svg(
             str(ef_file),
             save_to=str(tmp_path / "responsive.svg"),
             responsive_sizing=True,
@@ -1472,48 +1464,48 @@ class TestSvgGenerationIntegration:
 
 
 # ---------------------------------------------------------------------------
-# TikZ / generate_tikz option tests
+# TikZ / tikz option tests
 # ---------------------------------------------------------------------------
 
 
 class TestGenerateTikzOptions:
-    """Test generate_tikz with various options (replacing tutorial notebook
+    """Test tikz with various options (replacing tutorial notebook
     coverage for option variants)."""
 
     def test_color_scheme_default(self):
         ef_file = GAMES_DIR / "x1.ef"
         if not ef_file.exists():
             pytest.skip("Repository game file not found")
-        result = draw_tree.generate_tikz(str(ef_file), color_scheme="default")
+        result = core.tikz(str(ef_file), color_scheme="default")
         assert "\\begin{tikzpicture}" in result
 
     def test_color_scheme_gambit(self):
         ef_file = GAMES_DIR / "x1.ef"
         if not ef_file.exists():
             pytest.skip("Repository game file not found")
-        result = draw_tree.generate_tikz(str(ef_file), color_scheme="gambit")
+        result = core.tikz(str(ef_file), color_scheme="gambit")
         assert "\\begin{tikzpicture}" in result
 
     def test_color_scheme_distinctipy(self):
         ef_file = GAMES_DIR / "x1.ef"
         if not ef_file.exists():
             pytest.skip("Repository game file not found")
-        result = draw_tree.generate_tikz(str(ef_file), color_scheme="distinctipy")
+        result = core.tikz(str(ef_file), color_scheme="distinctipy")
         assert "\\begin{tikzpicture}" in result
 
     def test_color_scheme_colorblind(self):
         ef_file = GAMES_DIR / "x1.ef"
         if not ef_file.exists():
             pytest.skip("Repository game file not found")
-        result = draw_tree.generate_tikz(str(ef_file), color_scheme="colorblind")
+        result = core.tikz(str(ef_file), color_scheme="colorblind")
         assert "\\begin{tikzpicture}" in result
 
     def test_scale_factor_affects_output(self):
         ef_file = GAMES_DIR / "x1.ef"
         if not ef_file.exists():
             pytest.skip("Repository game file not found")
-        result_default = draw_tree.generate_tikz(str(ef_file))
-        result_scaled = draw_tree.generate_tikz(str(ef_file), scale_factor=2.0)
+        result_default = core.tikz(str(ef_file))
+        result_scaled = core.tikz(str(ef_file), scale_factor=2.0)
         assert result_default != result_scaled
         assert "scale=1.6" in result_scaled  # 2.0 * 0.8
 
@@ -1521,9 +1513,7 @@ class TestGenerateTikzOptions:
         ef_file = GAMES_DIR / "x1.ef"
         if not ef_file.exists():
             pytest.skip("Repository game file not found")
-        result = draw_tree.generate_tikz(
-            str(ef_file), edge_thickness=2.0, action_label_position=0.8
-        )
+        result = core.tikz(str(ef_file), edge_thickness=2.0, action_label_position=0.8)
         assert "\\treethickn2.0pt" in result
         assert "\\begin{tikzpicture}" in result
 
@@ -1531,7 +1521,7 @@ class TestGenerateTikzOptions:
         """Test pygambit-specific options: level_scaling, sublevel_scaling,
         width_scaling, shared_terminal_depth, hide_action_labels."""
         g = _make_pygambit_game()
-        result = draw_tree.generate_tikz(
+        result = core.tikz(
             g,
             save_to=str(tmp_path / "opts.ef"),
             level_scaling=2,
@@ -1547,7 +1537,7 @@ class TestGenerateTikzOptions:
 
 
 # ---------------------------------------------------------------------------
-# Smoke test: generate_tikz over all repo .efg files via pygambit
+# Smoke test: tikz over all repo .efg files via pygambit
 # ---------------------------------------------------------------------------
 
 
@@ -1563,12 +1553,12 @@ _EFG_FILES = _find_efg_files()
 
 
 @pytest.mark.parametrize("efg_path", _EFG_FILES, ids=[p.name for p in _EFG_FILES])
-def test_pygambit_generate_tikz_smoke(efg_path, tmp_path):
+def test_pygambit_tikz_smoke(efg_path, tmp_path):
     """Smoke test: read each .efg with pygambit and generate TikZ without
     crashing. This replaces the tutorial notebooks' role as a crash-check
-    for the pygambit → draw_tree pipeline."""
+    for the pygambit → draw pipeline."""
     g = pygambit.read_efg(str(efg_path))
-    result = draw_tree.generate_tikz(g, save_to=str(tmp_path / "smoke.ef"))
+    result = core.tikz(g, save_to=str(tmp_path / "smoke.ef"))
     assert isinstance(result, str)
     assert "\\begin{tikzpicture}" in result
     assert len(result) > 100  # sanity check: non-trivial output
@@ -1576,11 +1566,11 @@ def test_pygambit_generate_tikz_smoke(efg_path, tmp_path):
 
 @pytest.mark.parametrize("efg_path", _EFG_FILES, ids=[p.name for p in _EFG_FILES])
 @requires_pdflatex
-def test_pygambit_generate_pdf_smoke(efg_path, tmp_path):
+def test_pygambit_pdf_smoke(efg_path, tmp_path):
     """Smoke test: read each .efg with pygambit and generate PDF.
     Verifies the full pipeline doesn't crash and produces a valid PDF."""
     g = pygambit.read_efg(str(efg_path))
-    pdf_path = draw_tree.generate_pdf(g, save_to=str(tmp_path / "smoke.pdf"))
+    pdf_path = core.pdf(g, save_to=str(tmp_path / "smoke.pdf"))
     assert os.path.isfile(pdf_path)
     with open(pdf_path, "rb") as f:
         assert f.read(4) == b"%PDF"
@@ -1589,6 +1579,7 @@ def test_pygambit_generate_pdf_smoke(efg_path, tmp_path):
 # ---------------------------------------------------------------------------
 # NFG (Normal Form Game) rendering tests
 # ---------------------------------------------------------------------------
+
 
 def _find_nfg_files():
     """Return list of .nfg paths under games/nfg/."""
@@ -1609,54 +1600,54 @@ class TestNFGRendering:
         if not os.path.exists(_NFG_PATH):
             pytest.skip("NFG test file not found")
 
-    def test_generate_tikz_from_nfg_file(self):
-        """generate_tikz on an NFG file path returns the LaTeX game environment."""
+    def test_tikz_from_nfg_file(self):
+        """tikz on an NFG file path returns the LaTeX game environment."""
         self._skip_if_no_nfg()
-        result = draw_tree.generate_tikz(_NFG_PATH)
+        result = core.tikz(_NFG_PATH)
         assert "\\begin{game}" in result
         assert "\\end{game}" in result
 
-    def test_generate_tikz_from_pygambit_nfg_object(self):
-        """generate_tikz on a pygambit NFG Game object returns the LaTeX game environment."""
+    def test_tikz_from_pygambit_nfg_object(self):
+        """tikz on a pygambit NFG Game object returns the LaTeX game environment."""
         self._skip_if_no_nfg()
         g = pygambit.read_nfg(_NFG_PATH)
-        result = draw_tree.generate_tikz(g)
+        result = core.tikz(g)
         assert "\\begin{game}" in result
         assert "\\end{game}" in result
 
-    def test_generate_tikz_nfg_does_not_contain_tikzpicture(self):
+    def test_tikz_nfg_does_not_contain_tikzpicture(self):
         """NFG output must not contain TikZ markup — it is a payoff table, not a tree."""
         self._skip_if_no_nfg()
-        result = draw_tree.generate_tikz(_NFG_PATH)
+        result = core.tikz(_NFG_PATH)
         assert "\\begin{tikzpicture}" not in result
 
-    def test_generate_tex_from_nfg(self, tmp_path):
-        """generate_tex for NFG produces a .tex file with the sgame package."""
+    def test_tex_from_nfg(self, tmp_path):
+        """tex for NFG produces a .tex file with the sgame package."""
         self._skip_if_no_nfg()
-        out = draw_tree.generate_tex(_NFG_PATH, save_to=str(tmp_path / "out"))
+        out = core.tex(_NFG_PATH, save_to=str(tmp_path / "out"))
         assert out.endswith(".tex")
         content = Path(out).read_text()
         assert "\\usepackage{sgame}" in content
         assert "\\begin{game}" in content
 
-    def test_draw_tree_nfg_returns_latex_body(self):
-        """draw_tree() on an NFG outside Jupyter returns the LaTeX body string."""
+    def test_draw_nfg_returns_latex_body(self):
+        """draw() on an NFG outside Jupyter returns the LaTeX body string."""
         self._skip_if_no_nfg()
-        result = draw_tree.draw_tree(_NFG_PATH)
+        result = core.draw(_NFG_PATH)
         assert result is not None
         assert "\\begin{game}" in result
 
     @pytest.mark.parametrize("nfg_path", _NFG_FILES, ids=[p.name for p in _NFG_FILES])
-    def test_nfg_generate_tikz_smoke(self, nfg_path):
-        """generate_tikz succeeds on all .nfg files in games/nfg/."""
-        result = draw_tree.generate_tikz(str(nfg_path))
+    def test_nfg_tikz_smoke(self, nfg_path):
+        """tikz succeeds on all .nfg files in games/nfg/."""
+        result = core.tikz(str(nfg_path))
         assert "\\begin{game}" in result, f"No game env in output for {nfg_path}"
 
     @pytest.mark.parametrize("nfg_path", _NFG_FILES, ids=[p.name for p in _NFG_FILES])
     @requires_pdflatex
-    def test_nfg_generate_pdf_smoke(self, nfg_path, tmp_path):
-        """generate_pdf compiles each NFG to a valid PDF."""
-        pdf_path = draw_tree.generate_pdf(str(nfg_path), save_to=str(tmp_path / "out.pdf"))
+    def test_nfg_pdf_smoke(self, nfg_path, tmp_path):
+        """pdf compiles each NFG to a valid PDF."""
+        pdf_path = core.pdf(str(nfg_path), save_to=str(tmp_path / "out.pdf"))
         assert os.path.isfile(pdf_path)
         with open(pdf_path, "rb") as f:
             assert f.read(4) == b"%PDF"
@@ -1665,7 +1656,7 @@ class TestNFGRendering:
 class TestFontStyling:
     """Test font styling in TikZ output."""
 
-    def test_generate_tikz_font_styles(self):
+    def test_tikz_font_styles(self):
         """Test that font styles are correctly injected into TikZ output."""
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
             f.write("player 1\nlevel 0 node root player 1\n")
@@ -1683,7 +1674,7 @@ class TestFontStyling:
                 )
                 ef2_path = f2.name
 
-            result = draw_tree.generate_tikz(
+            result = core.tikz(
                 ef2_path, font_family="sffamily", font_bold=True, font_italic=True
             )
             assert (
@@ -1695,7 +1686,7 @@ class TestFontStyling:
             assert "Move" in result
 
             # Test font size
-            result_size = draw_tree.generate_tikz(ef2_path, font_size="large")
+            result_size = core.tikz(ef2_path, font_size="large")
             assert "every node/.append style={font=\\rmfamily\\large}" in result_size
 
             os.unlink(ef2_path)
@@ -1715,9 +1706,9 @@ class TestCustomColors:
             ef_file_path = f.name
 
         try:
-            assert draw_tree.count_players(ef_file_path) == 2
+            assert core.count_players(ef_file_path) == 2
             # Chance player name should be capitalized
-            assert draw_tree.playername[0] == "Chance"
+            assert core.playername[0] == "Chance"
         finally:
             os.unlink(ef_file_path)
 
@@ -1730,7 +1721,7 @@ class TestCustomColors:
             ef_file_path = f.name
 
         try:
-            result = draw_tree.generate_tikz(
+            result = core.tikz(
                 ef_file_path, color_scheme="custom", custom_colors=custom_colors
             )
             assert "\\definecolor{customchancecolor}{HTML}{759138}" in result
@@ -1749,7 +1740,7 @@ class TestCustomColors:
             ef_file_path = f.name
 
         try:
-            result = draw_tree.generate_tikz(ef_file_path, edge_thickness=2.5)
+            result = core.tikz(ef_file_path, edge_thickness=2.5)
             # The iset draw command should contain the line width/thickn
             assert "line width=\\treethickn" in result
             assert "\\treethickn2.5pt" in result
@@ -1760,41 +1751,39 @@ class TestCustomColors:
 def test_commandline_font_options():
     """Test font-related argument parsing."""
     # Test font family
-    result = draw_tree.commandline(["draw_tree.py", "test.ef", "--font=sans-serif"])
+    result = core.commandline(["core.py", "test.ef", "--font=sans-serif"])
     assert result[7] == "sffamily"
 
-    result = draw_tree.commandline(["draw_tree.py", "test.ef", "--font=monospace"])
+    result = core.commandline(["core.py", "test.ef", "--font=monospace"])
     assert result[7] == "ttfamily"
 
     # Test bold/italic flags
-    result = draw_tree.commandline(["draw_tree.py", "test.ef", "--bold", "--italic"])
+    result = core.commandline(["core.py", "test.ef", "--bold", "--italic"])
     assert result[8] is True  # bold
     assert result[9] is True  # italic
 
     # Test font size
-    result = draw_tree.commandline(["draw_tree.py", "test.ef", "--font-size=large"])
+    result = core.commandline(["core.py", "test.ef", "--font-size=large"])
     assert result[10] == "large"
 
 
 def test_commandline_horizontal_flag():
     """Test --horizontal flag parsing."""
-    result = draw_tree.commandline(["draw_tree.py", "test.ef", "--horizontal"])
+    result = core.commandline(["core.py", "test.ef", "--horizontal"])
     assert result[12] is True
 
 
 def test_commandline_color_scheme():
     """Test parsing of the --color-scheme option."""
-    result = draw_tree.commandline(
-        ["draw_tree.py", "test.ef", "--color-scheme=distinctipy"]
-    )
+    result = core.commandline(["core.py", "test.ef", "--color-scheme=distinctipy"])
     assert result[25] == "distinctipy"
 
 
 def test_commandline_edge_and_label_options():
     """Test parsing of edge thickness and action label position options."""
-    result = draw_tree.commandline(
+    result = core.commandline(
         [
-            "draw_tree.py",
+            "core.py",
             "test.ef",
             "--edge-thickness=2.0",
             "--action-label-position=0.7",
@@ -1806,9 +1795,9 @@ def test_commandline_edge_and_label_options():
 
 def test_commandline_efg_scaling_options():
     """Test parsing of scaling and layout options specific to EFG files."""
-    result = draw_tree.commandline(
+    result = core.commandline(
         [
-            "draw_tree.py",
+            "core.py",
             "test.ef",
             "--level-scaling=1.5",
             "--sublevel-scaling=0.8",
@@ -1832,7 +1821,7 @@ class TestHorizontalLayout:
             ef_file_path = f.name
 
         try:
-            result = draw_tree.generate_tikz(ef_file_path, horizontal=True)
+            result = core.tikz(ef_file_path, horizontal=True)
 
             # Check for picture rotation
             assert "rotate=90" in result
@@ -1852,7 +1841,7 @@ class TestHorizontalLayout:
                 )
                 ef2_path = f2.name
 
-            result2 = draw_tree.generate_tikz(ef2_path, horizontal=True)
+            result2 = core.tikz(ef2_path, horizontal=True)
             # Should NOT contain \rotatebox{-90} in Move label
             assert "\\rotatebox{-90}" not in result2
             # But Move label should be present
@@ -1871,11 +1860,9 @@ class TestHorizontalLayout:
 
         try:
             # Vertical legend (default)
-            res_v = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit")
+            res_v = core.tikz(ef_file_path, color_scheme="gambit")
             # Horizontal legend
-            res_h = draw_tree.generate_tikz(
-                ef_file_path, color_scheme="gambit", horizontal=True
-            )
+            res_h = core.tikz(ef_file_path, color_scheme="gambit", horizontal=True)
 
             assert "Player color legend" in res_v
             assert "Player color legend" in res_h
@@ -1913,6 +1900,7 @@ class TestHorizontalLayout:
             ef_file_path = f.name
 
         try:
+
             def get_scope_xy(tikz):
                 m = re.search(
                     r"\\begin{scope}\[scale=1,shift={\(([\d.-]+),([\d.-]+)\)}\]",
@@ -1921,10 +1909,18 @@ class TestHorizontalLayout:
                 assert m, f"No scope shift found in: {tikz}"
                 return float(m.group(1)), float(m.group(2))
 
-            res_tl = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", legend_position="top-left")
-            res_tr = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", legend_position="top-right")
-            res_bl = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", legend_position="bottom-left")
-            res_br = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", legend_position="bottom-right")
+            res_tl = core.tikz(
+                ef_file_path, color_scheme="gambit", legend_position="top-left"
+            )
+            res_tr = core.tikz(
+                ef_file_path, color_scheme="gambit", legend_position="top-right"
+            )
+            res_bl = core.tikz(
+                ef_file_path, color_scheme="gambit", legend_position="bottom-left"
+            )
+            res_br = core.tikz(
+                ef_file_path, color_scheme="gambit", legend_position="bottom-right"
+            )
 
             x_tl, y_tl = get_scope_xy(res_tl)
             x_tr, y_tr = get_scope_xy(res_tr)
@@ -1966,6 +1962,7 @@ class TestHorizontalLayout:
             ef_file_path = f.name
 
         try:
+
             def get_scope_xy(tikz):
                 m = re.search(
                     r"\\begin{scope}\[scale=1,shift={\(([\d.-]+),([\d.-]+)\)}, rotate=-90\]",
@@ -1974,10 +1971,30 @@ class TestHorizontalLayout:
                 assert m, f"No horizontal scope shift found in: {tikz}"
                 return float(m.group(1)), float(m.group(2))
 
-            res_tl = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", horizontal=True, legend_position="top-left")
-            res_tr = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", horizontal=True, legend_position="top-right")
-            res_bl = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", horizontal=True, legend_position="bottom-left")
-            res_br = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit", horizontal=True, legend_position="bottom-right")
+            res_tl = core.tikz(
+                ef_file_path,
+                color_scheme="gambit",
+                horizontal=True,
+                legend_position="top-left",
+            )
+            res_tr = core.tikz(
+                ef_file_path,
+                color_scheme="gambit",
+                horizontal=True,
+                legend_position="top-right",
+            )
+            res_bl = core.tikz(
+                ef_file_path,
+                color_scheme="gambit",
+                horizontal=True,
+                legend_position="bottom-left",
+            )
+            res_br = core.tikz(
+                ef_file_path,
+                color_scheme="gambit",
+                horizontal=True,
+                legend_position="bottom-right",
+            )
 
             x_tl, y_tl = get_scope_xy(res_tl)
             x_tr, y_tr = get_scope_xy(res_tr)
@@ -1997,27 +2014,27 @@ class TestHorizontalLayout:
 
     def test_legend_position_commandline(self):
         """Test that --legend-position is correctly parsed by commandline()."""
-        result_default = draw_tree.commandline(["draw_tree.py", "test.ef"])
+        result_default = core.commandline(["core.py", "test.ef"])
         assert result_default[14] == "top-left"
 
-        result_tr = draw_tree.commandline(
-            ["draw_tree.py", "test.ef", "--legend-position=top-right"]
+        result_tr = core.commandline(
+            ["core.py", "test.ef", "--legend-position=top-right"]
         )
         assert result_tr[14] == "top-right"
 
-        result_bl = draw_tree.commandline(
-            ["draw_tree.py", "test.ef", "--legend-position=bottom-left"]
+        result_bl = core.commandline(
+            ["core.py", "test.ef", "--legend-position=bottom-left"]
         )
         assert result_bl[14] == "bottom-left"
 
-        result_br = draw_tree.commandline(
-            ["draw_tree.py", "test.ef", "--legend-position=bottom-right"]
+        result_br = core.commandline(
+            ["core.py", "test.ef", "--legend-position=bottom-right"]
         )
         assert result_br[14] == "bottom-right"
 
         # Invalid value should leave default unchanged
-        result_invalid = draw_tree.commandline(
-            ["draw_tree.py", "test.ef", "--legend-position=invalid"]
+        result_invalid = core.commandline(
+            ["core.py", "test.ef", "--legend-position=invalid"]
         )
         assert result_invalid[14] == "top-left"
 
@@ -2029,7 +2046,7 @@ class TestHorizontalLayout:
             ef_file_path = f.name
 
         try:
-            result = draw_tree.generate_tikz(ef_file_path, horizontal=True)
+            result = core.tikz(ef_file_path, horizontal=True)
             # Payoffs should be combined into a single comma-separated node
             assert "1, 2" in result
             # Vertical mode would emit separate values without commas; comma means combined
@@ -2039,7 +2056,7 @@ class TestHorizontalLayout:
             assert "below=0.5\\paydown" not in result
 
             # Test with label background enabled (terminal payoffs should still lack a background and be comma-separated)
-            result_bg = draw_tree.generate_tikz(ef_file_path, horizontal=True, label_bg=True)
+            result_bg = core.tikz(ef_file_path, horizontal=True, label_bg=True)
             assert "1, 2" in result_bg
             assert "right=0.5\\paydown" in result_bg
             assert "right=2.5\\paydown" not in result_bg
@@ -2053,20 +2070,26 @@ class TestHorizontalLayout:
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".ef") as f:
             f.write("player 1\n")
             f.write("level 0 node root player 1\n")
-            f.write("level 1 node child from 0,root player 1 move MyAction payoffs 1 2\n")
+            f.write(
+                "level 1 node child from 0,root player 1 move MyAction payoffs 1 2\n"
+            )
             ef_file_path = f.name
 
         try:
             # 1. Backgrounds off: should have positional offsets/sides (e.g. above/below/left/right/yshift/xshift)
-            res_no_bg = draw_tree.generate_tikz(ef_file_path, label_bg=False)
+            res_no_bg = core.tikz(ef_file_path, label_bg=False)
             assert "MyAction" in res_no_bg
             assert "xshift=" in res_no_bg or "yshift=" in res_no_bg
 
             # 2. Backgrounds on: should NOT have positional offsets/sides and should be centered on edge
-            res_bg = draw_tree.generate_tikz(ef_file_path, label_bg=True)
+            res_bg = core.tikz(ef_file_path, label_bg=True)
             assert "MyAction" in res_bg
             # Because it is centered, there are no side or shift options in the action label node
-            action_lines = [line for line in res_bg.split("\n") if "MyAction" in line and not line.strip().startswith("%")]
+            action_lines = [
+                line
+                for line in res_bg.split("\n")
+                if "MyAction" in line and not line.strip().startswith("%")
+            ]
             assert len(action_lines) == 1
             action_line = action_lines[0]
             assert "xshift" not in action_line
@@ -2093,16 +2116,18 @@ def test_chance_node_probability_with_long_label():
         f.write(ef_content)
         path = f.name
     try:
-        result = draw_tree.generate_tikz(path)
-        assert "\\frac{1}{6}" in result, "Probability fraction must appear in TikZ output"
+        result = core.tikz(path)
+        assert "\\frac{1}{6}" in result, (
+            "Probability fraction must appear in TikZ output"
+        )
     finally:
         os.unlink(path)
 
 
 def test_commandline_custom_colors():
     """Test custom color argument parsing."""
-    result = draw_tree.commandline(
-        ["draw_tree.py", "test.ef", '--custom-colors="0:#FF0000,1:#0000FF"']
+    result = core.commandline(
+        ["core.py", "test.ef", '--custom-colors="0:#FF0000,1:#0000FF"']
     )
     custom_colors = result[11]
     assert custom_colors == {0: "#FF0000", 1: "#0000FF"}
@@ -2121,19 +2146,17 @@ def test_action_label_dist():
 
     try:
         # Default dist=1.0 -> 0.5mm
-        res1 = draw_tree.generate_tikz(ef_file_path, action_label_dist=1.0)
+        res1 = core.tikz(ef_file_path, action_label_dist=1.0)
         if not ("xshift=0.5mm" in res1 or "xshift=-0.5mm" in res1):
             print(f"DEBUG: res1=\n{res1}")
         assert "xshift=0.5mm" in res1 or "xshift=-0.5mm" in res1
 
         # Custom dist=2.0 -> 1.0mm
-        res2 = draw_tree.generate_tikz(ef_file_path, action_label_dist=2.0)
+        res2 = core.tikz(ef_file_path, action_label_dist=2.0)
         assert "xshift=1mm" in res2 or "xshift=-1mm" in res2
 
         # Horizontal dist=2.0 -> yshift 1mm
-        res3 = draw_tree.generate_tikz(
-            ef_file_path, action_label_dist=2.0, horizontal=True
-        )
+        res3 = core.tikz(ef_file_path, action_label_dist=2.0, horizontal=True)
         assert "yshift=1mm" in res3 or "yshift=-1mm" in res3
     except Exception as e:
         raise e
@@ -2142,9 +2165,9 @@ def test_action_label_dist():
 def test_commandline_iset_options():
     """Test parsing of information set styling flags."""
     # Test all flags together
-    result = draw_tree.commandline(
+    result = core.commandline(
         [
-            "draw_tree.py",
+            "core.py",
             "test.ef",
             "--iset-fill",
             "--iset-fill-opacity=0.5",
@@ -2158,17 +2181,15 @@ def test_commandline_iset_options():
     assert result[19] == 2.0  # node_size
 
     # Test individual flags
-    result_fill = draw_tree.commandline(["draw_tree.py", "test.ef", "--iset-fill"])
+    result_fill = core.commandline(["core.py", "test.ef", "--iset-fill"])
     assert result_fill[16] is True
     assert result_fill[17] == 0.2  # Default
     assert result_fill[18] == "solid"
 
-    result_dotted = draw_tree.commandline(["draw_tree.py", "test.ef", "--iset-dotted"])
+    result_dotted = core.commandline(["core.py", "test.ef", "--iset-dotted"])
     assert result_dotted[18] == "dotted"
 
-    result_none = draw_tree.commandline(
-        ["draw_tree.py", "test.ef", "--iset-boundary=none"]
-    )
+    result_none = core.commandline(["core.py", "test.ef", "--iset-boundary=none"])
     assert result_none[18] == "none"
 
 
@@ -2189,7 +2210,7 @@ class TestIsetStylingIntegration:
         ef_file_path = str(ef_file)
 
         # 1. Default (no fill, not dotted)
-        res_default = draw_tree.generate_tikz(ef_file_path, color_scheme="gambit")
+        res_default = core.tikz(ef_file_path, color_scheme="gambit")
         # Check for iset draw command (not the node definition)
         iset_draw_lines = [
             line
@@ -2202,7 +2223,7 @@ class TestIsetStylingIntegration:
         assert "draw=none" not in iset_draw_lines[0]
 
         # 2. Filled
-        res_fill = draw_tree.generate_tikz(
+        res_fill = core.tikz(
             ef_file_path, color_scheme="gambit", iset_fill=True, iset_fill_opacity=0.4
         )
         iset_draw_fill = [
@@ -2214,7 +2235,7 @@ class TestIsetStylingIntegration:
         assert "fill opacity=0.4" in iset_draw_fill[0]
 
         # 3. Dotted
-        res_dotted = draw_tree.generate_tikz(
+        res_dotted = core.tikz(
             ef_file_path, color_scheme="gambit", iset_boundary="dotted"
         )
         iset_draw_dotted = [
@@ -2225,9 +2246,7 @@ class TestIsetStylingIntegration:
         assert "dotted" in iset_draw_dotted[0]
 
         # 4. None (invisible)
-        res_none = draw_tree.generate_tikz(
-            ef_file_path, color_scheme="gambit", iset_boundary="none"
-        )
+        res_none = core.tikz(ef_file_path, color_scheme="gambit", iset_boundary="none")
         iset_draw_none = [
             line
             for line in res_none.split("\n")
@@ -2247,12 +2266,12 @@ def test_node_size_macro():
             return
 
     # Default size=1.5mm
-    res1 = draw_tree.generate_tikz(ef_file_path, node_size=1.5)
+    res1 = core.tikz(ef_file_path, node_size=1.5)
     assert "\\ndiam1.5mm" in res1
     assert "\\sqwidth1.6mm" in res1
 
     # Custom size=2.0mm
-    res2 = draw_tree.generate_tikz(ef_file_path, node_size=2.0)
+    res2 = core.tikz(ef_file_path, node_size=2.0)
     assert "\\ndiam2.0mm" in res2
     assert "\\sqwidth2.1mm" in res2
 
@@ -2268,11 +2287,11 @@ def test_payoff_font_family():
             return
 
     # Serif (default)
-    res_serif = draw_tree.generate_tikz(ef_file_path, font_family="rmfamily")
+    res_serif = core.tikz(ef_file_path, font_family="rmfamily")
     assert "$\\mathsf{" not in res_serif
 
     # Sans-serif
-    res_sans = draw_tree.generate_tikz(ef_file_path, font_family="sffamily")
+    res_sans = core.tikz(ef_file_path, font_family="sffamily")
     assert "$\\mathsf{" in res_sans
 
 
@@ -2283,7 +2302,9 @@ class TestConverter:
         """Test basic EF to EFG conversion produces valid EFG output."""
         ef_file = "games/example.ef"
         if not os.path.exists(ef_file):
-            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+            ef_file = os.path.join(
+                os.path.dirname(__file__), "..", "games", "example.ef"
+            )
         if not os.path.exists(ef_file):
             pytest.skip("example.ef not found")
 
@@ -2303,7 +2324,9 @@ class TestConverter:
         """Test that save_to controls the output filename."""
         ef_file = "games/example.ef"
         if not os.path.exists(ef_file):
-            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+            ef_file = os.path.join(
+                os.path.dirname(__file__), "..", "games", "example.ef"
+            )
         if not os.path.exists(ef_file):
             pytest.skip("example.ef not found")
 
@@ -2316,7 +2339,9 @@ class TestConverter:
         """Test that .efg extension is added automatically if missing."""
         ef_file = "games/example.ef"
         if not os.path.exists(ef_file):
-            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+            ef_file = os.path.join(
+                os.path.dirname(__file__), "..", "games", "example.ef"
+            )
         if not os.path.exists(ef_file):
             pytest.skip("example.ef not found")
 
@@ -2329,7 +2354,9 @@ class TestConverter:
         """Test that custom title is used in the EFG prologue."""
         ef_file = "games/example.ef"
         if not os.path.exists(ef_file):
-            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+            ef_file = os.path.join(
+                os.path.dirname(__file__), "..", "games", "example.ef"
+            )
         if not os.path.exists(ef_file):
             pytest.skip("example.ef not found")
 
@@ -2343,7 +2370,9 @@ class TestConverter:
         """Test that payoff values survive EF to EFG conversion."""
         ef_file = "games/example.ef"
         if not os.path.exists(ef_file):
-            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+            ef_file = os.path.join(
+                os.path.dirname(__file__), "..", "games", "example.ef"
+            )
         if not os.path.exists(ef_file):
             pytest.skip("example.ef not found")
 
@@ -2361,7 +2390,9 @@ class TestConverter:
         """Test that the generated EFG file can be loaded by pygambit."""
         ef_file = "games/example.ef"
         if not os.path.exists(ef_file):
-            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "example.ef")
+            ef_file = os.path.join(
+                os.path.dirname(__file__), "..", "games", "example.ef"
+            )
         if not os.path.exists(ef_file):
             pytest.skip("example.ef not found")
 
@@ -2462,19 +2493,44 @@ class TestConverter:
 
     def test_commandline_to_efg_flag(self):
         """Test that --to-efg flag is parsed correctly."""
-        from draw_tree.core import commandline
+        from gtdraw.core import commandline
 
-        result = commandline(["draw_tree", "games/example.ef", "--to-efg"])
+        result = commandline(["gtdraw", "games/example.ef", "--to-efg"])
         (
-            output_mode, pdf_requested, png_requested, svg_requested,
-            tex_requested, output_file, dpi, font_family, font_bold,
-            font_italic, font_size, custom_colors, horizontal,
-            mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
-            node_size, label_bg, label_bg_color, label_bg_opacity,
-            label_bg_by, label_bg_style,
-            color_scheme, edge_thickness, action_label_position,
-            level_scaling, sublevel_scaling, width_scaling,
-            shared_terminal_depth, to_efg, to_ef,
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal,
+            mirror,
+            legend_position,
+            action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
+            color_scheme,
+            edge_thickness,
+            action_label_position,
+            level_scaling,
+            sublevel_scaling,
+            width_scaling,
+            shared_terminal_depth,
+            to_efg,
+            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -2485,19 +2541,44 @@ class TestConverter:
 
     def test_commandline_to_ef_flag(self):
         """Test that --to-ef flag is parsed correctly."""
-        from draw_tree.core import commandline
+        from gtdraw.core import commandline
 
-        result = commandline(["draw_tree", "games/efg/test.efg", "--to-ef"])
+        result = commandline(["gtdraw", "games/efg/test.efg", "--to-ef"])
         (
-            output_mode, pdf_requested, png_requested, svg_requested,
-            tex_requested, output_file, dpi, font_family, font_bold,
-            font_italic, font_size, custom_colors, horizontal,
-            mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
-            node_size, label_bg, label_bg_color, label_bg_opacity,
-            label_bg_by, label_bg_style,
-            color_scheme, edge_thickness, action_label_position,
-            level_scaling, sublevel_scaling, width_scaling,
-            shared_terminal_depth, to_efg, to_ef,
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal,
+            mirror,
+            legend_position,
+            action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
+            color_scheme,
+            edge_thickness,
+            action_label_position,
+            level_scaling,
+            sublevel_scaling,
+            width_scaling,
+            shared_terminal_depth,
+            to_efg,
+            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -2537,12 +2618,12 @@ class TestLabelBackground:
         return str(ef)
 
     def test_label_bg_disabled_by_default(self, simple_ef):
-        result = draw_tree.generate_tikz(simple_ef)
+        result = core.tikz(simple_ef)
         assert "fill opacity=" not in result
 
     def test_label_bg_enables_fill(self, simple_ef):
         # Default colour scheme: player 1 is black; background uses player colour
-        result = draw_tree.generate_tikz(simple_ef, label_bg=True)
+        result = core.tikz(simple_ef, label_bg=True)
         assert "fill=black" in result
         assert "fill opacity=" in result
         assert "text opacity=1" in result
@@ -2550,47 +2631,77 @@ class TestLabelBackground:
 
     def test_label_bg_custom_named_color(self, simple_ef):
         # label_bg_color is a fallback; player colors still take precedence for labelled nodes
-        result = draw_tree.generate_tikz(simple_ef, label_bg=True, label_bg_color="yellow")
+        result = core.tikz(simple_ef, label_bg=True, label_bg_color="yellow")
         assert "fill opacity=" in result  # fill is present (player colour used)
-        assert "text=white" in result    # text is always white when label_bg active
+        assert "text=white" in result  # text is always white when label_bg active
 
     def test_label_bg_custom_hex_color(self, simple_ef):
         # Hex fallback colour is still defined in preamble even though player colours take precedence
-        result = draw_tree.generate_tikz(simple_ef, label_bg=True, label_bg_color="#ffcc00")
-        assert "\\definecolor{drawtreedropbg}{HTML}{FFCC00}" in result
+        result = core.tikz(simple_ef, label_bg=True, label_bg_color="#ffcc00")
+        assert "\\definecolor{gtdrawdropbg}{HTML}{FFCC00}" in result
         assert "fill opacity=" in result
 
     def test_label_bg_hex_without_hash(self, simple_ef):
-        result = draw_tree.generate_tikz(simple_ef, label_bg=True, label_bg_color="ffcc00")
-        assert "\\definecolor{drawtreedropbg}{HTML}{FFCC00}" in result
+        result = core.tikz(simple_ef, label_bg=True, label_bg_color="ffcc00")
+        assert "\\definecolor{gtdrawdropbg}{HTML}{FFCC00}" in result
 
     def test_label_bg_opacity_clamped_high(self, simple_ef):
         # opacity > 1 should be clamped to 1.0
-        result = draw_tree.generate_tikz(simple_ef, label_bg=True, label_bg_opacity=5.0)
+        result = core.tikz(simple_ef, label_bg=True, label_bg_opacity=5.0)
         assert "fill opacity=1" in result
 
     def test_label_bg_opacity_clamped_low(self, simple_ef):
         # opacity < 0 should be clamped to 0.0
-        result = draw_tree.generate_tikz(simple_ef, label_bg=True, label_bg_opacity=-1.0)
+        result = core.tikz(simple_ef, label_bg=True, label_bg_opacity=-1.0)
         assert "fill opacity=0" in result
 
     def test_cli_label_bg_flag(self):
-        from draw_tree.core import commandline
+        from gtdraw.core import commandline
 
-        result = commandline([
-            "draw_tree", "game.ef",
-            "--label-bg", "--label-bg-color=#aabbcc", "--label-bg-opacity=0.5",
-        ])
+        result = commandline(
+            [
+                "gtdraw",
+                "game.ef",
+                "--label-bg",
+                "--label-bg-color=#aabbcc",
+                "--label-bg-opacity=0.5",
+            ]
+        )
         (
-            output_mode, pdf_requested, png_requested, svg_requested,
-            tex_requested, output_file, dpi, font_family, font_bold,
-            font_italic, font_size, custom_colors, horizontal,
-            mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
-            node_size, label_bg, label_bg_color, label_bg_opacity,
-            label_bg_by, label_bg_style,
-            color_scheme, edge_thickness, action_label_position,
-            level_scaling, sublevel_scaling, width_scaling,
-            shared_terminal_depth, to_efg, to_ef,
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal,
+            mirror,
+            legend_position,
+            action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
+            color_scheme,
+            edge_thickness,
+            action_label_position,
+            level_scaling,
+            sublevel_scaling,
+            width_scaling,
+            shared_terminal_depth,
+            to_efg,
+            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -2601,92 +2712,119 @@ class TestLabelBackground:
         assert label_bg_opacity == pytest.approx(0.5)
 
     def test_label_bg_declares_layer(self, simple_ef):
-        from draw_tree.core import generate_tikz
+        from gtdraw.core import tikz
 
-        code = generate_tikz(str(simple_ef), label_bg=True)
+        code = tikz(str(simple_ef), label_bg=True)
         assert "\\pgfdeclarelayer{labels}" in code
         assert "\\pgfsetlayers{main,labels}" in code
 
     def test_label_bg_no_layer_when_disabled(self, simple_ef):
-        from draw_tree.core import generate_tikz
+        from gtdraw.core import tikz
 
-        code = generate_tikz(str(simple_ef), label_bg=False)
+        code = tikz(str(simple_ef), label_bg=False)
         assert "\\pgfdeclarelayer" not in code
         assert "\\pgfsetlayers" not in code
 
     def test_label_bg_labels_in_foreground(self, simple_ef):
-        from draw_tree.core import generate_tikz
+        from gtdraw.core import tikz
 
-        code = generate_tikz(str(simple_ef), label_bg=True)
+        code = tikz(str(simple_ef), label_bg=True)
         assert "\\begin{pgfonlayer}{labels}" in code
         assert "\\end{pgfonlayer}" in code
 
     def test_label_bg_per_player_dict_enabled(self, simple_ef):
         # Player 1 enabled, player 2 not — fill should appear (player 1 label exists)
-        from draw_tree.core import generate_tikz
+        from gtdraw.core import tikz
 
-        code = generate_tikz(str(simple_ef), label_bg={1: True, 2: False}, label_bg_by="player")
+        code = tikz(str(simple_ef), label_bg={1: True, 2: False}, label_bg_by="player")
         assert "fill opacity=" in code
 
     def test_label_bg_per_player_dict_all_disabled(self, simple_ef):
         # All players disabled — no fill
-        from draw_tree.core import generate_tikz
+        from gtdraw.core import tikz
 
-        code = generate_tikz(str(simple_ef), label_bg={1: False, 2: False}, label_bg_by="player")
+        code = tikz(str(simple_ef), label_bg={1: False, 2: False}, label_bg_by="player")
         assert "fill opacity=" not in code
 
     def test_label_bg_per_level_dict(self, simple_ef):
         # Enable for level 0 only
-        from draw_tree.core import generate_tikz
+        from gtdraw.core import tikz
 
-        code = generate_tikz(str(simple_ef), label_bg={0: True}, label_bg_by="level")
+        code = tikz(str(simple_ef), label_bg={0: True}, label_bg_by="level")
         assert "fill opacity=" in code
 
     def test_label_bg_white_bg_style(self, simple_ef):
         # white_bg: fill=white and text= set to player color (not text=white)
-        from draw_tree.core import generate_tikz
+        from gtdraw.core import tikz
 
-        code = generate_tikz(str(simple_ef), label_bg=True, label_bg_style="white_bg")
+        code = tikz(str(simple_ef), label_bg=True, label_bg_style="white_bg")
         assert "fill=white" in code
         assert "fill opacity=" in code
         assert "text=white" not in code
 
     def test_label_bg_player_bg_style_unchanged(self, simple_ef):
         # player_bg: current behaviour — fill=player_color, text=white
-        from draw_tree.core import generate_tikz
+        from gtdraw.core import tikz
 
-        code = generate_tikz(str(simple_ef), label_bg=True, label_bg_style="player_bg")
+        code = tikz(str(simple_ef), label_bg=True, label_bg_style="player_bg")
         assert "fill opacity=" in code
         assert "text=white" in code
 
     def test_label_bg_dict_declares_layer(self, simple_ef):
         # Even with a dict, the labels layer is declared if any value is True
-        from draw_tree.core import generate_tikz
+        from gtdraw.core import tikz
 
-        code = generate_tikz(str(simple_ef), label_bg={1: True}, label_bg_by="player")
+        code = tikz(str(simple_ef), label_bg={1: True}, label_bg_by="player")
         assert "\\pgfdeclarelayer{labels}" in code
 
     def test_label_bg_dict_no_layer_all_false(self, simple_ef):
         # Dict with all False — no layer declared
-        from draw_tree.core import generate_tikz
+        from gtdraw.core import tikz
 
-        code = generate_tikz(str(simple_ef), label_bg={1: False, 2: False}, label_bg_by="player")
+        code = tikz(str(simple_ef), label_bg={1: False, 2: False}, label_bg_by="player")
         assert "\\pgfdeclarelayer" not in code
 
     def test_cli_label_bg_per_player_indices(self):
-        from draw_tree.core import commandline
+        from gtdraw.core import commandline
 
-        result = commandline(["draw_tree", "game.ef", "--label-bg=1,2", "--label-bg-by=player"])
+        result = commandline(
+            ["gtdraw", "game.ef", "--label-bg=1,2", "--label-bg-by=player"]
+        )
         (
-            output_mode, pdf_requested, png_requested, svg_requested,
-            tex_requested, output_file, dpi, font_family, font_bold,
-            font_italic, font_size, custom_colors, horizontal,
-            mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
-            node_size, label_bg, label_bg_color, label_bg_opacity,
-            label_bg_by, label_bg_style,
-            color_scheme, edge_thickness, action_label_position,
-            level_scaling, sublevel_scaling, width_scaling,
-            shared_terminal_depth, to_efg, to_ef,
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal,
+            mirror,
+            legend_position,
+            action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
+            color_scheme,
+            edge_thickness,
+            action_label_position,
+            level_scaling,
+            sublevel_scaling,
+            width_scaling,
+            shared_terminal_depth,
+            to_efg,
+            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -2696,19 +2834,46 @@ class TestLabelBackground:
         assert label_bg_by == "player"
 
     def test_cli_label_bg_style(self):
-        from draw_tree.core import commandline
+        from gtdraw.core import commandline
 
-        result = commandline(["draw_tree", "game.ef", "--label-bg", "--label-bg-style=white_bg"])
+        result = commandline(
+            ["gtdraw", "game.ef", "--label-bg", "--label-bg-style=white_bg"]
+        )
         (
-            output_mode, pdf_requested, png_requested, svg_requested,
-            tex_requested, output_file, dpi, font_family, font_bold,
-            font_italic, font_size, custom_colors, horizontal,
-            mirror, legend_position, action_label_dist, iset_fill, iset_fill_opacity, iset_boundary,
-            node_size, label_bg, label_bg_color, label_bg_opacity,
-            label_bg_by, label_bg_style,
-            color_scheme, edge_thickness, action_label_position,
-            level_scaling, sublevel_scaling, width_scaling,
-            shared_terminal_depth, to_efg, to_ef,
+            output_mode,
+            pdf_requested,
+            png_requested,
+            svg_requested,
+            tex_requested,
+            output_file,
+            dpi,
+            font_family,
+            font_bold,
+            font_italic,
+            font_size,
+            custom_colors,
+            horizontal,
+            mirror,
+            legend_position,
+            action_label_dist,
+            iset_fill,
+            iset_fill_opacity,
+            iset_boundary,
+            node_size,
+            label_bg,
+            label_bg_color,
+            label_bg_opacity,
+            label_bg_by,
+            label_bg_style,
+            color_scheme,
+            edge_thickness,
+            action_label_position,
+            level_scaling,
+            sublevel_scaling,
+            width_scaling,
+            shared_terminal_depth,
+            to_efg,
+            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -2723,8 +2888,9 @@ class TestVaryActionLabelPositions:
 
     def test_commandline_vary_action_label_positions_flag(self):
         """Test parsing of the --vary-action-label-positions option."""
-        from draw_tree.core import commandline
-        result = commandline(["draw_tree.py", "test.ef", "--vary-action-label-positions"])
+        from gtdraw.core import commandline
+
+        result = commandline(["core.py", "test.ef", "--vary-action-label-positions"])
         assert result[34] is True
 
     def test_vary_action_label_positions_layout(self, tmp_path):
@@ -2736,8 +2902,8 @@ class TestVaryActionLabelPositions:
             "level 1 node 1 from 0,root move Left payoffs 1 0\n"
             "level 1 node 2 from 0,root move Right payoffs 0 1\n"
         )
-        result_default = draw_tree.generate_tikz(str(ef_file), vary_action_label_positions=False)
-        result_varied = draw_tree.generate_tikz(str(ef_file), vary_action_label_positions=True)
+        result_default = core.tikz(str(ef_file), vary_action_label_positions=False)
+        result_varied = core.tikz(str(ef_file), vary_action_label_positions=True)
         assert result_default != result_varied
 
 
@@ -2746,22 +2912,20 @@ class TestPlayerActionLabelPositions:
 
     def test_commandline_player_action_label_positions(self):
         """Test parsing of dictionary-based --action-label-position settings."""
-        from draw_tree.core import commandline
+        from gtdraw.core import commandline
 
         # Dictionary format
-        result = commandline([
-            "draw_tree.py", "test.ef",
-            "--action-label-position=0:0.3,1:0.65"
-        ])
+        result = commandline(
+            ["core.py", "test.ef", "--action-label-position=0:0.3,1:0.65"]
+        )
         assert isinstance(result[27], dict)
         assert result[27][0] == 0.3
         assert result[27][1] == 0.65
 
         # Invalid format falls back
-        result_invalid = commandline([
-            "draw_tree.py", "test.ef",
-            "--action-label-position=invalid"
-        ])
+        result_invalid = commandline(
+            ["core.py", "test.ef", "--action-label-position=invalid"]
+        )
         assert result_invalid[27] == 0.5
 
     def test_player_action_label_positions_layout(self, tmp_path):
@@ -2776,10 +2940,10 @@ class TestPlayerActionLabelPositions:
         )
 
         positions = {1: 0.3, 2: 0.7}
-        result = draw_tree.generate_tikz(str(ef_file), action_label_position=positions)
+        result = core.tikz(str(ef_file), action_label_position=positions)
 
-        result_global_0_3 = draw_tree.generate_tikz(str(ef_file), action_label_position=0.3)
-        result_global_0_7 = draw_tree.generate_tikz(str(ef_file), action_label_position=0.7)
+        result_global_0_3 = core.tikz(str(ef_file), action_label_position=0.3)
+        result_global_0_7 = core.tikz(str(ef_file), action_label_position=0.7)
 
         assert result != result_global_0_3
         assert result != result_global_0_7
@@ -2790,13 +2954,16 @@ class TestLevelActionLabelPositions:
 
     def test_commandline_level_position_by(self):
         """Test that --action-label-position-by=level is parsed correctly."""
-        from draw_tree.core import commandline
+        from gtdraw.core import commandline
 
-        result = commandline([
-            "draw_tree.py", "test.ef",
-            "--action-label-position=0:0.3,1:0.7",
-            "--action-label-position-by=level",
-        ])
+        result = commandline(
+            [
+                "core.py",
+                "test.ef",
+                "--action-label-position=0:0.3,1:0.7",
+                "--action-label-position-by=level",
+            ]
+        )
         # action_label_position_by is at index 33
         assert result[35] == "level"
         assert isinstance(result[27], dict)
@@ -2813,12 +2980,12 @@ class TestLevelActionLabelPositions:
         )
 
         positions = {0: 0.3, 1: 0.7}
-        result_by_level = draw_tree.generate_tikz(
+        result_by_level = core.tikz(
             str(ef_file),
             action_label_position=positions,
             action_label_position_by="level",
         )
-        result_by_player = draw_tree.generate_tikz(
+        result_by_player = core.tikz(
             str(ef_file),
             action_label_position=positions,
             action_label_position_by="player",
@@ -2843,12 +3010,12 @@ class TestSelectiveVaryActionLabelPositions:
             "level 1 node child2 from 0,root player 1 move R1 payoffs 0 1\n"
         )
 
-        result_all = draw_tree.generate_tikz(
+        result_all = core.tikz(
             str(ef_file),
             vary_action_label_positions=True,
             vary_action_label_positions_by="all",
         )
-        result_player1_only = draw_tree.generate_tikz(
+        result_player1_only = core.tikz(
             str(ef_file),
             vary_action_label_positions=True,
             vary_action_label_positions_by="player",
@@ -2868,18 +3035,18 @@ class TestSelectiveVaryActionLabelPositions:
             "level 1 node child2 from 0,root player 1 move R1 payoffs 0 1\n"
         )
 
-        result_all = draw_tree.generate_tikz(
+        result_all = core.tikz(
             str(ef_file),
             vary_action_label_positions=True,
             vary_action_label_positions_by="all",
         )
-        result_level0_only = draw_tree.generate_tikz(
+        result_level0_only = core.tikz(
             str(ef_file),
             vary_action_label_positions=True,
             vary_action_label_positions_by="level",
             vary_action_label_positions_choices=[0],
         )
-        result_no_match = draw_tree.generate_tikz(
+        result_no_match = core.tikz(
             str(ef_file),
             vary_action_label_positions=True,
             vary_action_label_positions_by="level",
@@ -2907,7 +3074,7 @@ class TestEF3Format:
             "level 2 node 2 from 1 move L",
             "level 2 node 3 from 1 move R payoffs 1 0",
         ]
-        assert draw_tree._detect_ef_version(lines) == 3
+        assert core._detect_ef_version(lines) == 3
 
     def test_detect_ef_version_v2(self):
         """Files where 'from' references use 'level,name' format (comma) are detected as EF 2.x."""
@@ -2916,27 +3083,36 @@ class TestEF3Format:
             "level 2 node 1 from 0,1 move L",
             "level 2 node 2 from 0,1 move R payoffs 1 0",
         ]
-        assert draw_tree._detect_ef_version(lines) == 2
+        assert core._detect_ef_version(lines) == 2
 
     def test_detect_ef_version_example_v2(self):
         """games/example.ef is detected as EF 2.x (repeated per-level node numbers)."""
         path = self._get_ef_path("example.ef")
         if not os.path.exists(path):
             pytest.skip("example.ef not found")
-        lines = [l.strip() for l in open(path).read().splitlines() if l.strip() and not l.strip().startswith("%")]
-        assert draw_tree._detect_ef_version(lines) == 2
+        lines = [
+            l.strip()
+            for l in open(path).read().splitlines()
+            if l.strip() and not l.strip().startswith("%")
+        ]
+        assert core._detect_ef_version(lines) == 2
 
     def test_detect_ef_version_example_v3(self):
         """games/example_v3.ef is detected as EF 3.0."""
         path = self._get_ef_path("example_v3.ef")
         if not os.path.exists(path):
             pytest.skip("example_v3.ef not found")
-        lines = [l.strip() for l in open(path).read().splitlines() if l.strip() and not l.strip().startswith("%")]
-        assert draw_tree._detect_ef_version(lines) == 3
+        lines = [
+            l.strip()
+            for l in open(path).read().splitlines()
+            if l.strip() and not l.strip().startswith("%")
+        ]
+        assert core._detect_ef_version(lines) == 3
 
     def test_parse_ef_v3_node_ids_are_bare_strings(self, tmp_path):
         """Parsing an EF 3.0 file yields node IDs that are bare strings, not 'level,name'."""
-        from draw_tree.converter import parse_ef_file
+        from gtdraw.converter import parse_ef_file
+
         path = self._get_ef_path("example_v3.ef")
         if not os.path.exists(path):
             pytest.skip("example_v3.ef not found")
@@ -2949,7 +3125,8 @@ class TestEF3Format:
 
     def test_parse_ef_v3_parent_links(self, tmp_path):
         """Parent-child links are correctly built in EF 3.0 format."""
-        from draw_tree.converter import parse_ef_file
+        from gtdraw.converter import parse_ef_file
+
         path = self._get_ef_path("example_v3.ef")
         if not os.path.exists(path):
             pytest.skip("example_v3.ef not found")
@@ -2960,7 +3137,8 @@ class TestEF3Format:
 
     def test_parse_ef_v3_iset_assignment(self, tmp_path):
         """Information sets use bare node IDs in EF 3.0."""
-        from draw_tree.converter import parse_ef_file
+        from gtdraw.converter import parse_ef_file
+
         path = self._get_ef_path("example_v3.ef")
         if not os.path.exists(path):
             pytest.skip("example_v3.ef not found")
@@ -2976,7 +3154,7 @@ class TestEF3Format:
         path = self._get_ef_path("example_v3.ef")
         if not os.path.exists(path):
             pytest.skip("example_v3.ef not found")
-        result = draw_tree.generate_tikz(path)
+        result = core.tikz(path)
         assert result is not None
         assert "tikzpicture" in result
 
@@ -2985,7 +3163,7 @@ class TestEF3Format:
         path = self._get_ef_path("kuhn_v3.ef")
         if not os.path.exists(path):
             pytest.skip("kuhn_v3.ef not found")
-        result = draw_tree.generate_tikz(path)
+        result = core.tikz(path)
         assert result is not None
         assert "tikzpicture" in result
 
@@ -2994,7 +3172,7 @@ class TestEF3Format:
         path = self._get_ef_path("example_v3.ef")
         if not os.path.exists(path):
             pytest.skip("example_v3.ef not found")
-        result = draw_tree.generate_tikz(path)
+        result = core.tikz(path)
         # An iset is drawn as an ellipse in TikZ
         assert "ellipse" in result or "draw" in result
 
@@ -3003,7 +3181,7 @@ class TestEF3Format:
         path = self._get_ef_path("example.ef")
         if not os.path.exists(path):
             pytest.skip("example.ef not found")
-        result = draw_tree.generate_tikz(path)
+        result = core.tikz(path)
         assert result is not None
         assert "tikzpicture" in result
 
@@ -3013,15 +3191,16 @@ class TestEF3Format:
         v3_path = self._get_ef_path("example_v3.ef")
         if not os.path.exists(v2_path) or not os.path.exists(v3_path):
             pytest.skip("example.ef or example_v3.ef not found")
-        result_v2 = draw_tree.generate_tikz(v2_path)
-        result_v3 = draw_tree.generate_tikz(v3_path)
+        result_v2 = core.tikz(v2_path)
+        result_v3 = core.tikz(v3_path)
+
         # Strip comment lines (filename comment and source-echo %% lines) before comparing:
         # these differ between v2 and v3 due to different source text, but the rendering is identical.
         def strip_comments(s):
             return "\n".join(l for l in s.splitlines() if not l.startswith("%"))
+
         assert strip_comments(result_v2) == strip_comments(result_v3)
 
 
 if __name__ == "__main__":
     pytest.main([__file__])
-

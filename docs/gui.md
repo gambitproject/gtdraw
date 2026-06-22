@@ -1,9 +1,9 @@
 # Interactive GUI
 
-`draw_tree` includes a lightweight, interactive GUI built with Streamlit. It allows you to upload `.ef` or `.efg` files and adjust drawing parameters in real-time, previewing changes visually. You can run the GUI locally or used our hosted version on the Streamlit Community Cloud:
+`gtdraw` includes a lightweight, interactive GUI built with Streamlit. It allows you to upload `.ef` or `.efg` files and adjust drawing parameters in real-time, previewing changes visually. You can run the GUI locally or used our hosted version on the Streamlit Community Cloud:
 
-:::{card} 🚀 Try DrawTree Online!
-:link: https://drawtree.streamlit.app/
+:::{card} 🚀 Try GTDraw Online!
+:link: https://gtdraw.streamlit.app/
 
 **Visualize your game trees instantly.** No installation required.
 
@@ -19,7 +19,7 @@
 To launch the GUI from your terminal, simply run:
 
 ```bash
-draw_tree --gui
+gtdraw --gui
 ```
 
 This will start a local Streamlit server and automatically open the application in your default web browser at `http://localhost:8501/`. From there, you can:
@@ -41,6 +41,6 @@ If you are a Gambit developer adding new games to the official game catalog, you
 
 1. Download the styling configuration file using the **Settings** button.
 2. Copy the game's configuration section from the downloaded YAML.
-3. Paste or append the configuration under the appropriate key in the master settings file in the Gambit repository: [build_support/catalog/draw_tree_settings.yaml](https://github.com/gambitproject/gambit/blob/master/build_support/catalog/draw_tree_settings.yaml).
+3. Paste or append the configuration under the appropriate key in the master settings file in the Gambit repository: [build_support/catalog/gtdraw_settings.yaml](https://github.com/gambitproject/gambit/blob/master/build_support/catalog/gtdraw_settings.yaml).
 
 Once added, the game will automatically use your custom styles when displayed in the catalog.

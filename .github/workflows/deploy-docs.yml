@@ -39,7 +39,7 @@ jobs:
 
       - name: Build Jupyter Book
         run: |
-          cd docs && BASE_URL="/draw_tree/" jupyter-book build --html --ci
+          cd docs && BASE_URL="/gtdraw/" jupyter-book build --html --ci
 
       - name: Upload HTML Artifact
         uses: actions/upload-artifact@v4
