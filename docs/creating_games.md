@@ -38,8 +38,12 @@ flowchart TD
         pdf_fn  --> OUT3[PDF Document]
 
         %% Functions that build on pdf()
-        OUT3 --> png_fn["png()"] --> OUT4[PNG Image]
-        OUT3 --> svg_fn["svg()"] --> OUT5[SVG Image]
+        subgraph raster[ ]
+            png_fn["png()"] --> OUT4[PNG Image]
+            svg_fn["svg()"] --> OUT5[SVG Image]
+        end
+        OUT3 --> png_fn
+        OUT3 --> svg_fn
     end
 
     %% Styling
@@ -61,6 +65,7 @@ flowchart TD
     style OUT3 fill:#eee,stroke:#333
     style OUT4 fill:#eee,stroke:#333
     style OUT5 fill:#eee,stroke:#333
+    style raster fill:none,stroke:none
 ```
 
 ## Data Flow
