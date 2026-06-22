@@ -1,39 +1,39 @@
 # Python API
 
 You can use `gtdraw` as a Python library to generate game trees programmatically.
-When working in a Jupyter Notebook, you should use the `gtdraw` function to display the game tree directly in the notebook output:
+When working in a Jupyter Notebook, you should use the `draw` function to display the game tree directly in the notebook output:
 
 ```python
-from gtdraw import gtdraw
-gtdraw('games/example.ef')
+from gtdraw import draw
+draw('games/example.ef')
 ```
 
 :::{warning}
 Images may not render correctly in notebooks opened in VSCode; we recommend opening notebooks in Jupyter Lab.
 :::
 
-To generate other output formats, use the `generate_tex`, `generate_pdf`, `generate_png`, and `generate_svg` functions, all of which (including `gtdraw` above) accept the same keyword arguments (see below).
+To generate other output formats, use the `tex`, `pdf`, `png`, and `svg` functions, all of which (including `draw` above) accept the same keyword arguments (see below).
 
 Example usage:
 
 ```python
-from gtdraw import generate_tex, generate_pdf, generate_png, generate_svg
+from gtdraw import tex, pdf, png, svg
 
-generate_pdf(
+pdf(
     "game.ef",
     font_family="sffamily",
     font_bold=True,
     font_size="large",
     horizontal=True,
 )
-generate_svg(
+svg(
     "game.efg",
     color_scheme="custom",
     custom_colors={0: "#FF0000", 1: "#0000FF"},
     iset_fill=True,
     iset_fill_opacity=0.3,
 )
-generate_png(
+png(
     "game.ef",
     iset_boundary="dotted",
     node_size=2.0,
@@ -42,13 +42,13 @@ generate_png(
 
 ## API Keyword Arguments
 
-All `generate_*` functions and the main `gtdraw` function accept a variety of keyword arguments to customize the output.
+All output format functions (`draw`, `tikz`, `tex`, `pdf`, `png`, `svg`) accept a variety of keyword arguments to customize the output.
 
 | Category | Argument | Description |
 | :--- | :--- | :--- |
 | **Formatting** | `save_to="filename"` | Specify output filename (with or without extension). |
-| | `dpi=X` | Set PNG resolution in DPI for `generate_png` (72-2400, default: 300). |
-| | `responsive_sizing=True/False` | Make SVG output responsive for `generate_svg` (default: False). |
+| | `dpi=X` | Set PNG resolution in DPI for `png` (72-2400, default: 300). |
+| | `responsive_sizing=True/False` | Make SVG output responsive for `svg` (default: False). |
 | **Layout** | `scale_factor=X.X` | Set scale factor (0.01 to 100, default: 1.0). |
 | | `horizontal=True/False` | Switch from vertical to horizontal layout (default: False). |
 | | `mirror=True/False` | Mirror the tree left-to-right by flipping xshift values (default: False). |
@@ -89,21 +89,21 @@ You can pass a `pygambit` game object to the drawing functions:
 
 ```python
 import pygambit as gbt
-from gtdraw import gtdraw, generate_tex, generate_pdf, generate_png, generate_svg
+from gtdraw import draw, tex, pdf, png, svg
 
 g = gbt.read_efg('somegame.efg')
-gtdraw(g)
-generate_tex(g)
-generate_pdf(g)
-generate_png(g)
-generate_svg(g)
+draw(g)
+tex(g)
+pdf(g)
+png(g)
+svg(g)
 ```
 
 Or pass the path to an `.efg` file directly:
 
 ```python
-from gtdraw import generate_pdf
-generate_pdf('somegame.efg')
+from gtdraw import pdf
+pdf('somegame.efg')
 ```
 
 ::: {note}
@@ -153,19 +153,19 @@ Both functions return the path to the generated output file.
 
 ```python
 import pygambit as gbt
-from gtdraw import gtdraw, generate_tex, generate_pdf, generate_png, generate_svg
+from gtdraw import draw, tex, pdf, png, svg
 
 # From a pygambit NFG object
 g = gbt.read_nfg("games/nfg/example.nfg")
-gtdraw(g)       # returns \begin{game}...\end{game} body; displays image in Jupyter
-generate_pdf(g)    # compiles payoff table to PDF
-generate_png(g)    # compiles payoff table to PNG
-generate_svg(g)    # compiles payoff table to SVG
+draw(g)       # returns \begin{game}...\end{game} body; displays image in Jupyter
+pdf(g)    # compiles payoff table to PDF
+png(g)    # compiles payoff table to PNG
+svg(g)    # compiles payoff table to SVG
 
 # Or directly from the .nfg file path
-generate_pdf("games/nfg/example.nfg", save_to="battle_of_sexes.pdf")
+pdf("games/nfg/example.nfg", save_to="battle_of_sexes.pdf")
 ```
 
-`generate_tikz()` on an NFG returns the raw `\begin{game}...\end{game}` LaTeX body (not TikZ code). PDF/PNG/SVG compilation requires `pdflatex` and the `sgame` LaTeX package (`texlive-games` on Ubuntu).
+`tikz()` on an NFG returns the raw `\begin{game}...\end{game}` LaTeX body (not TikZ code). PDF/PNG/SVG compilation requires `pdflatex` and the `sgame` LaTeX package (`texlive-games` on Ubuntu).
 
 Tree-specific keyword arguments (`horizontal`, `mirror`, `iset_fill`, `scale_factor`, etc.) are accepted but silently ignored for NFG inputs.

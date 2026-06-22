@@ -26,11 +26,11 @@ flowchart TD
         EFG --> |"gambit_layout.py <br/> (to EF)"| Gen
         
         %% Output Layer
-        Gen --> |"generate_tikz()"| TikZ[TikZ Code]
-        Gen --> |"generate_tex()"| TeX[LaTeX Doc]
-        Gen --> |"generate_svg()"| SVG[SVG Image]
-        Gen --> |"generate_png()"| PNG[PNG Image]
-        Gen --> |"generate_pdf()"| PDF[PDF Document]
+        Gen --> |"tikz()"| TikZ[TikZ Code]
+        Gen --> |"tex()"| TeX[LaTeX Doc]
+        Gen --> |"svg()"| SVG[SVG Image]
+        Gen --> |"png()"| PNG[PNG Image]
+        Gen --> |"pdf()"| PDF[PDF Document]
     end
 
     %% Styling
@@ -61,7 +61,7 @@ flowchart TD
 
 GTDraw renders normal form (strategic form) games from Gambit's `.nfg` file format or from `pygambit` NFG game objects.
 
-For NFG inputs, `generate_tikz()` returns the raw `\begin{game}...\end{game}` LaTeX body produced by pygambit's `game.to_latex()`. This uses the [`sgame`](https://ctan.org/pkg/sgame) LaTeX package to typeset the payoff matrix.
+For NFG inputs, `tikz()` returns the raw `\begin{game}...\end{game}` LaTeX body produced by pygambit's `game.to_latex()`. This uses the [`sgame`](https://ctan.org/pkg/sgame) LaTeX package to typeset the payoff matrix.
 
 Rendering to PDF, PNG, or SVG compiles this LaTeX body with `pdflatex` and requires the `sgame` package (provided by `texlive-games` on Ubuntu, or included in full TeX Live / MiKTeX distributions).
 
