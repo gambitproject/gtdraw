@@ -19,11 +19,13 @@ flowchart TD
         direction TB
 
         %% Conversion Layer
-        EF <--> |"converter.py <br/> (ef_to_efg / efg_to_ef)"| EFG
+        EF --> ef_to_efg_fn["ef_to_efg()"]
+        ef_to_efg_fn --> EFG
+        EFG --> efg_to_ef_fn["efg_to_ef()"]
+        efg_to_ef_fn --> EF
 
         %% core.py entry point
-        EF --> |"core.py"| tikz_fn["tikz()"]
-        EFG --> |"gambit_layout.py <br/> (to EF)"| tikz_fn
+        EF --> tikz_fn["tikz()"]
 
         %% Functions that build directly on tikz()
         tikz_fn --> draw_fn["draw()"]
@@ -47,7 +49,9 @@ flowchart TD
     style Gambit fill:#f9f,stroke:#333,stroke-width:2px
     style EF fill:#bbf,stroke:#333,stroke-width:2px
     style EFG fill:#bfb,stroke:#333,stroke-width:2px
-    style tikz_fn fill:#f96,stroke:#333,stroke-width:2px
+    style ef_to_efg_fn fill:#ffd,stroke:#333
+    style efg_to_ef_fn fill:#ffd,stroke:#333
+    style tikz_fn fill:#ffd,stroke:#333
     style draw_fn fill:#ffd,stroke:#333
     style tex_fn fill:#ffd,stroke:#333
     style pdf_fn fill:#ffd,stroke:#333
