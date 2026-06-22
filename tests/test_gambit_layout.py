@@ -450,21 +450,21 @@ class TestChildLevelInvariant:
                 f"Child level {child_level} <= parent level {parent_level}"
             )
 
-    def test_generated_ef_is_detected_as_v3(self):
-        """gambit_layout_to_ef generates EF 3.0 files (no duplicate node names)."""
+    def test_generated_ef_is_detected_as_v1(self):
+        """gambit_layout_to_ef generates EF 1 files (no duplicate node names)."""
         from gtdraw.core import _detect_ef_version
         g = _asymmetric_game()
         ef = gambit_layout_to_ef(
             g,
-            save_to=os.path.join(tempfile.gettempdir(), "v3chk.ef"),
+            save_to=os.path.join(tempfile.gettempdir(), "v1chk.ef"),
         )
         content = _read_ef(ef)
         os.unlink(ef)
         lines = [l.strip() for l in content.splitlines() if l.strip() and not l.strip().startswith("%")]
-        assert _detect_ef_version(lines) == 3
+        assert _detect_ef_version(lines) == 1
 
     def test_generated_ef_from_references_are_bare(self):
-        """EF 3.0 output uses bare node IDs in 'from' references (no commas)."""
+        """EF 1 output uses bare node IDs in 'from' references (no commas)."""
         g = _asymmetric_game()
         ef = gambit_layout_to_ef(
             g,

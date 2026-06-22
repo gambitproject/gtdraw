@@ -1,0 +1,14 @@
+% Example game (EF 1 format with globally unique node identifiers)
+player 1 name I
+player 2 name II
+level 0 node r player 1
+level 2 node e player 0 xshift a=1.5 from r move R
+level 4 node f xshift -2a from r move::0.25 L
+level 2 node g xshift -.5 from r move:r: M payoffs 3 3
+level 4 node h xshift -b=1.2 from e move \frac{1}{3}
+level 4 node i xshift b from e move \frac{2}{3} payoffs 1 -1
+level 6 node j xshift -c=.8 from f move a payoffs 5 1
+level 6 node k xshift c from f move b payoffs 2 0
+level 6 node l xshift -c from h move a payoffs 6 0
+level 6 node m xshift c from h move b payoffs 0 2
+iset f h player 2

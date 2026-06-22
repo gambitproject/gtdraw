@@ -91,7 +91,7 @@ _vary_action_label_positions: bool = False
 _vary_action_label_positions_by: str = "all"
 _vary_action_label_positions_choices: Optional[set[int]] = None
 parent_to_children: dict[str, list[str]] = {}
-ef_version: int = 3
+ef_version: int = 1
 _iset_boundary: str = "solid"
 _node_size: float = 1.5
 _label_bg: bool | dict[int, bool] = False
@@ -933,7 +933,7 @@ def fromnode(words: List[str]) -> tuple[str, int]:
     if len(words) < 2:
         error("need node name after 'from'")
         return fromn, advance
-    if ef_version == 3:
+    if ef_version == 1:
         s = words[1].strip()
     else:
         s = cleannodeid(words[1])
@@ -1192,22 +1192,22 @@ def _detect_ef_version(lines: List[str]) -> int:
     """
     Detect EF format version from file lines.
 
-    EF 3.0: ``from`` references are bare node identifier strings (no commas).
-    EF 2.x: ``from`` references use the composite ``level,nodeid`` form and
+    EF 1: ``from`` references are bare node identifier strings (no commas).
+    EF 0: ``from`` references use the composite ``level,nodeid`` form and
     therefore always contain a comma.
 
     If any ``from`` reference on a ``level`` line contains a comma the file is
-    treated as EF 2.x.  Otherwise EF 3.0 is assumed.
+    treated as EF 0.  Otherwise EF 1 is assumed.
 
-    Returns 3 for EF 3.0, 2 for legacy EF 2.x.
+    Returns 1 for EF 1, 0 for legacy EF 0.
     """
     for line in lines:
         words = line.split()
         if len(words) >= 4 and words[0] == "level" and "from" in words:
             idx = words.index("from")
             if idx + 1 < len(words) and "," in words[idx + 1]:
-                return 2
-    return 3
+                return 0
+    return 1
 
 
 def preparse_tree(lines: List[str]) -> None:
@@ -1230,7 +1230,7 @@ def preparse_tree(lines: List[str]) -> None:
                 lev = float(words[1])
                 assert words[2] == "node"
                 name = words[3]
-                if ef_version == 3:
+                if ef_version == 1:
                     nodeid = name
                 else:
                     nodeid = setnodeid(lev, name)
@@ -1241,7 +1241,7 @@ def preparse_tree(lines: List[str]) -> None:
             if "from" in words:
                 idx = words.index("from")
                 if idx + 1 < len(words):
-                    if ef_version == 3:
+                    if ef_version == 1:
                         fromn = words[idx + 1].strip()
                     else:
                         fromn = cleannodeid(words[idx + 1])
@@ -1282,7 +1282,7 @@ def parse_isets_first(lines: List[str]) -> None:
                     except (ValueError, IndexError):
                         count += 1
                 else:
-                    if ef_version == 3:
+                    if ef_version == 1:
                         nodeid = words[count].strip()
                     else:
                         nodeid = cleannodeid(words[count])
@@ -1413,7 +1413,7 @@ def level(
     except Exception:
         error("Expected node name")
         return
-    if ef_version == 3:
+    if ef_version == 1:
         nodeid = s
     else:
         nodeid = setnodeid(lev, s)
@@ -1774,7 +1774,7 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
             where = count
             count += advance
         else:
-            if ef_version == 3:
+            if ef_version == 1:
                 nodeid = words[count].strip()
             else:
                 nodeid = cleannodeid(words[count])

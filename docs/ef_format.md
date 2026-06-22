@@ -13,7 +13,7 @@ You can add comments by prefixing a line with `%`.
 
 An example EF file:
 ```text
-% Example game (EF 3.0 — globally unique node identifiers)
+% Example game (EF 1 — globally unique node identifiers)
 player 1 name I
 player 2 name II
 level 0 node 1 player 1
@@ -54,17 +54,19 @@ If the chance player is meant to have no name, write `player 0 name ~`. The `~` 
 ## Nodes and Levels
 The `level` keyword encodes game tree nodes. The tree starts at `level 0` for the root. Each subsequent level is typically an even number, representing standard level distances of 2 centimeters.
 
-Each node requires a **globally unique** identifier — unique across the *entire* file, not just within its level.  This is the EF 3.0 default, and it means you can freely adjust a node's `level` value for layout reasons without having to rename the node or update any references to it.
+Each node requires a **globally unique** identifier — unique across the *entire* file, not just within its level.  This is the EF 1 default, and it means you can freely adjust a node's `level` value for layout reasons without having to rename the node or update any references to it.
+
+Node identifiers can be **any string** (integers, letters, or descriptive names):
 
 ```text
-level 0 node 1 player 1
-level 2 node 2 from 1 move Left
-level 2 node 3 from 1 move Right payoffs 1 0
+level 0 node root player 1
+level 2 node left from root move Left
+level 2 node right from root move Right payoffs 1 0
 ```
 
 Omit the `player` specification if the node is a terminal node (with payoffs) or if the player will be specified later via an information set (`iset`). A chance node needs `player 0` to get the square node symbol.
 
-### Legacy EF 2.x format (backward compatible)
+### Legacy EF 0 format (backward compatible)
 
 Older `.ef` files use a per-level numbering scheme where the same node number may appear at different levels (e.g., `level 2 node 1` and `level 4 node 1` are two different nodes). In that scheme, nodes are identified by the composite `level,nodeid` pair — and `from` / `iset` references also use that composite form:
 
@@ -74,17 +76,17 @@ level 2 node 1 from 0,1 move Left
 level 2 node 2 from 0,1 move Right payoffs 1 0
 ```
 
-GTDraw automatically detects the format: if any `from` reference contains a comma (e.g. `from 2,1`), the file is treated as EF 2.x; otherwise EF 3.0 is assumed. All existing files continue to work without modification.
+GTDraw automatically detects the format: if any `from` reference contains a comma (e.g. `from 2,1`), the file is treated as EF 0; otherwise EF 1 is assumed. All existing files continue to work without modification.
 
 ## Parenting
 Specify the parent of a node using `from`, followed by the parent node's identifier.
 
-**EF 3.0 (globally unique IDs):**
+**EF 1 (globally unique IDs):**
 ```text
 level 2 node 2 from 1
 ```
 
-**EF 2.x (per-level IDs):**
+**EF 0 (per-level IDs):**
 ```text
 level 2 node 1 from 0,1
 ```
@@ -120,12 +122,12 @@ payoffs 1 -1
 ## Information Sets
 The `iset` keyword defines an information set connecting multiple nodes. Provide a list of node identifiers, and optionally end with the `player` number.
 
-**EF 3.0 (globally unique IDs):**
+**EF 1 (globally unique IDs):**
 ```text
 iset 3 5 player 2
 ```
 
-**EF 2.x (per-level IDs):**
+**EF 0 (per-level IDs):**
 ```text
 iset 4,1 4,2 player 2
 ```

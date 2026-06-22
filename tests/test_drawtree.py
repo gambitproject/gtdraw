@@ -3058,8 +3058,8 @@ class TestSelectiveVaryActionLabelPositions:
         assert result_all != result_no_match
 
 
-class TestEF3Format:
-    """Tests for EF 3.0 globally unique node identifier support."""
+class TestEF1Format:
+    """Tests for EF 1 globally unique node identifier support."""
 
     def _get_ef_path(self, name):
         path = f"games/{name}"
@@ -3067,26 +3067,26 @@ class TestEF3Format:
             path = os.path.join(os.path.dirname(__file__), "..", "games", name)
         return path
 
-    def test_detect_ef_version_v3(self):
-        """Files where 'from' references contain no commas are detected as EF 3.0."""
+    def test_detect_ef_version_v1(self):
+        """Files where 'from' references contain no commas are detected as EF 1."""
         lines = [
-            "level 0 node 1 player 1",
-            "level 2 node 2 from 1 move L",
-            "level 2 node 3 from 1 move R payoffs 1 0",
+            "level 0 node r player 1",
+            "level 2 node p from r move L",
+            "level 2 node q from r move R payoffs 1 0",
         ]
-        assert core._detect_ef_version(lines) == 3
+        assert core._detect_ef_version(lines) == 1
 
-    def test_detect_ef_version_v2(self):
-        """Files where 'from' references use 'level,name' format (comma) are detected as EF 2.x."""
+    def test_detect_ef_version_v0(self):
+        """Files where 'from' references use 'level,name' format (comma) are detected as EF 0."""
         lines = [
             "level 0 node 1 player 1",
             "level 2 node 1 from 0,1 move L",
             "level 2 node 2 from 0,1 move R payoffs 1 0",
         ]
-        assert core._detect_ef_version(lines) == 2
+        assert core._detect_ef_version(lines) == 0
 
-    def test_detect_ef_version_example_v2(self):
-        """games/example.ef is detected as EF 2.x (repeated per-level node numbers)."""
+    def test_detect_ef_version_example_v0(self):
+        """games/example.ef is detected as EF 0 (repeated per-level node numbers)."""
         path = self._get_ef_path("example.ef")
         if not os.path.exists(path):
             pytest.skip("example.ef not found")
@@ -3095,89 +3095,89 @@ class TestEF3Format:
             for l in open(path).read().splitlines()
             if l.strip() and not l.strip().startswith("%")
         ]
-        assert core._detect_ef_version(lines) == 2
+        assert core._detect_ef_version(lines) == 0
 
-    def test_detect_ef_version_example_v3(self):
-        """games/example_v3.ef is detected as EF 3.0."""
-        path = self._get_ef_path("example_v3.ef")
+    def test_detect_ef_version_example_v1(self):
+        """games/example_v1.ef is detected as EF 1."""
+        path = self._get_ef_path("example_v1.ef")
         if not os.path.exists(path):
-            pytest.skip("example_v3.ef not found")
+            pytest.skip("example_v1.ef not found")
         lines = [
             l.strip()
             for l in open(path).read().splitlines()
             if l.strip() and not l.strip().startswith("%")
         ]
-        assert core._detect_ef_version(lines) == 3
+        assert core._detect_ef_version(lines) == 1
 
-    def test_parse_ef_v3_node_ids_are_bare_strings(self, tmp_path):
-        """Parsing an EF 3.0 file yields node IDs that are bare strings, not 'level,name'."""
+    def test_parse_ef_v1_node_ids_are_bare_strings(self, tmp_path):
+        """Parsing an EF 1 file yields node IDs that are bare strings, not 'level,name'."""
         from gtdraw.converter import parse_ef_file
 
-        path = self._get_ef_path("example_v3.ef")
+        path = self._get_ef_path("example_v1.ef")
         if not os.path.exists(path):
-            pytest.skip("example_v3.ef not found")
+            pytest.skip("example_v1.ef not found")
         game = parse_ef_file(path)
-        assert game.version == 3
-        # Root node should have ID "1" (bare), not "0,1"
-        assert game.root_id == "1"
-        assert "1" in game.nodes
-        assert "0,1" not in game.nodes
+        assert game.version == 1
+        # Root node should have ID "r" (bare alphabetical), not "0,r"
+        assert game.root_id == "r"
+        assert "r" in game.nodes
+        assert "0,r" not in game.nodes
 
-    def test_parse_ef_v3_parent_links(self, tmp_path):
-        """Parent-child links are correctly built in EF 3.0 format."""
+    def test_parse_ef_v1_parent_links(self, tmp_path):
+        """Parent-child links are correctly built in EF 1 format."""
         from gtdraw.converter import parse_ef_file
 
-        path = self._get_ef_path("example_v3.ef")
+        path = self._get_ef_path("example_v1.ef")
         if not os.path.exists(path):
-            pytest.skip("example_v3.ef not found")
+            pytest.skip("example_v1.ef not found")
         game = parse_ef_file(path)
-        # Node "2" (was level 2 node 2) has parent "1" (was level 0 node 1)
-        assert game.nodes["2"].parent_id == "1"
-        assert "2" in game.nodes["1"].children
+        # Node "e" (chance node) has parent "r" (root)
+        assert game.nodes["e"].parent_id == "r"
+        assert "e" in game.nodes["r"].children
 
-    def test_parse_ef_v3_iset_assignment(self, tmp_path):
-        """Information sets use bare node IDs in EF 3.0."""
+    def test_parse_ef_v1_iset_assignment(self, tmp_path):
+        """Information sets use bare node IDs in EF 1."""
         from gtdraw.converter import parse_ef_file
 
-        path = self._get_ef_path("example_v3.ef")
+        path = self._get_ef_path("example_v1.ef")
         if not os.path.exists(path):
-            pytest.skip("example_v3.ef not found")
+            pytest.skip("example_v1.ef not found")
         game = parse_ef_file(path)
-        # There should be an iset containing node IDs "3" and "5"
+        # There should be an iset containing node IDs "f" and "h"
         assert game.isets, "Expected at least one information set"
         iset_node_ids = game.isets[0].node_ids
-        assert "3" in iset_node_ids
-        assert "5" in iset_node_ids
+        assert "f" in iset_node_ids
+        assert "h" in iset_node_ids
 
-    def test_render_v3_example(self, tmp_path):
-        """EF 3.0 example file renders without errors."""
-        path = self._get_ef_path("example_v3.ef")
+    def test_render_v1_example(self, tmp_path):
+        """EF 1 example file renders without errors."""
+        path = self._get_ef_path("example_v1.ef")
         if not os.path.exists(path):
-            pytest.skip("example_v3.ef not found")
+            pytest.skip("example_v1.ef not found")
         result = core.tikz(path)
         assert result is not None
         assert "tikzpicture" in result
 
-    def test_render_v3_kuhn(self, tmp_path):
-        """EF 3.0 Kuhn poker file renders without errors."""
-        path = self._get_ef_path("kuhn_v3.ef")
+    def test_render_v1_kuhn(self, tmp_path):
+        """EF 1 Kuhn poker file renders without errors."""
+        path = self._get_ef_path("kuhn_v1.ef")
         if not os.path.exists(path):
-            pytest.skip("kuhn_v3.ef not found")
+            pytest.skip("kuhn_v1.ef not found")
         result = core.tikz(path)
         assert result is not None
         assert "tikzpicture" in result
 
-    def test_render_v3_iset_present(self):
-        """EF 3.0 file with iset produces TikZ output containing iset drawing code."""
-        path = self._get_ef_path("example_v3.ef")
+    def test_render_v1_iset_present(self):
+        """EF 1 file with iset produces TikZ output containing iset drawing code."""
+        path = self._get_ef_path("example_v1.ef")
         if not os.path.exists(path):
-            pytest.skip("example_v3.ef not found")
+            pytest.skip("example_v1.ef not found")
         result = core.tikz(path)
         # An iset is drawn as an ellipse in TikZ
         assert "ellipse" in result or "draw" in result
 
-    def test_v2_files_still_render(self):
-        """Existing EF 2.x files still render correctly (backward compatibility)."""
+    def test_v0_files_still_render(self):
+        """Existing EF 0 files still render correctly (backward compatibility)."""
         path = self._get_ef_path("example.ef")
         if not os.path.exists(path):
             pytest.skip("example.ef not found")
@@ -3185,21 +3185,21 @@ class TestEF3Format:
         assert result is not None
         assert "tikzpicture" in result
 
-    def test_v3_and_v2_same_output(self):
-        """EF 3.0 and EF 2.x versions of the same game produce equivalent TikZ output."""
-        v2_path = self._get_ef_path("example.ef")
-        v3_path = self._get_ef_path("example_v3.ef")
-        if not os.path.exists(v2_path) or not os.path.exists(v3_path):
-            pytest.skip("example.ef or example_v3.ef not found")
-        result_v2 = core.tikz(v2_path)
-        result_v3 = core.tikz(v3_path)
+    def test_v1_and_v0_same_output(self):
+        """EF 1 and EF 0 versions of the same game produce equivalent TikZ output."""
+        v0_path = self._get_ef_path("example.ef")
+        v1_path = self._get_ef_path("example_v1.ef")
+        if not os.path.exists(v0_path) or not os.path.exists(v1_path):
+            pytest.skip("example.ef or example_v1.ef not found")
+        result_v0 = core.tikz(v0_path)
+        result_v1 = core.tikz(v1_path)
 
         # Strip comment lines (filename comment and source-echo %% lines) before comparing:
-        # these differ between v2 and v3 due to different source text, but the rendering is identical.
+        # these differ between v0 and v1 due to different source text, but the rendering is identical.
         def strip_comments(s):
             return "\n".join(l for l in s.splitlines() if not l.startswith("%"))
 
-        assert strip_comments(result_v2) == strip_comments(result_v3)
+        assert strip_comments(result_v0) == strip_comments(result_v1)
 
 
 if __name__ == "__main__":
