@@ -25,7 +25,7 @@ gtdraw --gui
 
 This will start a local Streamlit server and automatically open the application in your default web browser at `http://localhost:8501/`. From there, you can:
 - Upload game files
-- Tinker with formatting options (e.g., node size, layouts, colors, label backgrounds)
+- Tinker with formatting options (e.g., node size, layouts, colors, label backgrounds, curved information sets)
 - Download the resulting Tex, SVG, PDF, or PNG images, as well as the active rendering configuration.
 
 ```{image} ../img/gui_screenshot.png
@@ -45,3 +45,16 @@ If you are a Gambit developer adding new games to the official game catalog, you
 3. Paste or append the configuration under the appropriate key in the master settings file in the Gambit repository: [build_support/catalog/gtdraw_settings.yaml](https://github.com/gambitproject/gambit/blob/master/build_support/catalog/gtdraw_settings.yaml).
 
 Once added, the game will automatically use your custom styles when displayed in the catalog.
+
+## Information Set Options
+
+The sidebar **Information Sets** section exposes the following controls:
+
+| Control | Description |
+|---|---|
+| **Fill Information Sets** | Toggle fill colour inside the information set shape. |
+| **Fill Opacity** | Opacity of the fill (0.0–1.0, enabled when fill is on). |
+| **Boundary Style** | Choose `solid`, `dotted`, or `none` for the outline. |
+| **Curved Information Sets** | Switch from the default closed arc shape to a TikZ `to[bend left]` curved line through the information set nodes. |
+| **Bend Angle** | Angle of the curve in degrees (−90 to 90). Positive values curve upward; negative values curve downward. Only active when curved mode is on. |
+| **Curve Looseness** | Controls how loose or tight the curve is (TikZ default: 1.0). Higher values produce more exaggerated curves. Only active when curved mode is on. |

@@ -40,6 +40,9 @@ You can also use `.efg` files from Gambit instead of `.ef` files.
 | **Information Sets**| `--iset-fill` | Fill information sets with player colors. |
 | | `--iset-fill-opacity=X.X` | Opacity of information set fill (0.0-1.0, default: 0.2). |
 | | `--iset-boundary=X` | Boundary style: `solid`, `dotted`, `none` (default: `solid`). |
+| | `--iset-curved` | Draw information sets as curved lines using TikZ `to[bend left]` paths instead of closed arc shapes. |
+| | `--iset-curved-bend=X.X` | Bend angle for curved information sets in degrees (-90 to 90, default: 10.0). Positive values curve upward, negative downward. |
+| | `--iset-curved-looseness=X.X` | Looseness of the curve (default: 1.0, the TikZ default). Higher values produce more exaggerated curves. |
 | **Aesthetics** | `--color-scheme=X` | Set color scheme (`default`, `gambit`, `distinctipy`, `colorblind`, `custom`). |
 | | `--edge-thickness=X.X` | Set thickness of edges (default: 1.0). |
 | | `--font=[serif\|sans-serif\|monospace]`| Set the global LaTeX font family. |

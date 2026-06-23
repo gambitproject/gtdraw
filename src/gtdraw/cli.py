@@ -77,6 +77,13 @@ def main():
         print(
             "  --iset-boundary=X Set information set boundary style (solid, dotted, none, default: solid)"
         )
+        print("  --iset-curved  Draw information sets as curved lines using TikZ 'to[bend left]' paths")
+        print(
+            "  --iset-curved-bend=X Set bend angle for curved information sets (-90 to 90, default: 10.0)"
+        )
+        print(
+            "  --iset-curved-looseness=X Set looseness of curved information set paths (default: 1.0)"
+        )
         print("  --node-size=X Set size of player nodes in mm (default: 1.5)")
         print("  --level-scaling=X Set level spacing multiplier for .efg files (default: 1.0)")
         print("  --sublevel-scaling=X Set sublevel spacing multiplier for .efg files (default: 1.0)")
@@ -144,6 +151,9 @@ def main():
         iset_fill,
         iset_fill_opacity,
         iset_boundary,
+        iset_curved,
+        iset_curved_bend,
+        iset_curved_looseness,
         node_size,
         label_bg,
         label_bg_color,
@@ -218,6 +228,9 @@ def main():
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
+                iset_curved=iset_curved,
+                iset_curved_bend=iset_curved_bend,
+                iset_curved_looseness=iset_curved_looseness,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -261,6 +274,9 @@ def main():
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
+                iset_curved=iset_curved,
+                iset_curved_bend=iset_curved_bend,
+                iset_curved_looseness=iset_curved_looseness,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -303,6 +319,9 @@ def main():
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
+                iset_curved=iset_curved,
+                iset_curved_bend=iset_curved_bend,
+                iset_curved_looseness=iset_curved_looseness,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -345,6 +364,9 @@ def main():
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
+                iset_curved=iset_curved,
+                iset_curved_bend=iset_curved_bend,
+                iset_curved_looseness=iset_curved_looseness,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -383,6 +405,9 @@ def main():
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
+                iset_curved=iset_curved,
+                iset_curved_bend=iset_curved_bend,
+                iset_curved_looseness=iset_curved_looseness,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,

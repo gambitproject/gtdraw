@@ -93,6 +93,9 @@ _vary_action_label_positions_choices: Optional[set[int]] = None
 parent_to_children: dict[str, list[str]] = {}
 ef_version: int = 1
 _iset_boundary: str = "solid"
+_iset_curved: bool = False
+_iset_curved_bend: float = 10.0
+_iset_curved_looseness: float = 1.0
 _node_size: float = 1.5
 _label_bg: bool | dict[int, bool] = False
 _label_bg_by: str = "player"
@@ -715,9 +718,7 @@ def iset(nodes: List[List[float]], radius: float = isetradius) -> str:
     Returns:
         Complete TikZ draw command string with semicolon.
     """
-    arcs = arcseq(nodes, radius)
-
-    # Build TikZ options
+    # Build TikZ options (shared by both curved and arc modes)
     options = [thickn]
     if _iset_boundary == "dotted":
         options.append("dotted")
@@ -738,7 +739,17 @@ def iset(nodes: List[List[float]], radius: float = isetradius) -> str:
             options.append(f"fill={color}")
             options.append(f"fill opacity={fformat(_iset_fill_opacity)}")
 
-    # tikz code
+    # Curved mode: use TikZ 'to[bend left=X]' path through nodes
+    if _iset_curved and len(nodes) > 1:
+        to_opts = f"bend left={fformat(_iset_curved_bend)}"
+        if not aeq(_iset_curved_looseness - 1.0):
+            to_opts += f",looseness={fformat(_iset_curved_looseness)}"
+        coords = [coord(n[0], n[1]) for n in nodes]
+        path = f" to[{to_opts}] ".join(coords)
+        return "\\draw [" + ",".join(options) + "] " + path + ";"
+
+    # Arc mode (default): closed arc-segment loop around nodes
+    arcs = arcseq(nodes, radius)
     return "\\draw [" + ",".join(options) + "] " + "\n  -- ".join(arcs) + " -- cycle;"
 
 
@@ -1909,6 +1920,9 @@ def commandline(
     iset_fill = False
     iset_fill_opacity = 0.2
     iset_boundary = "solid"
+    iset_curved = False
+    iset_curved_bend = 10.0
+    iset_curved_looseness = 1.0
     node_size = 1.5
     label_bg = False
     label_bg_color = "white"
@@ -2074,6 +2088,24 @@ def commandline(
             val = arg[16:].lower()
             if val in ["solid", "dotted", "none"]:
                 iset_boundary = val
+        elif arg == "--iset-curved":
+            iset_curved = True
+        elif arg.startswith("--iset-curved-bend="):
+            try:
+                iset_curved_bend = float(arg[19:])
+            except ValueError:
+                print(
+                    "Warning: Invalid iset-curved-bend value, using default 10.0",
+                    file=sys.stderr,
+                )
+        elif arg.startswith("--iset-curved-looseness="):
+            try:
+                iset_curved_looseness = float(arg[24:])
+            except ValueError:
+                print(
+                    "Warning: Invalid iset-curved-looseness value, using default 1.0",
+                    file=sys.stderr,
+                )
         elif arg.startswith("--node-size="):
             try:
                 node_size = float(arg[12:])
@@ -2185,6 +2217,9 @@ def commandline(
         iset_fill,
         iset_fill_opacity,
         iset_boundary,
+        iset_curved,
+        iset_curved_bend,
+        iset_curved_looseness,
         node_size,
         label_bg,
         label_bg_color,
@@ -2224,6 +2259,9 @@ def ef_to_tex(
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
+    iset_curved: bool = False,
+    iset_curved_bend: float = 10.0,
+    iset_curved_looseness: float = 1.0,
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -2263,6 +2301,7 @@ def ef_to_tex(
     global scale, grid, node_to_iset_player
     global _font_family, _font_bold, _font_italic, _font_size
     global _iset_fill, _iset_fill_opacity, _iset_boundary, _node_size
+    global _iset_curved, _iset_curved_bend, _iset_curved_looseness
     global _label_bg, _label_bg_by, _label_bg_style, _label_bg_color, _label_bg_opacity
     global _horizontal, _mirror, _legend_position, _action_label_dist
     global \
@@ -2301,6 +2340,9 @@ def ef_to_tex(
         _iset_fill = iset_fill
         _iset_fill_opacity = iset_fill_opacity
         _iset_boundary = iset_boundary
+        _iset_curved = iset_curved
+        _iset_curved_bend = iset_curved_bend
+        _iset_curved_looseness = iset_curved_looseness
         _node_size = node_size
         _label_bg = label_bg
         _label_bg_by = label_bg_by
@@ -2427,6 +2469,9 @@ def tikz(
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
+    iset_curved: bool = False,
+    iset_curved_bend: float = 10.0,
+    iset_curved_looseness: float = 1.0,
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -2538,6 +2583,9 @@ def tikz(
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
         iset_boundary=iset_boundary,
+        iset_curved=iset_curved,
+        iset_curved_bend=iset_curved_bend,
+        iset_curved_looseness=iset_curved_looseness,
         node_size=node_size,
         label_bg=label_bg,
         label_bg_color=label_bg_color,
@@ -2820,6 +2868,9 @@ def draw(
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
+    iset_curved: bool = False,
+    iset_curved_bend: float = 10.0,
+    iset_curved_looseness: float = 1.0,
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -2894,6 +2945,9 @@ def draw(
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
         iset_boundary=iset_boundary,
+        iset_curved=iset_curved,
+        iset_curved_bend=iset_curved_bend,
+        iset_curved_looseness=iset_curved_looseness,
         node_size=node_size,
         label_bg=label_bg,
         label_bg_color=label_bg_color,
@@ -3006,6 +3060,9 @@ def tex(
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
+    iset_curved: bool = False,
+    iset_curved_bend: float = 10.0,
+    iset_curved_looseness: float = 1.0,
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -3099,6 +3156,9 @@ def tex(
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
         iset_boundary=iset_boundary,
+        iset_curved=iset_curved,
+        iset_curved_bend=iset_curved_bend,
+        iset_curved_looseness=iset_curved_looseness,
         node_size=node_size,
         label_bg=label_bg,
         label_bg_color=label_bg_color,
@@ -3146,6 +3206,9 @@ def pdf(
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
+    iset_curved: bool = False,
+    iset_curved_bend: float = 10.0,
+    iset_curved_looseness: float = 1.0,
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -3271,6 +3334,9 @@ def pdf(
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
         iset_boundary=iset_boundary,
+        iset_curved=iset_curved,
+        iset_curved_bend=iset_curved_bend,
+        iset_curved_looseness=iset_curved_looseness,
         node_size=node_size,
         label_bg=label_bg,
         label_bg_color=label_bg_color,
@@ -3362,6 +3428,9 @@ def png(
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
+    iset_curved: bool = False,
+    iset_curved_bend: float = 10.0,
+    iset_curved_looseness: float = 1.0,
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -3450,6 +3519,9 @@ def png(
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
+                iset_curved=iset_curved,
+                iset_curved_bend=iset_curved_bend,
+                iset_curved_looseness=iset_curved_looseness,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -3588,6 +3660,9 @@ def svg(
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
+    iset_curved: bool = False,
+    iset_curved_bend: float = 10.0,
+    iset_curved_looseness: float = 1.0,
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -3669,6 +3744,9 @@ def svg(
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
+                iset_curved=iset_curved,
+                iset_curved_bend=iset_curved_bend,
+                iset_curved_looseness=iset_curved_looseness,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
