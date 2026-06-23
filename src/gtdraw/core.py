@@ -284,6 +284,33 @@ def _resolve_iset_curved_param(
     return param
 
 
+def _bezier_for_bend(
+    x1: float, y1: float, x2: float, y2: float, bend: float, looseness: float = 1.0
+) -> str:
+    """
+    Return '.. controls (C1) and (C2) ..' equivalent to TikZ 'to[bend left=bend]'.
+    Computing control points in Python avoids PGF's internal dimension overflow
+    that occurs when coordinate spans are large (> ~30cm at scale=0.8).
+    Formula: A_out = theta + bend, A_in = theta + 180° - bend (backward tangent at P2).
+    cp_dist = distance * looseness / 3.
+    """
+    dx = x2 - x1
+    dy = y2 - y1
+    d = math.sqrt(dx * dx + dy * dy)
+    if d == 0:
+        return f".. controls {coord(x2, y2)} and {coord(x2, y2)} .."
+    theta = math.atan2(dy, dx)
+    B_rad = bend * math.pi / 180.0
+    cp_dist = d * looseness / 3.0
+    A_out = theta + B_rad
+    A_in = theta + math.pi - B_rad
+    C1x = x1 + cp_dist * math.cos(A_out)
+    C1y = y1 + cp_dist * math.sin(A_out)
+    C2x = x2 + cp_dist * math.cos(A_in)
+    C2y = y2 + cp_dist * math.sin(A_in)
+    return f".. controls {coord(C1x, C1y)} and {coord(C2x, C2y)} .."
+
+
 def _label_bg_node_opts(
     player_color: str = "", player: int = -1, level: int = -1
 ) -> str:
@@ -775,9 +802,6 @@ def iset(
             _iset_curved_looseness if not isinstance(_iset_curved_looseness, dict) else 1.0
         )
         eff_dd = double_distance if double_distance is not None else _iset_curved_double_distance
-        to_opts = f"bend left={fformat(eff_bend)}"
-        if not aeq(eff_looseness - 1.0):
-            to_opts += f",looseness={fformat(eff_looseness)}"
         # double distance + round caps create the oval/capsule appearance
         options.append(f"double distance={fformat(eff_dd)}mm")
         options.append("line cap=round")
@@ -787,8 +811,15 @@ def iset(
                 options.append(f"fill opacity={fformat(_iset_fill_opacity)}")
         else:
             options.append("double")  # white/background centre = hollow ribbon
-        coords = [coord(n[0], n[1]) for n in nodes]
-        path = f" to[{to_opts}] ".join(coords)
+        # Compute explicit Bezier control points in Python to avoid TikZ's
+        # dimension-overflow bug when coordinate spans exceed ~30cm at scale=0.8.
+        path_parts = [coord(nodes[0][0], nodes[0][1])]
+        for i in range(len(nodes) - 1):
+            x1, y1 = nodes[i][0], nodes[i][1]
+            x2, y2 = nodes[i + 1][0], nodes[i + 1][1]
+            path_parts.append(_bezier_for_bend(x1, y1, x2, y2, eff_bend, eff_looseness))
+            path_parts.append(coord(x2, y2))
+        path = " ".join(path_parts)
         return "\\draw [" + ",".join(options) + "] " + path + ";"
 
     # Arc mode (default): closed arc-segment loop around nodes

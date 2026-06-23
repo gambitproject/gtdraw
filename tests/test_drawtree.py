@@ -2347,14 +2347,14 @@ class TestIsetStylingIntegration:
         assert "draw=none" in iset_draw_none[0]
 
     def test_iset_curved_tikz(self, tmp_path):
-        """Verify that curved iset mode produces 'to[bend left]' paths."""
+        """Verify that curved iset mode produces explicit Bezier control point paths."""
         ef_file = tmp_path / "iset_curved_test.ef"
         ef_file.write_text(
             "player 1\n"
             "player 2\n"
             "level 0 node 1 player 1\n"
-            "level 1 node 1 from 0,1 player 2 move L\n"
-            "level 1 node 2 from 0,1 player 2 move R\n"
+            "level 1 node 1 xshift -2 from 0,1 player 2 move L\n"
+            "level 1 node 2 xshift 2 from 0,1 player 2 move R\n"
             "iset 1,1 1,2 player 2\n"
         )
         ef_file_path = str(ef_file)
@@ -2377,30 +2377,37 @@ class TestIsetStylingIntegration:
         ]
         assert len(iset_lines_curved) > 0
         iset_line = iset_lines_curved[0]
-        assert "to[bend left=10" in iset_line
+        # Explicit Bezier control points used to avoid TikZ dimension overflow
+        assert ".. controls" in iset_line
         assert "-- cycle" not in iset_line
-        # Open path: for N nodes, open path has N-1 'to[bend' joins, closed has N
+        # Open path: for N nodes, open path has N-1 Bezier segments
         import re
-        bend_count = len(re.findall(r'to\[bend', iset_line))
-        node_count = len(re.findall(r'coord\(', iset_line)) or iset_line.count(' to[')
-        # 2 nodes → 1 join on open path, 2 joins on closed path
-        assert bend_count == 1, f"Open path for 2 nodes must have exactly 1 'to[bend', got {bend_count}"
+        ctrl_count = len(re.findall(r'\.\. controls', iset_line))
+        assert ctrl_count == 1, f"Open path for 2 nodes must have exactly 1 Bezier segment, got {ctrl_count}"
         # Double-stroke ribbon style
         assert "double distance=" in iset_line
         assert "line cap=round" in iset_line
         # No arc-mode fill= in curved mode
         assert "fill=" not in iset_line
 
-        # 3. Negative bend angle
+        # 3. Negative bend angle — curve goes to the opposite side; still uses Bezier
         res_neg = core.tikz(
             ef_file_path, color_scheme="gambit", iset_curved=True, iset_curved_bend=-15.0
         )
         iset_lines_neg = [
             line for line in res_neg.split("\n") if "playertwocolor" in line and "\\draw [" in line
         ]
-        assert "to[bend left=-15" in iset_lines_neg[0]
+        assert ".. controls" in iset_lines_neg[0]
+        # Positive and negative bends should produce different control points
+        res_pos = core.tikz(
+            ef_file_path, color_scheme="gambit", iset_curved=True, iset_curved_bend=15.0
+        )
+        iset_lines_pos = [
+            line for line in res_pos.split("\n") if "playertwocolor" in line and "\\draw [" in line
+        ]
+        assert iset_lines_neg[0] != iset_lines_pos[0], "Positive and negative bends must differ"
 
-        # 4. Custom looseness appears when non-default
+        # 4. Different looseness values produce different control points
         res_loose = core.tikz(
             ef_file_path,
             color_scheme="gambit",
@@ -2411,7 +2418,17 @@ class TestIsetStylingIntegration:
         iset_lines_loose = [
             line for line in res_loose.split("\n") if "playertwocolor" in line and "\\draw [" in line
         ]
-        assert "looseness=2" in iset_lines_loose[0]
+        res_tight = core.tikz(
+            ef_file_path,
+            color_scheme="gambit",
+            iset_curved=True,
+            iset_curved_bend=10.0,
+            iset_curved_looseness=0.5,
+        )
+        iset_lines_tight = [
+            line for line in res_tight.split("\n") if "playertwocolor" in line and "\\draw [" in line
+        ]
+        assert iset_lines_loose[0] != iset_lines_tight[0], "Different looseness values must produce different curves"
 
         # 5. Per-player dict bend: player 2 gets a different bend from player 1
         res_per_player = core.tikz(
@@ -2421,32 +2438,24 @@ class TestIsetStylingIntegration:
             iset_curved_bend={1: 5.0, 2: 25.0},
             iset_curved_bend_by="player",
         )
-        iset_lines_pp = [
-            line for line in res_per_player.split("\n") if "playertwocolor" in line and "\\draw [" in line
-        ]
-        assert "to[bend left=25" in iset_lines_pp[0]
-
-        # 6. Default looseness (1.0) should NOT add looseness= to the output
-        res_default_loose = core.tikz(
-            ef_file_path, color_scheme="gambit", iset_curved=True
-        )
-        iset_lines_dl = [
-            line for line in res_default_loose.split("\n") if "playertwocolor" in line and "\\draw [" in line
-        ]
-        assert "looseness=" not in iset_lines_dl[0]
-
-        # 5. Default looseness (1.0) is omitted from the path
-        res_default_loose = core.tikz(
+        res_default_bend = core.tikz(
             ef_file_path,
             color_scheme="gambit",
             iset_curved=True,
             iset_curved_bend=10.0,
-            iset_curved_looseness=1.0,
         )
-        iset_lines_dl = [
-            line for line in res_default_loose.split("\n") if "playertwocolor" in line and "\\draw [" in line
+        iset_lines_pp = [
+            line for line in res_per_player.split("\n") if "playertwocolor" in line and "\\draw [" in line
         ]
-        assert "looseness=" not in iset_lines_dl[0]
+        iset_lines_db = [
+            line for line in res_default_bend.split("\n") if "playertwocolor" in line and "\\draw [" in line
+        ]
+        assert iset_lines_pp[0] != iset_lines_db[0], "Per-player dict bend must differ from uniform bend"
+
+        # 6. Bezier control points change with bend angle — different angles → different paths
+        res_b10 = core.tikz(ef_file_path, color_scheme="gambit", iset_curved=True, iset_curved_bend=10.0)
+        res_b20 = core.tikz(ef_file_path, color_scheme="gambit", iset_curved=True, iset_curved_bend=20.0)
+        assert res_b10 != res_b20, "Different bend angles must produce different TikZ output"
 
 
 def test_node_size_macro():
