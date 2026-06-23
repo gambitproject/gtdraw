@@ -47,9 +47,8 @@ overrides:
       0: '#759138'
       1: '#04461b'
       2: '#DD79E0'
-    iset_boundary: dotted
     iset_curved: true
-    iset_curved_bend: 21.0
+    iset_curved_bend: 0.0
     iset_curved_looseness: 2.5
   jakobsen2016/fig3:
     sublevel_scaling: 0.0
@@ -116,3 +115,10 @@ overrides:
     iset_curved: true
     iset_curved_bend: 50.0
     iset_curved_looseness: 3.0
+  kuhn-3-card-v1:
+    level_scaling: 2.4
+    color_scheme: colorblind
+    iset_curved: true
+  tiny_hanabi:
+    color_scheme: colorblind
+    iset_curved: true

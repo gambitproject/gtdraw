@@ -40,11 +40,12 @@ You can also use `.efg` files from Gambit instead of `.ef` files.
 | **Information Sets**| `--iset-fill` | Fill information sets with player colors. |
 | | `--iset-fill-opacity=X.X` | Opacity of information set fill (0.0-1.0, default: 0.2). |
 | | `--iset-boundary=X` | Boundary style: `solid`, `dotted`, `none` (default: `solid`). |
-| | `--iset-curved` | Draw information sets as curved closed ovals using TikZ `to[bend left]` paths instead of arc-segment loops. |
+| | `--iset-curved` | Draw information sets as curved ovals using a TikZ `to[bend left]` open path with double-stroke ribbon style. |
 | | `--iset-curved-bend=X.X` | Bend angle in degrees (-90 to 90, default: 10.0). Also accepts a player/level/iset-keyed dict: `0:5.0,1:20.0`. |
 | | `--iset-curved-looseness=X.X` | Looseness of the curve (default: 1.0). Also accepts a dict: `0:1.0,1:2.0`. |
 | | `--iset-curved-bend-by=[player\|level\|iset]` | Interpret a dict `--iset-curved-bend` as keyed by player index (default), level index, or information set order index. |
 | | `--iset-curved-looseness-by=[player\|level\|iset]` | Same, for `--iset-curved-looseness`. |
+| | `--iset-curved-double-distance=X.X` | Width of the curved information set ribbon in mm (TikZ `double distance`, default: 3.0). |
 | **Aesthetics** | `--color-scheme=X` | Set color scheme (`default`, `gambit`, `distinctipy`, `colorblind`, `custom`). |
 | | `--edge-thickness=X.X` | Set thickness of edges (default: 1.0). |
 | | `--font=[serif\|sans-serif\|monospace]`| Set the global LaTeX font family. |

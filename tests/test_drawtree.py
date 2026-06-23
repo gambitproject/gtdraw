@@ -651,6 +651,7 @@ class TestCommandlineArguments:
             iset_curved_looseness,
             iset_curved_bend_by,
             iset_curved_looseness_by,
+            iset_curved_double_distance,
             node_size,
             label_bg,
             label_bg_color,
@@ -707,6 +708,7 @@ class TestCommandlineArguments:
             iset_curved_looseness,
             iset_curved_bend_by,
             iset_curved_looseness_by,
+            iset_curved_double_distance,
             node_size,
             label_bg,
             label_bg_color,
@@ -763,6 +765,7 @@ class TestCommandlineArguments:
             iset_curved_looseness,
             iset_curved_bend_by,
             iset_curved_looseness_by,
+            iset_curved_double_distance,
             node_size,
             label_bg,
             label_bg_color,
@@ -819,6 +822,7 @@ class TestCommandlineArguments:
             iset_curved_looseness,
             iset_curved_bend_by,
             iset_curved_looseness_by,
+            iset_curved_double_distance,
             node_size,
             label_bg,
             label_bg_color,
@@ -875,6 +879,7 @@ class TestCommandlineArguments:
             iset_curved_looseness,
             iset_curved_bend_by,
             iset_curved_looseness_by,
+            iset_curved_double_distance,
             node_size,
             label_bg,
             label_bg_color,
@@ -931,6 +936,7 @@ class TestCommandlineArguments:
             iset_curved_looseness,
             iset_curved_bend_by,
             iset_curved_looseness_by,
+            iset_curved_double_distance,
             node_size,
             label_bg,
             label_bg_color,
@@ -988,6 +994,7 @@ class TestCommandlineArguments:
             iset_curved_looseness,
             iset_curved_bend_by,
             iset_curved_looseness_by,
+            iset_curved_double_distance,
             node_size,
             label_bg,
             label_bg_color,
@@ -1037,6 +1044,7 @@ class TestCommandlineArguments:
             iset_curved_looseness,
             iset_curved_bend_by,
             iset_curved_looseness_by,
+            iset_curved_double_distance,
             node_size,
             label_bg,
             label_bg_color,
@@ -1087,6 +1095,7 @@ class TestCommandlineArguments:
             iset_curved_looseness,
             iset_curved_bend_by,
             iset_curved_looseness_by,
+            iset_curved_double_distance,
             node_size,
             label_bg,
             label_bg_color,
@@ -1137,6 +1146,7 @@ class TestCommandlineArguments:
             iset_curved_looseness,
             iset_curved_bend_by,
             iset_curved_looseness_by,
+            iset_curved_double_distance,
             node_size,
             label_bg,
             label_bg_color,
@@ -1193,6 +1203,7 @@ class TestCommandlineArguments:
             iset_curved_looseness,
             iset_curved_bend_by,
             iset_curved_looseness_by,
+            iset_curved_double_distance,
             node_size,
             label_bg,
             label_bg_color,
@@ -1831,7 +1842,7 @@ def test_commandline_horizontal_flag():
 def test_commandline_color_scheme():
     """Test parsing of the --color-scheme option."""
     result = core.commandline(["core.py", "test.ef", "--color-scheme=distinctipy"])
-    assert result[30] == "distinctipy"
+    assert result[31] == "distinctipy"
 
 
 def test_commandline_edge_and_label_options():
@@ -1844,8 +1855,8 @@ def test_commandline_edge_and_label_options():
             "--action-label-position=0.7",
         ]
     )
-    assert result[31] == 2.0
-    assert result[32] == 0.7
+    assert result[32] == 2.0
+    assert result[33] == 0.7
 
 
 def test_commandline_efg_scaling_options():
@@ -1860,10 +1871,10 @@ def test_commandline_efg_scaling_options():
             "--shared-terminal-depth",
         ]
     )
-    assert result[33] == 1.5
-    assert result[34] == 0.8
-    assert result[35] == 1.2
-    assert result[36] is True
+    assert result[34] == 1.5
+    assert result[35] == 0.8
+    assert result[36] == 1.2
+    assert result[37] is True
 
 
 class TestHorizontalLayout:
@@ -2239,7 +2250,8 @@ def test_commandline_iset_options():
     assert result[21] == 1.0  # iset_curved_looseness default
     assert result[22] == "player"  # iset_curved_bend_by default
     assert result[23] == "player"  # iset_curved_looseness_by default
-    assert result[24] == 2.0  # node_size
+    assert result[24] == 3.0  # iset_curved_double_distance default
+    assert result[25] == 2.0  # node_size
 
     # Test individual flags
     result_fill = core.commandline(["core.py", "test.ef", "--iset-fill"])
@@ -2270,6 +2282,7 @@ def test_commandline_iset_options():
     assert result_curved[21] == 2.0  # iset_curved_looseness
     assert result_curved[22] == "level"  # iset_curved_bend_by
     assert result_curved[23] == "iset"  # iset_curved_looseness_by
+    assert result_curved[24] == 3.0  # iset_curved_double_distance default
 
 
 class TestIsetStylingIntegration:
@@ -2355,7 +2368,7 @@ class TestIsetStylingIntegration:
         assert "-- cycle" in res_default
         assert "to[bend left=" not in res_default
 
-        # 2. Curved mode: closed oval — first coord appears twice, no '-- cycle'
+        # 2. Curved mode: open path with double-stroke ribbon, no '-- cycle'
         res_curved = core.tikz(
             ef_file_path, color_scheme="gambit", iset_curved=True, iset_curved_bend=10.0
         )
@@ -2366,11 +2379,17 @@ class TestIsetStylingIntegration:
         iset_line = iset_lines_curved[0]
         assert "to[bend left=10" in iset_line
         assert "-- cycle" not in iset_line
-        # Oval is closed: line ends with the first coordinate repeated
+        # Open path: for N nodes, open path has N-1 'to[bend' joins, closed has N
         import re
-        coords_in_line = re.findall(r'\(-?[\d.]+,-?[\d.]+\)', iset_line)
-        assert len(coords_in_line) >= 2
-        assert coords_in_line[0] == coords_in_line[-1], "Oval path must close back to the first coordinate"
+        bend_count = len(re.findall(r'to\[bend', iset_line))
+        node_count = len(re.findall(r'coord\(', iset_line)) or iset_line.count(' to[')
+        # 2 nodes → 1 join on open path, 2 joins on closed path
+        assert bend_count == 1, f"Open path for 2 nodes must have exactly 1 'to[bend', got {bend_count}"
+        # Double-stroke ribbon style
+        assert "double distance=" in iset_line
+        assert "line cap=round" in iset_line
+        # No arc-mode fill= in curved mode
+        assert "fill=" not in iset_line
 
         # 3. Negative bend angle
         res_neg = core.tikz(
@@ -2696,6 +2715,7 @@ class TestConverter:
             iset_curved_looseness,
             iset_curved_bend_by,
             iset_curved_looseness_by,
+            iset_curved_double_distance,
             node_size,
             label_bg,
             label_bg_color,
@@ -2749,6 +2769,7 @@ class TestConverter:
             iset_curved_looseness,
             iset_curved_bend_by,
             iset_curved_looseness_by,
+            iset_curved_double_distance,
             node_size,
             label_bg,
             label_bg_color,
@@ -2877,6 +2898,7 @@ class TestLabelBackground:
             iset_curved_looseness,
             iset_curved_bend_by,
             iset_curved_looseness_by,
+            iset_curved_double_distance,
             node_size,
             label_bg,
             label_bg_color,
@@ -3005,6 +3027,7 @@ class TestLabelBackground:
             iset_curved_looseness,
             iset_curved_bend_by,
             iset_curved_looseness_by,
+            iset_curved_double_distance,
             node_size,
             label_bg,
             label_bg_color,
@@ -3059,6 +3082,7 @@ class TestLabelBackground:
             iset_curved_looseness,
             iset_curved_bend_by,
             iset_curved_looseness_by,
+            iset_curved_double_distance,
             node_size,
             label_bg,
             label_bg_color,
@@ -3091,7 +3115,7 @@ class TestVaryActionLabelPositions:
         from gtdraw.core import commandline
 
         result = commandline(["core.py", "test.ef", "--vary-action-label-positions"])
-        assert result[39] is True
+        assert result[40] is True
 
     def test_vary_action_label_positions_layout(self, tmp_path):
         """Test that vary_action_label_positions=True staggers action labels for nodes with multiple children."""
@@ -3118,15 +3142,15 @@ class TestPlayerActionLabelPositions:
         result = commandline(
             ["core.py", "test.ef", "--action-label-position=0:0.3,1:0.65"]
         )
-        assert isinstance(result[32], dict)
-        assert result[32][0] == 0.3
-        assert result[32][1] == 0.65
+        assert isinstance(result[33], dict)
+        assert result[33][0] == 0.3
+        assert result[33][1] == 0.65
 
         # Invalid format falls back
         result_invalid = commandline(
             ["core.py", "test.ef", "--action-label-position=invalid"]
         )
-        assert result_invalid[32] == 0.5
+        assert result_invalid[33] == 0.5
 
     def test_player_action_label_positions_layout(self, tmp_path):
         """Test that different player nodes apply different action label positions."""
@@ -3164,9 +3188,9 @@ class TestLevelActionLabelPositions:
                 "--action-label-position-by=level",
             ]
         )
-        # action_label_position_by is at index 38
-        assert result[40] == "level"
-        assert isinstance(result[32], dict)
+        # action_label_position_by is at index 41
+        assert result[41] == "level"
+        assert isinstance(result[33], dict)
 
     def test_level_action_label_positions_layout(self, tmp_path):
         """Test that level-keyed positions produce different output than player-keyed ones."""

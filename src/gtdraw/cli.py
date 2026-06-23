@@ -90,6 +90,9 @@ def main():
         print(
             "  --iset-curved-looseness-by=[player|level|iset] Key for dict --iset-curved-looseness (default: player)"
         )
+        print(
+            "  --iset-curved-double-distance=X.X  Width of the curved information set ribbon in mm (default: 3.0)"
+        )
         print("  --node-size=X Set size of player nodes in mm (default: 1.5)")
         print("  --level-scaling=X Set level spacing multiplier for .efg files (default: 1.0)")
         print("  --sublevel-scaling=X Set sublevel spacing multiplier for .efg files (default: 1.0)")
@@ -162,6 +165,7 @@ def main():
         iset_curved_looseness,
         iset_curved_bend_by,
         iset_curved_looseness_by,
+        iset_curved_double_distance,
         node_size,
         label_bg,
         label_bg_color,
@@ -241,6 +245,7 @@ def main():
                 iset_curved_looseness=iset_curved_looseness,
                 iset_curved_bend_by=iset_curved_bend_by,
                 iset_curved_looseness_by=iset_curved_looseness_by,
+                iset_curved_double_distance=iset_curved_double_distance,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -289,6 +294,7 @@ def main():
                 iset_curved_looseness=iset_curved_looseness,
                 iset_curved_bend_by=iset_curved_bend_by,
                 iset_curved_looseness_by=iset_curved_looseness_by,
+                iset_curved_double_distance=iset_curved_double_distance,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -336,6 +342,7 @@ def main():
                 iset_curved_looseness=iset_curved_looseness,
                 iset_curved_bend_by=iset_curved_bend_by,
                 iset_curved_looseness_by=iset_curved_looseness_by,
+                iset_curved_double_distance=iset_curved_double_distance,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -383,6 +390,7 @@ def main():
                 iset_curved_looseness=iset_curved_looseness,
                 iset_curved_bend_by=iset_curved_bend_by,
                 iset_curved_looseness_by=iset_curved_looseness_by,
+                iset_curved_double_distance=iset_curved_double_distance,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -426,6 +434,7 @@ def main():
                 iset_curved_looseness=iset_curved_looseness,
                 iset_curved_bend_by=iset_curved_bend_by,
                 iset_curved_looseness_by=iset_curved_looseness_by,
+                iset_curved_double_distance=iset_curved_double_distance,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,

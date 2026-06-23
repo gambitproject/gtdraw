@@ -60,3 +60,4 @@ The sidebar **Information Sets** section exposes the following controls:
 | **Curve Looseness** | Controls how loose or tight the curve is (TikZ default: 1.0). Higher values produce more exaggerated curves. Only active when curved mode is on. |
 | **Bend Angle grouped by** | When `iset_curved_bend` is set as a dict via the API or a YAML settings file, interpret its keys as player index (`player`), level index (`level`), or information set order index (`iset`). |
 | **Curve Looseness grouped by** | Same grouping selector for `iset_curved_looseness`. |
+| **Ribbon Width (mm)** | Width of the curved information set oval ribbon in mm (TikZ `double distance`, default: 3.0). Only active when curved mode is on. |
