@@ -1,7 +1,7 @@
-# gtdraw GUI master settings
+# draw GUI master settings
 # Per-game overrides are written here automatically as you adjust settings.
 # Edit the defaults section to change settings that apply to all games.
-# Consult https://www.gambit-project.org/gtdraw/ for available settings.
+# Consult https://www.gambit-project.org/draw/ for available settings.
 
 defaults:
   color_scheme: colorblind
@@ -18,6 +18,7 @@ overrides:
     font_size: Large
     iset_fill: true
     iset_boundary: none
+    iset_curved: true
     node_size: 3.1
     label_bg:
       0: true
@@ -46,6 +47,10 @@ overrides:
       0: '#759138'
       1: '#04461b'
       2: '#DD79E0'
+    iset_boundary: dotted
+    iset_curved: true
+    iset_curved_bend: 21.0
+    iset_curved_looseness: 2.5
   jakobsen2016/fig3:
     sublevel_scaling: 0.0
     shared_terminal_depth: true
@@ -106,3 +111,8 @@ overrides:
     font_family: sffamily
     font_italic: true
     action_label_dist: 5.0
+  cross:
+    color_scheme: colorblind
+    iset_curved: true
+    iset_curved_bend: 50.0
+    iset_curved_looseness: 3.0

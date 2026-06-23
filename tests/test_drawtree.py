@@ -649,6 +649,8 @@ class TestCommandlineArguments:
             iset_curved,
             iset_curved_bend,
             iset_curved_looseness,
+            iset_curved_bend_by,
+            iset_curved_looseness_by,
             node_size,
             label_bg,
             label_bg_color,
@@ -703,6 +705,8 @@ class TestCommandlineArguments:
             iset_curved,
             iset_curved_bend,
             iset_curved_looseness,
+            iset_curved_bend_by,
+            iset_curved_looseness_by,
             node_size,
             label_bg,
             label_bg_color,
@@ -757,6 +761,8 @@ class TestCommandlineArguments:
             iset_curved,
             iset_curved_bend,
             iset_curved_looseness,
+            iset_curved_bend_by,
+            iset_curved_looseness_by,
             node_size,
             label_bg,
             label_bg_color,
@@ -811,6 +817,8 @@ class TestCommandlineArguments:
             iset_curved,
             iset_curved_bend,
             iset_curved_looseness,
+            iset_curved_bend_by,
+            iset_curved_looseness_by,
             node_size,
             label_bg,
             label_bg_color,
@@ -865,6 +873,8 @@ class TestCommandlineArguments:
             iset_curved,
             iset_curved_bend,
             iset_curved_looseness,
+            iset_curved_bend_by,
+            iset_curved_looseness_by,
             node_size,
             label_bg,
             label_bg_color,
@@ -919,6 +929,8 @@ class TestCommandlineArguments:
             iset_curved,
             iset_curved_bend,
             iset_curved_looseness,
+            iset_curved_bend_by,
+            iset_curved_looseness_by,
             node_size,
             label_bg,
             label_bg_color,
@@ -974,6 +986,8 @@ class TestCommandlineArguments:
             iset_curved,
             iset_curved_bend,
             iset_curved_looseness,
+            iset_curved_bend_by,
+            iset_curved_looseness_by,
             node_size,
             label_bg,
             label_bg_color,
@@ -1021,6 +1035,8 @@ class TestCommandlineArguments:
             iset_curved,
             iset_curved_bend,
             iset_curved_looseness,
+            iset_curved_bend_by,
+            iset_curved_looseness_by,
             node_size,
             label_bg,
             label_bg_color,
@@ -1069,6 +1085,8 @@ class TestCommandlineArguments:
             iset_curved,
             iset_curved_bend,
             iset_curved_looseness,
+            iset_curved_bend_by,
+            iset_curved_looseness_by,
             node_size,
             label_bg,
             label_bg_color,
@@ -1117,6 +1135,8 @@ class TestCommandlineArguments:
             iset_curved,
             iset_curved_bend,
             iset_curved_looseness,
+            iset_curved_bend_by,
+            iset_curved_looseness_by,
             node_size,
             label_bg,
             label_bg_color,
@@ -1171,6 +1191,8 @@ class TestCommandlineArguments:
             iset_curved,
             iset_curved_bend,
             iset_curved_looseness,
+            iset_curved_bend_by,
+            iset_curved_looseness_by,
             node_size,
             label_bg,
             label_bg_color,
@@ -1809,7 +1831,7 @@ def test_commandline_horizontal_flag():
 def test_commandline_color_scheme():
     """Test parsing of the --color-scheme option."""
     result = core.commandline(["core.py", "test.ef", "--color-scheme=distinctipy"])
-    assert result[28] == "distinctipy"
+    assert result[30] == "distinctipy"
 
 
 def test_commandline_edge_and_label_options():
@@ -1822,8 +1844,8 @@ def test_commandline_edge_and_label_options():
             "--action-label-position=0.7",
         ]
     )
-    assert result[29] == 2.0
-    assert result[30] == 0.7
+    assert result[31] == 2.0
+    assert result[32] == 0.7
 
 
 def test_commandline_efg_scaling_options():
@@ -1838,10 +1860,10 @@ def test_commandline_efg_scaling_options():
             "--shared-terminal-depth",
         ]
     )
-    assert result[31] == 1.5
-    assert result[32] == 0.8
-    assert result[33] == 1.2
-    assert result[34] is True
+    assert result[33] == 1.5
+    assert result[34] == 0.8
+    assert result[35] == 1.2
+    assert result[36] is True
 
 
 class TestHorizontalLayout:
@@ -2211,11 +2233,13 @@ def test_commandline_iset_options():
     assert result[16] is True  # iset_fill
     assert result[17] == 0.5  # iset_fill_opacity
     assert result[18] == "dotted"  # iset_boundary
-    # iset_curved, iset_curved_bend, iset_curved_looseness now occupy indices 19-21
+    # iset_curved, iset_curved_bend, iset_curved_looseness, _by x2 at indices 19-23
     assert result[19] is False  # iset_curved default
     assert result[20] == 10.0  # iset_curved_bend default
     assert result[21] == 1.0  # iset_curved_looseness default
-    assert result[22] == 2.0  # node_size
+    assert result[22] == "player"  # iset_curved_bend_by default
+    assert result[23] == "player"  # iset_curved_looseness_by default
+    assert result[24] == 2.0  # node_size
 
     # Test individual flags
     result_fill = core.commandline(["core.py", "test.ef", "--iset-fill"])
@@ -2237,11 +2261,15 @@ def test_commandline_iset_options():
             "--iset-curved",
             "--iset-curved-bend=15.0",
             "--iset-curved-looseness=2.0",
+            "--iset-curved-bend-by=level",
+            "--iset-curved-looseness-by=iset",
         ]
     )
     assert result_curved[19] is True  # iset_curved
     assert result_curved[20] == 15.0  # iset_curved_bend
     assert result_curved[21] == 2.0  # iset_curved_looseness
+    assert result_curved[22] == "level"  # iset_curved_bend_by
+    assert result_curved[23] == "iset"  # iset_curved_looseness_by
 
 
 class TestIsetStylingIntegration:
@@ -2327,7 +2355,7 @@ class TestIsetStylingIntegration:
         assert "-- cycle" in res_default
         assert "to[bend left=" not in res_default
 
-        # 2. Curved mode: produces 'to[bend left=X]' and no '-- cycle'
+        # 2. Curved mode: closed oval — first coord appears twice, no '-- cycle'
         res_curved = core.tikz(
             ef_file_path, color_scheme="gambit", iset_curved=True, iset_curved_bend=10.0
         )
@@ -2335,8 +2363,14 @@ class TestIsetStylingIntegration:
             line for line in res_curved.split("\n") if "playertwocolor" in line and "\\draw [" in line
         ]
         assert len(iset_lines_curved) > 0
-        assert "to[bend left=10" in iset_lines_curved[0]
-        assert "-- cycle" not in iset_lines_curved[0]
+        iset_line = iset_lines_curved[0]
+        assert "to[bend left=10" in iset_line
+        assert "-- cycle" not in iset_line
+        # Oval is closed: line ends with the first coordinate repeated
+        import re
+        coords_in_line = re.findall(r'\(-?[\d.]+,-?[\d.]+\)', iset_line)
+        assert len(coords_in_line) >= 2
+        assert coords_in_line[0] == coords_in_line[-1], "Oval path must close back to the first coordinate"
 
         # 3. Negative bend angle
         res_neg = core.tikz(
@@ -2359,6 +2393,28 @@ class TestIsetStylingIntegration:
             line for line in res_loose.split("\n") if "playertwocolor" in line and "\\draw [" in line
         ]
         assert "looseness=2" in iset_lines_loose[0]
+
+        # 5. Per-player dict bend: player 2 gets a different bend from player 1
+        res_per_player = core.tikz(
+            ef_file_path,
+            color_scheme="gambit",
+            iset_curved=True,
+            iset_curved_bend={1: 5.0, 2: 25.0},
+            iset_curved_bend_by="player",
+        )
+        iset_lines_pp = [
+            line for line in res_per_player.split("\n") if "playertwocolor" in line and "\\draw [" in line
+        ]
+        assert "to[bend left=25" in iset_lines_pp[0]
+
+        # 6. Default looseness (1.0) should NOT add looseness= to the output
+        res_default_loose = core.tikz(
+            ef_file_path, color_scheme="gambit", iset_curved=True
+        )
+        iset_lines_dl = [
+            line for line in res_default_loose.split("\n") if "playertwocolor" in line and "\\draw [" in line
+        ]
+        assert "looseness=" not in iset_lines_dl[0]
 
         # 5. Default looseness (1.0) is omitted from the path
         res_default_loose = core.tikz(
@@ -2638,6 +2694,8 @@ class TestConverter:
             iset_curved,
             iset_curved_bend,
             iset_curved_looseness,
+            iset_curved_bend_by,
+            iset_curved_looseness_by,
             node_size,
             label_bg,
             label_bg_color,
@@ -2689,6 +2747,8 @@ class TestConverter:
             iset_curved,
             iset_curved_bend,
             iset_curved_looseness,
+            iset_curved_bend_by,
+            iset_curved_looseness_by,
             node_size,
             label_bg,
             label_bg_color,
@@ -2815,6 +2875,8 @@ class TestLabelBackground:
             iset_curved,
             iset_curved_bend,
             iset_curved_looseness,
+            iset_curved_bend_by,
+            iset_curved_looseness_by,
             node_size,
             label_bg,
             label_bg_color,
@@ -2941,6 +3003,8 @@ class TestLabelBackground:
             iset_curved,
             iset_curved_bend,
             iset_curved_looseness,
+            iset_curved_bend_by,
+            iset_curved_looseness_by,
             node_size,
             label_bg,
             label_bg_color,
@@ -2993,6 +3057,8 @@ class TestLabelBackground:
             iset_curved,
             iset_curved_bend,
             iset_curved_looseness,
+            iset_curved_bend_by,
+            iset_curved_looseness_by,
             node_size,
             label_bg,
             label_bg_color,
@@ -3025,7 +3091,7 @@ class TestVaryActionLabelPositions:
         from gtdraw.core import commandline
 
         result = commandline(["core.py", "test.ef", "--vary-action-label-positions"])
-        assert result[37] is True
+        assert result[39] is True
 
     def test_vary_action_label_positions_layout(self, tmp_path):
         """Test that vary_action_label_positions=True staggers action labels for nodes with multiple children."""
@@ -3052,15 +3118,15 @@ class TestPlayerActionLabelPositions:
         result = commandline(
             ["core.py", "test.ef", "--action-label-position=0:0.3,1:0.65"]
         )
-        assert isinstance(result[30], dict)
-        assert result[30][0] == 0.3
-        assert result[30][1] == 0.65
+        assert isinstance(result[32], dict)
+        assert result[32][0] == 0.3
+        assert result[32][1] == 0.65
 
         # Invalid format falls back
         result_invalid = commandline(
             ["core.py", "test.ef", "--action-label-position=invalid"]
         )
-        assert result_invalid[30] == 0.5
+        assert result_invalid[32] == 0.5
 
     def test_player_action_label_positions_layout(self, tmp_path):
         """Test that different player nodes apply different action label positions."""
@@ -3098,9 +3164,9 @@ class TestLevelActionLabelPositions:
                 "--action-label-position-by=level",
             ]
         )
-        # action_label_position_by is at index 36
-        assert result[38] == "level"
-        assert isinstance(result[30], dict)
+        # action_label_position_by is at index 38
+        assert result[40] == "level"
+        assert isinstance(result[32], dict)
 
     def test_level_action_label_positions_layout(self, tmp_path):
         """Test that level-keyed positions produce different output than player-keyed ones."""

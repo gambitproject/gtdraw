@@ -66,9 +66,11 @@ All output format functions (`draw`, `tikz`, `tex`, `pdf`, `png`, `svg`) accept 
 | **Information Sets**| `iset_fill=True/False` | Fill information sets with player colors (default: False). |
 | | `iset_fill_opacity=X.X` | Opacity of information set fill (0.0-1.0, default: 0.2). |
 | | `iset_boundary="X"` | Boundary style: `"solid"`, `"dotted"`, `"none"` (default: `"solid"`). |
-| | `iset_curved=True/False` | Draw information sets as curved lines using TikZ `to[bend left]` paths instead of closed arc shapes (default: False). |
-| | `iset_curved_bend=X.X` | Bend angle in degrees for curved information sets (-90 to 90, default: 10.0). Positive curves upward, negative downward. |
-| | `iset_curved_looseness=X.X` | Looseness of the curved path (default: 1.0, the TikZ default). Higher values produce more exaggerated curves. |
+| | `iset_curved=True/False` | Draw information sets as curved closed ovals using TikZ `to[bend left]` paths instead of arc-segment loops (default: False). |
+| | `iset_curved_bend=X.X` | Bend angle in degrees (-90 to 90, default: 10.0). Also accepts `dict[int, float]` keyed by player/level/iset index. |
+| | `iset_curved_looseness=X.X` | Looseness of the curve (default: 1.0). Also accepts `dict[int, float]`. |
+| | `iset_curved_bend_by="X"` | Interpret a dict `iset_curved_bend` as keyed by player index (`"player"`, default), level index (`"level"`), or iset order index (`"iset"`). |
+| | `iset_curved_looseness_by="X"` | Same, for `iset_curved_looseness`. |
 | **Label Background** | `label_bg=True/False` | Add a filled background behind all label text to improve readability. Also accepts a `dict[int, bool]` to enable per-player or per-level (use with `label_bg_by`, default: False). |
 | | `label_bg_by="X"` | Interpret a dictionary `label_bg` as keyed by player index (`"player"`, default) or by tree level index (`"level"`). |
 | | `label_bg_style="X"` | Background style: `"player_bg"` (player-colour background with white text, default) or `"white_bg"` (white background with player-colour text). |

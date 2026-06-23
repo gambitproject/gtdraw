@@ -94,8 +94,11 @@ parent_to_children: dict[str, list[str]] = {}
 ef_version: int = 1
 _iset_boundary: str = "solid"
 _iset_curved: bool = False
-_iset_curved_bend: float = 10.0
-_iset_curved_looseness: float = 1.0
+_iset_curved_bend: float | dict[int, float] = 10.0
+_iset_curved_looseness: float | dict[int, float] = 1.0
+_iset_curved_bend_by: str = "player"
+_iset_curved_looseness_by: str = "player"
+_iset_index: int = 0
 _node_size: float = 1.5
 _label_bg: bool | dict[int, bool] = False
 _label_bg_by: str = "player"
@@ -259,6 +262,25 @@ def _label_bg_active(player: int = -1, level: int = -1) -> bool:
             return _label_bg.get(level, False)
         return _label_bg.get(player, False)
     return True
+
+
+def _resolve_iset_curved_param(
+    param: float | dict[int, float],
+    by: str,
+    player: int,
+    level: int,
+    iset_idx: int,
+    default: float,
+) -> float:
+    """Return the effective scalar bend/looseness for one information set."""
+    if isinstance(param, dict):
+        if by == "level":
+            return param.get(level, default)
+        elif by == "iset":
+            return param.get(iset_idx, default)
+        else:  # "player"
+            return param.get(player, default)
+    return param
 
 
 def _label_bg_node_opts(
@@ -707,13 +729,20 @@ def arcseq(nodes: List[List[float]], radius: float = isetradius) -> List[str]:
     return out
 
 
-def iset(nodes: List[List[float]], radius: float = isetradius) -> str:
+def iset(
+    nodes: List[List[float]],
+    radius: float = isetradius,
+    bend: Optional[float] = None,
+    looseness: Optional[float] = None,
+) -> str:
     """
     Create complete TikZ drawing commands for an information set.
 
     Args:
         nodes: List of coordinate pairs [x,y].
         radius: Radius for the arcs. Defaults to isetradius.
+        bend: Bend angle override for curved mode (uses global if None).
+        looseness: Looseness override for curved mode (uses global if None).
 
     Returns:
         Complete TikZ draw command string with semicolon.
@@ -739,13 +768,20 @@ def iset(nodes: List[List[float]], radius: float = isetradius) -> str:
             options.append(f"fill={color}")
             options.append(f"fill opacity={fformat(_iset_fill_opacity)}")
 
-    # Curved mode: use TikZ 'to[bend left=X]' path through nodes
+    # Curved mode: closed oval using TikZ 'to[bend left=X]' between each consecutive pair
     if _iset_curved and len(nodes) > 1:
-        to_opts = f"bend left={fformat(_iset_curved_bend)}"
-        if not aeq(_iset_curved_looseness - 1.0):
-            to_opts += f",looseness={fformat(_iset_curved_looseness)}"
+        eff_bend = bend if bend is not None else (
+            _iset_curved_bend if not isinstance(_iset_curved_bend, dict) else 10.0
+        )
+        eff_looseness = looseness if looseness is not None else (
+            _iset_curved_looseness if not isinstance(_iset_curved_looseness, dict) else 1.0
+        )
+        to_opts = f"bend left={fformat(eff_bend)}"
+        if not aeq(eff_looseness - 1.0):
+            to_opts += f",looseness={fformat(eff_looseness)}"
         coords = [coord(n[0], n[1]) for n in nodes]
-        path = f" to[{to_opts}] ".join(coords)
+        # Close the oval by looping back to the first coordinate
+        path = f" to[{to_opts}] ".join(coords) + f" to[{to_opts}] " + coords[0]
         return "\\draw [" + ",".join(options) + "] " + path + ";"
 
     # Arc mode (default): closed arc-segment loop around nodes
@@ -1773,12 +1809,15 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
         words: List of command words starting with 'iset'.
         color_scheme: Color scheme for player nodes.
     """
-    global isetparams
+    global isetparams, _iset_index
     assert words[0] == "iset"
+    current_iset = _iset_index
+    _iset_index += 1
     nodelist = []
     p = -1
     count = 1
     where = 0  # where "player" was found
+    node_level = 0  # level of first valid node (for per-level iset param lookup)
     while count < len(words):
         if words[count] == "player":
             p, advance = player(words[count:])
@@ -1794,6 +1833,8 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
                 error("Node '" + nodeid + "' in iset not defined", stream0)
             else:
                 v = [nodes[nodeid]["x"], nodes[nodeid]["y"]]
+                if not nodelist:  # first valid node — capture its level
+                    node_level = int(nodes[nodeid].get("level", 0))
                 nodelist.append(v)
             count += 1
     # generate and ship iset
@@ -1809,7 +1850,13 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
     else:
         isetparams = ""
 
-    outs(iset(nodelist, radius / scale), stream0)
+    resolved_bend = _resolve_iset_curved_param(
+        _iset_curved_bend, _iset_curved_bend_by, p, node_level, current_iset, 10.0
+    )
+    resolved_looseness = _resolve_iset_curved_param(
+        _iset_curved_looseness, _iset_curved_looseness_by, p, node_level, current_iset, 1.0
+    )
+    outs(iset(nodelist, radius / scale, bend=resolved_bend, looseness=resolved_looseness), stream0)
 
     # Reset isetparams after drawing
     isetparams = ""
@@ -1921,8 +1968,10 @@ def commandline(
     iset_fill_opacity = 0.2
     iset_boundary = "solid"
     iset_curved = False
-    iset_curved_bend = 10.0
-    iset_curved_looseness = 1.0
+    iset_curved_bend: float | dict[int, float] = 10.0
+    iset_curved_looseness: float | dict[int, float] = 1.0
+    iset_curved_bend_by = "player"
+    iset_curved_looseness_by = "player"
     node_size = 1.5
     label_bg = False
     label_bg_color = "white"
@@ -2091,19 +2140,51 @@ def commandline(
         elif arg == "--iset-curved":
             iset_curved = True
         elif arg.startswith("--iset-curved-bend="):
+            val = arg[19:]
             try:
-                iset_curved_bend = float(arg[19:])
+                iset_curved_bend = float(val)
             except ValueError:
+                try:
+                    iset_curved_bend = {
+                        int(k): float(v)
+                        for k, v in (pair.split(":") for pair in val.split(","))
+                    }
+                except Exception:
+                    print(
+                        "Warning: Invalid --iset-curved-bend value, expected float or '0:5.0,1:10.0'",
+                        file=sys.stderr,
+                    )
+        elif arg.startswith("--iset-curved-bend-by="):
+            val = arg[22:]
+            if val in ("player", "level", "iset"):
+                iset_curved_bend_by = val
+            else:
                 print(
-                    "Warning: Invalid iset-curved-bend value, using default 10.0",
+                    "Warning: Invalid --iset-curved-bend-by value, expected player/level/iset",
                     file=sys.stderr,
                 )
         elif arg.startswith("--iset-curved-looseness="):
+            val = arg[24:]
             try:
-                iset_curved_looseness = float(arg[24:])
+                iset_curved_looseness = float(val)
             except ValueError:
+                try:
+                    iset_curved_looseness = {
+                        int(k): float(v)
+                        for k, v in (pair.split(":") for pair in val.split(","))
+                    }
+                except Exception:
+                    print(
+                        "Warning: Invalid --iset-curved-looseness value, expected float or '0:1.0,1:2.0'",
+                        file=sys.stderr,
+                    )
+        elif arg.startswith("--iset-curved-looseness-by="):
+            val = arg[27:]
+            if val in ("player", "level", "iset"):
+                iset_curved_looseness_by = val
+            else:
                 print(
-                    "Warning: Invalid iset-curved-looseness value, using default 1.0",
+                    "Warning: Invalid --iset-curved-looseness-by value, expected player/level/iset",
                     file=sys.stderr,
                 )
         elif arg.startswith("--node-size="):
@@ -2220,6 +2301,8 @@ def commandline(
         iset_curved,
         iset_curved_bend,
         iset_curved_looseness,
+        iset_curved_bend_by,
+        iset_curved_looseness_by,
         node_size,
         label_bg,
         label_bg_color,
@@ -2260,8 +2343,10 @@ def ef_to_tex(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     iset_curved: bool = False,
-    iset_curved_bend: float = 10.0,
-    iset_curved_looseness: float = 1.0,
+    iset_curved_bend: float | dict[int, float] = 10.0,
+    iset_curved_looseness: float | dict[int, float] = 1.0,
+    iset_curved_bend_by: str = "player",
+    iset_curved_looseness_by: str = "player",
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -2302,6 +2387,7 @@ def ef_to_tex(
     global _font_family, _font_bold, _font_italic, _font_size
     global _iset_fill, _iset_fill_opacity, _iset_boundary, _node_size
     global _iset_curved, _iset_curved_bend, _iset_curved_looseness
+    global _iset_curved_bend_by, _iset_curved_looseness_by, _iset_index
     global _label_bg, _label_bg_by, _label_bg_style, _label_bg_color, _label_bg_opacity
     global _horizontal, _mirror, _legend_position, _action_label_dist
     global \
@@ -2343,6 +2429,9 @@ def ef_to_tex(
         _iset_curved = iset_curved
         _iset_curved_bend = iset_curved_bend
         _iset_curved_looseness = iset_curved_looseness
+        _iset_curved_bend_by = iset_curved_bend_by
+        _iset_curved_looseness_by = iset_curved_looseness_by
+        _iset_index = 0
         _node_size = node_size
         _label_bg = label_bg
         _label_bg_by = label_bg_by
@@ -2470,8 +2559,10 @@ def tikz(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     iset_curved: bool = False,
-    iset_curved_bend: float = 10.0,
-    iset_curved_looseness: float = 1.0,
+    iset_curved_bend: float | dict[int, float] = 10.0,
+    iset_curved_looseness: float | dict[int, float] = 1.0,
+    iset_curved_bend_by: str = "player",
+    iset_curved_looseness_by: str = "player",
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -2586,6 +2677,8 @@ def tikz(
         iset_curved=iset_curved,
         iset_curved_bend=iset_curved_bend,
         iset_curved_looseness=iset_curved_looseness,
+        iset_curved_bend_by=iset_curved_bend_by,
+        iset_curved_looseness_by=iset_curved_looseness_by,
         node_size=node_size,
         label_bg=label_bg,
         label_bg_color=label_bg_color,
@@ -2869,8 +2962,10 @@ def draw(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     iset_curved: bool = False,
-    iset_curved_bend: float = 10.0,
-    iset_curved_looseness: float = 1.0,
+    iset_curved_bend: float | dict[int, float] = 10.0,
+    iset_curved_looseness: float | dict[int, float] = 1.0,
+    iset_curved_bend_by: str = "player",
+    iset_curved_looseness_by: str = "player",
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -2948,6 +3043,8 @@ def draw(
         iset_curved=iset_curved,
         iset_curved_bend=iset_curved_bend,
         iset_curved_looseness=iset_curved_looseness,
+        iset_curved_bend_by=iset_curved_bend_by,
+        iset_curved_looseness_by=iset_curved_looseness_by,
         node_size=node_size,
         label_bg=label_bg,
         label_bg_color=label_bg_color,
@@ -3061,8 +3158,10 @@ def tex(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     iset_curved: bool = False,
-    iset_curved_bend: float = 10.0,
-    iset_curved_looseness: float = 1.0,
+    iset_curved_bend: float | dict[int, float] = 10.0,
+    iset_curved_looseness: float | dict[int, float] = 1.0,
+    iset_curved_bend_by: str = "player",
+    iset_curved_looseness_by: str = "player",
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -3159,6 +3258,8 @@ def tex(
         iset_curved=iset_curved,
         iset_curved_bend=iset_curved_bend,
         iset_curved_looseness=iset_curved_looseness,
+        iset_curved_bend_by=iset_curved_bend_by,
+        iset_curved_looseness_by=iset_curved_looseness_by,
         node_size=node_size,
         label_bg=label_bg,
         label_bg_color=label_bg_color,
@@ -3207,8 +3308,10 @@ def pdf(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     iset_curved: bool = False,
-    iset_curved_bend: float = 10.0,
-    iset_curved_looseness: float = 1.0,
+    iset_curved_bend: float | dict[int, float] = 10.0,
+    iset_curved_looseness: float | dict[int, float] = 1.0,
+    iset_curved_bend_by: str = "player",
+    iset_curved_looseness_by: str = "player",
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -3337,6 +3440,8 @@ def pdf(
         iset_curved=iset_curved,
         iset_curved_bend=iset_curved_bend,
         iset_curved_looseness=iset_curved_looseness,
+        iset_curved_bend_by=iset_curved_bend_by,
+        iset_curved_looseness_by=iset_curved_looseness_by,
         node_size=node_size,
         label_bg=label_bg,
         label_bg_color=label_bg_color,
@@ -3429,8 +3534,10 @@ def png(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     iset_curved: bool = False,
-    iset_curved_bend: float = 10.0,
-    iset_curved_looseness: float = 1.0,
+    iset_curved_bend: float | dict[int, float] = 10.0,
+    iset_curved_looseness: float | dict[int, float] = 1.0,
+    iset_curved_bend_by: str = "player",
+    iset_curved_looseness_by: str = "player",
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -3522,6 +3629,8 @@ def png(
                 iset_curved=iset_curved,
                 iset_curved_bend=iset_curved_bend,
                 iset_curved_looseness=iset_curved_looseness,
+                iset_curved_bend_by=iset_curved_bend_by,
+                iset_curved_looseness_by=iset_curved_looseness_by,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -3661,8 +3770,10 @@ def svg(
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
     iset_curved: bool = False,
-    iset_curved_bend: float = 10.0,
-    iset_curved_looseness: float = 1.0,
+    iset_curved_bend: float | dict[int, float] = 10.0,
+    iset_curved_looseness: float | dict[int, float] = 1.0,
+    iset_curved_bend_by: str = "player",
+    iset_curved_looseness_by: str = "player",
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -3747,6 +3858,8 @@ def svg(
                 iset_curved=iset_curved,
                 iset_curved_bend=iset_curved_bend,
                 iset_curved_looseness=iset_curved_looseness,
+                iset_curved_bend_by=iset_curved_bend_by,
+                iset_curved_looseness_by=iset_curved_looseness_by,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
