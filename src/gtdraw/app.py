@@ -211,7 +211,6 @@ def _apply_yaml_to_session_state(settings: dict) -> None:
         "iset_fill_opacity": "gui_iset_fill_opacity",
         "iset_boundary": "gui_iset_boundary",
         "iset_curved": "gui_iset_curved",
-        "iset_curved_bend": "gui_iset_curved_bend",
         "font_bold": "gui_font_bold",
         "font_italic": "gui_font_italic",
         "legend_position": "gui_legend_position",
@@ -263,6 +262,26 @@ def _apply_yaml_to_session_state(settings: dict) -> None:
         else:
             st.session_state["gui_positioning_mode"] = "Global"
             st.session_state["gui_alp_global"] = float(alp)
+
+    # iset_curved_bend — must set the mode selectbox key so widgets render correctly
+    icb = settings.get("iset_curved_bend")
+    icb_by = settings.get("iset_curved_bend_by", "player")
+    if icb is not None:
+        if isinstance(icb, dict):
+            if icb_by == "level":
+                st.session_state["gui_iset_curved_bend_mode"] = "By Level"
+                for lv, v in icb.items():
+                    st.session_state[f"icb_lv{lv}"] = float(v)
+            else:
+                st.session_state["gui_iset_curved_bend_mode"] = "By Player"
+                if 0 in icb:
+                    st.session_state["icb_chance"] = float(icb[0])
+                for i in range(1, 10):
+                    if i in icb:
+                        st.session_state[f"icb_p{i}"] = float(icb[i])
+        else:
+            st.session_state["gui_iset_curved_bend_mode"] = "Global"
+            st.session_state["gui_iset_curved_bend"] = float(icb)
 
     # label_bg
     lb = settings.get("label_bg")
