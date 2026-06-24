@@ -792,26 +792,46 @@ def iset(
             path_parts.append(coord(x2, y2))
         path = " ".join(path_parts)
         cmds = []
-        # Fill: separate \fill command so fill opacity is independent of stroke opacity,
-        # matching arc-mode behaviour where boundary strokes stay at full opacity.
-        if _iset_fill and color:
-            cmds.append(
-                f"\\fill [color={color},fill opacity={fformat(_iset_fill_opacity)}] {path};"
-            )
-        # Boundary: hollow double-stroke ribbon (omitted entirely when boundary=none,
-        # so fill still shows — consistent with arc mode).
-        if _iset_boundary != "none":
+
+        if _iset_boundary == "none":
+            # No boundary strokes. Fill only: a thick round-cap stroke IS the capsule
+            # shape, so it matches what the ribbon boundary looks like when visible.
+            if _iset_fill and color:
+                fill_opts = [
+                    f"color={color}",
+                    f"line width={fformat(eff_dd)}mm",
+                    "line cap=round",
+                ]
+                if not aeq(_iset_fill_opacity - 1.0):
+                    fill_opts.append(f"opacity={fformat(_iset_fill_opacity)}")
+                cmds.append("\\draw [" + ",".join(fill_opts) + "] " + path + ";")
+            # fill=False + boundary=none → nothing emitted (same as arc mode)
+        else:
+            # Build the ribbon options. `double=color` fills the corridor; `double`
+            # alone leaves it hollow/white.
             draw_opts = [thickn]
             if _iset_boundary == "dotted":
                 draw_opts.append("dotted")
             if isetparams:
                 draw_opts.append(isetparams)
-            draw_opts.extend([
-                f"double distance={fformat(eff_dd)}mm",
-                "line cap=round",
-                "double",  # hollow/white corridor; fill handled by \fill above
-            ])
-            cmds.append("\\draw [" + ",".join(draw_opts) + "] " + path + ";")
+            draw_opts.extend([f"double distance={fformat(eff_dd)}mm", "line cap=round"])
+            if _iset_fill and color:
+                draw_opts.append(f"double={color}")
+            else:
+                draw_opts.append("double")  # hollow/white corridor
+            draw_cmd = "\\draw [" + ",".join(draw_opts) + "] " + path + ";"
+            # TikZ `fill opacity` has no effect on `double=` corridor fills; wrap in
+            # a scope to honour opacity (this also dims the boundary strokes slightly,
+            # which is acceptable — the shape alignment is the priority).
+            if _iset_fill and color and not aeq(_iset_fill_opacity - 1.0):
+                cmds.append(
+                    f"\\begin{{scope}}[opacity={fformat(_iset_fill_opacity)}]\n"
+                    f"  {draw_cmd}\n"
+                    f"\\end{{scope}}"
+                )
+            else:
+                cmds.append(draw_cmd)
+
         return "\n".join(cmds)
 
     # Arc mode (default): closed arc-segment loop around nodes
