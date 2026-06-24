@@ -93,6 +93,10 @@ _vary_action_label_positions_choices: Optional[set[int]] = None
 parent_to_children: dict[str, list[str]] = {}
 ef_version: int = 1
 _iset_boundary: str = "solid"
+_iset_curved: bool = False
+_iset_curved_bend: float | dict[int, float] = 10.0
+_iset_curved_bend_by: str = "player"
+_iset_index: int = 0
 _node_size: float = 1.5
 _label_bg: bool | dict[int, bool] = False
 _label_bg_by: str = "player"
@@ -256,6 +260,86 @@ def _label_bg_active(player: int = -1, level: int = -1) -> bool:
             return _label_bg.get(level, False)
         return _label_bg.get(player, False)
     return True
+
+
+def _resolve_iset_curved_param(
+    param: float | dict[int, float],
+    by: str,
+    player: int,
+    level: int,
+    default: float,
+) -> float:
+    """Return the effective scalar bend angle for one information set."""
+    if isinstance(param, dict):
+        if by == "level":
+            return param.get(level, default)
+        else:  # "player"
+            return param.get(player, default)
+    return param
+
+
+def _bezier_for_bend(
+    x1: float, y1: float, x2: float, y2: float, bend: float, looseness: float = 1.0
+) -> str:
+    """
+    Return '.. controls (C1) and (C2) ..' equivalent to TikZ 'to[bend left=bend]'.
+    Computing control points in Python avoids PGF's internal dimension overflow
+    that occurs when coordinate spans are large (> ~30cm at scale=0.8).
+    Formula: A_out = theta + bend, A_in = theta + 180° - bend (backward tangent at P2).
+    cp_dist = distance * looseness / 3.
+    """
+    dx = x2 - x1
+    dy = y2 - y1
+    d = math.sqrt(dx * dx + dy * dy)
+    if d == 0:
+        return f".. controls {coord(x2, y2)} and {coord(x2, y2)} .."
+    theta = math.atan2(dy, dx)
+    B_rad = bend * math.pi / 180.0
+    cp_dist = d * looseness / 3.0
+    A_out = theta + B_rad
+    A_in = theta + math.pi - B_rad
+    C1x = x1 + cp_dist * math.cos(A_out)
+    C1y = y1 + cp_dist * math.sin(A_out)
+    C2x = x2 + cp_dist * math.cos(A_in)
+    C2y = y2 + cp_dist * math.sin(A_in)
+    return f".. controls {coord(C1x, C1y)} and {coord(C2x, C2y)} .."
+
+
+def _offset_bezier_coords(
+    x1: float, y1: float, x2: float, y2: float, bend: float, d_off: float
+) -> tuple:
+    """
+    Return offset control points (ox1,oy1, oC1x,oC1y, oC2x,oC2y, ox2,oy2)
+    for a Bezier segment equivalent to to[bend left=bend], displaced d_off cm
+    perpendicular to the path (positive d_off = left of travel direction, i.e.
+    the outside of the bend for a positive bend angle).
+    """
+    dx = x2 - x1
+    dy = y2 - y1
+    d = math.sqrt(dx * dx + dy * dy)
+    if d == 0:
+        return (x1, y1, x1, y1, x2, y2, x2, y2)
+    theta = math.atan2(dy, dx)
+    B_rad = bend * math.pi / 180.0
+    cp_dist = d / 3.0
+    A_out = theta + B_rad
+    A_in = theta + math.pi - B_rad
+    # Left-of-travel unit normals (rotate each tangent 90° CCW).
+    # Tangent at start: (cos(A_out), sin(A_out)) → normal: (-sin(A_out), cos(A_out))
+    n0x, n0y = -math.sin(A_out), math.cos(A_out)
+    # Tangent at end going forward: (-cos(A_in), -sin(A_in))
+    # → normal (left of forward travel): (sin(A_in), -cos(A_in))
+    n3x, n3y = math.sin(A_in), -math.cos(A_in)
+    # Offset endpoints and control points (C1 uses start normal, C2 uses end normal).
+    ox1 = x1 + d_off * n0x
+    oy1 = y1 + d_off * n0y
+    oC1x = x1 + cp_dist * math.cos(A_out) + d_off * n0x
+    oC1y = y1 + cp_dist * math.sin(A_out) + d_off * n0y
+    oC2x = x2 + cp_dist * math.cos(A_in) + d_off * n3x
+    oC2y = y2 + cp_dist * math.sin(A_in) + d_off * n3y
+    ox2 = x2 + d_off * n3x
+    oy2 = y2 + d_off * n3y
+    return (ox1, oy1, oC1x, oC1y, oC2x, oC2y, ox2, oy2)
 
 
 def _label_bg_node_opts(
@@ -704,41 +788,196 @@ def arcseq(nodes: List[List[float]], radius: float = isetradius) -> List[str]:
     return out
 
 
-def iset(nodes: List[List[float]], radius: float = isetradius) -> str:
+def iset(
+    nodes: List[List[float]],
+    radius: float = isetradius,
+    bend: Optional[float] = None,
+) -> str:
     """
     Create complete TikZ drawing commands for an information set.
 
     Args:
         nodes: List of coordinate pairs [x,y].
         radius: Radius for the arcs. Defaults to isetradius.
+        bend: Bend angle override for curved mode (uses global if None).
 
     Returns:
         Complete TikZ draw command string with semicolon.
     """
-    arcs = arcseq(nodes, radius)
-
-    # Build TikZ options
-    options = [thickn]
-    if _iset_boundary == "dotted":
-        options.append("dotted")
-    elif _iset_boundary == "none":
-        options.append("draw=none")
-
+    # Extract player colour from isetparams
+    color = None
     if isetparams:
-        # Extract color if present in isetparams (e.g., "color=red")
-        color = None
         for opt in isetparams.split(","):
             if opt.startswith("color="):
                 color = opt.split("=")[1]
                 break
 
+    # Curved mode: open path styled as a double-stroke oval/capsule (MAS_Fig6_2 style)
+    if _iset_curved and len(nodes) > 1:
+        eff_bend = bend if bend is not None else (
+            _iset_curved_bend if not isinstance(_iset_curved_bend, dict) else 10.0
+        )
+        # Ribbon width matches arc-mode oval diameter: 2 × isetradius (in cm) × 10 = 6 mm
+        eff_dd = 2 * isetradius * 10
+        # Compute explicit Bezier control points in Python to avoid TikZ's
+        # dimension-overflow bug when coordinate spans exceed ~30cm at scale=0.8.
+        path_parts = [coord(nodes[0][0], nodes[0][1])]
+        for i in range(len(nodes) - 1):
+            x1, y1 = nodes[i][0], nodes[i][1]
+            x2, y2 = nodes[i + 1][0], nodes[i + 1][1]
+            path_parts.append(_bezier_for_bend(x1, y1, x2, y2, eff_bend))
+            path_parts.append(coord(x2, y2))
+        path = " ".join(path_parts)
+        cmds = []
+
+        if _iset_boundary == "none":
+            # No boundary strokes. Fill only: a thick round-cap stroke IS the capsule
+            # shape, so it matches what the ribbon boundary looks like when visible.
+            if _iset_fill and color:
+                fill_opts = [
+                    f"color={color}",
+                    f"line width={fformat(eff_dd)}mm",
+                    "line cap=round",
+                ]
+                if not aeq(_iset_fill_opacity - 1.0):
+                    fill_opts.append(f"opacity={fformat(_iset_fill_opacity)}")
+                cmds.append("\\draw [" + ",".join(fill_opts) + "] " + path + ";")
+            # fill=False + boundary=none → nothing emitted (same as arc mode)
+        elif _iset_boundary == "dotted":
+            # TikZ `double+dotted` with large double_distance inflates each dot into
+            # a large blob.  Instead, draw a single thin dotted path that traces the
+            # full ribbon outline: upper offset edge → 180° arc at the far end →
+            # lower offset edge (reversed) → 180° arc at the near end.  The arcs
+            # match the `line cap=round` semicircular ends of the fill stroke.
+            if _iset_fill and color:
+                fill_opts = [
+                    f"color={color}",
+                    f"line width={fformat(eff_dd)}mm",
+                    "line cap=round",
+                ]
+                if not aeq(_iset_fill_opacity - 1.0):
+                    fill_opts.append(f"opacity={fformat(_iset_fill_opacity)}")
+                cmds.append("\\draw [" + ",".join(fill_opts) + "] " + path + ";")
+
+            # d_off is the perpendicular offset of the ribbon edge in TikZ coordinate
+            # units.  Using the `radius` parameter (= isetradius / scale_factor) keeps
+            # the offset scale-consistent with the absolute `line width=eff_dd mm` fill.
+            d_off = radius
+
+            # Compute offset control points for every segment.
+            segs_u: List[tuple] = []
+            segs_l: List[tuple] = []
+            for i in range(len(nodes) - 1):
+                x1, y1 = nodes[i][0], nodes[i][1]
+                x2, y2 = nodes[i + 1][0], nodes[i + 1][1]
+                segs_u.append(_offset_bezier_coords(x1, y1, x2, y2, eff_bend, +d_off))
+                segs_l.append(_offset_bezier_coords(x1, y1, x2, y2, eff_bend, -d_off))
+
+            # Arc angles for the semicircular end caps (degrees).
+            # A_out_0: outgoing tangent angle at the first node of the first segment.
+            dx0 = nodes[1][0] - nodes[0][0]
+            dy0 = nodes[1][1] - nodes[0][1]
+            A_out_0 = math.degrees(math.atan2(dy0, dx0)) + eff_bend
+            # A_in_N: incoming tangent angle at the last node of the last segment.
+            dxN = nodes[-1][0] - nodes[-2][0]
+            dyN = nodes[-1][1] - nodes[-2][1]
+            A_in_N = math.degrees(math.atan2(dyN, dxN)) + 180 - eff_bend
+
+            # Build the single outline path.
+            parts: List[str] = []
+
+            # --- Upper edge (forward) ---
+            for i, seg in enumerate(segs_u):
+                ox1, oy1, oC1x, oC1y, oC2x, oC2y, ox2, oy2 = seg
+                if i == 0:
+                    parts.append(coord(ox1, oy1))
+                else:
+                    parts.extend(["--", coord(ox1, oy1)])
+                parts.append(f".. controls {coord(oC1x, oC1y)} and {coord(oC2x, oC2y)} ..")
+                parts.append(coord(ox2, oy2))
+
+            # --- End cap: 180° CW arc from upper_end to lower_end at last node ---
+            # CW in TikZ when start_angle > end_angle.
+            parts.append(
+                f"arc [start angle={fformat(A_in_N - 90)},"
+                f"end angle={fformat(A_in_N - 270)},"
+                f"radius={fformat(d_off)}]"
+            )
+
+            # --- Lower edge (reversed) ---
+            for i in range(len(segs_l) - 1, -1, -1):
+                ox1, oy1, oC1x, oC1y, oC2x, oC2y, ox2, oy2 = segs_l[i]
+                # Reversed: ox2→ox1 with control points swapped.
+                if i < len(segs_l) - 1:
+                    parts.extend(["--", coord(ox2, oy2)])
+                parts.append(f".. controls {coord(oC2x, oC2y)} and {coord(oC1x, oC1y)} ..")
+                parts.append(coord(ox1, oy1))
+
+            # --- Start cap: 180° CW arc from lower_start back to upper_start ---
+            parts.append(
+                f"arc [start angle={fformat(A_out_0 - 90)},"
+                f"end angle={fformat(A_out_0 - 270)},"
+                f"radius={fformat(d_off)}]"
+            )
+
+            outline_path = " ".join(parts)
+            boundary_opts = [thickn, "dotted"]
+            if isetparams:
+                boundary_opts.append(isetparams)
+            cmds.append("\\draw [" + ",".join(boundary_opts) + "] " + outline_path + ";")
+        else:
+            # Solid boundary: double-stroke ribbon.
+            ribbon_opts = [thickn]
+            if isetparams:
+                ribbon_opts.append(isetparams)
+            ribbon_opts.extend([f"double distance={fformat(eff_dd)}mm", "line cap=round"])
+
+            if _iset_fill and color:
+                if aeq(_iset_fill_opacity - 1.0):
+                    # Full opacity: single `double=color` command.
+                    cmds.append(
+                        "\\draw ["
+                        + ",".join(ribbon_opts + [f"double={color}"])
+                        + "] " + path + ";"
+                    )
+                else:
+                    # Partial opacity: draw hollow ribbon first (full-opacity boundary
+                    # strokes), then draw the fill as a thick round-cap stroke that
+                    # covers only the corridor (line width = double distance) at the
+                    # desired opacity.  The outer boundary strokes lie outside the
+                    # corridor and are not affected.
+                    cmds.append(
+                        "\\draw [" + ",".join(ribbon_opts + ["double"]) + "] " + path + ";"
+                    )
+                    cmds.append(
+                        "\\draw ["
+                        + ",".join([
+                            f"color={color}",
+                            f"line width={fformat(eff_dd)}mm",
+                            "line cap=round",
+                            f"opacity={fformat(_iset_fill_opacity)}",
+                        ])
+                        + "] " + path + ";"
+                    )
+            else:
+                cmds.append(
+                    "\\draw [" + ",".join(ribbon_opts + ["double"]) + "] " + path + ";"
+                )
+
+        return "\n".join(cmds)
+
+    # Arc mode (default): closed arc-segment loop around nodes
+    options = [thickn]
+    if _iset_boundary == "dotted":
+        options.append("dotted")
+    elif _iset_boundary == "none":
+        options.append("draw=none")
+    if isetparams:
         options.append(isetparams)
-
-        if _iset_fill and color:
-            options.append(f"fill={color}")
-            options.append(f"fill opacity={fformat(_iset_fill_opacity)}")
-
-    # tikz code
+    if _iset_fill and color:
+        options.append(f"fill={color}")
+        options.append(f"fill opacity={fformat(_iset_fill_opacity)}")
+    arcs = arcseq(nodes, radius)
     return "\\draw [" + ",".join(options) + "] " + "\n  -- ".join(arcs) + " -- cycle;"
 
 
@@ -1762,12 +2001,14 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
         words: List of command words starting with 'iset'.
         color_scheme: Color scheme for player nodes.
     """
-    global isetparams
+    global isetparams, _iset_index
     assert words[0] == "iset"
+    _iset_index += 1
     nodelist = []
     p = -1
     count = 1
     where = 0  # where "player" was found
+    node_level = 0  # level of first valid node (for per-level iset param lookup)
     while count < len(words):
         if words[count] == "player":
             p, advance = player(words[count:])
@@ -1783,6 +2024,8 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
                 error("Node '" + nodeid + "' in iset not defined", stream0)
             else:
                 v = [nodes[nodeid]["x"], nodes[nodeid]["y"]]
+                if not nodelist:  # first valid node — capture its level
+                    node_level = int(nodes[nodeid].get("level", 0))
                 nodelist.append(v)
             count += 1
     # generate and ship iset
@@ -1798,7 +2041,10 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
     else:
         isetparams = ""
 
-    outs(iset(nodelist, radius / scale), stream0)
+    resolved_bend = _resolve_iset_curved_param(
+        _iset_curved_bend, _iset_curved_bend_by, p, node_level, 10.0
+    )
+    outs(iset(nodelist, radius / scale, bend=resolved_bend), stream0)
 
     # Reset isetparams after drawing
     isetparams = ""
@@ -1909,6 +2155,9 @@ def commandline(
     iset_fill = False
     iset_fill_opacity = 0.2
     iset_boundary = "solid"
+    iset_curved = False
+    iset_curved_bend: float | dict[int, float] = 10.0
+    iset_curved_bend_by = "player"
     node_size = 1.5
     label_bg = False
     label_bg_color = "white"
@@ -2074,6 +2323,32 @@ def commandline(
             val = arg[16:].lower()
             if val in ["solid", "dotted", "none"]:
                 iset_boundary = val
+        elif arg == "--iset-curved":
+            iset_curved = True
+        elif arg.startswith("--iset-curved-bend="):
+            val = arg[19:]
+            try:
+                iset_curved_bend = float(val)
+            except ValueError:
+                try:
+                    iset_curved_bend = {
+                        int(k): float(v)
+                        for k, v in (pair.split(":") for pair in val.split(","))
+                    }
+                except Exception:
+                    print(
+                        "Warning: Invalid --iset-curved-bend value, expected float or '0:5.0,1:10.0'",
+                        file=sys.stderr,
+                    )
+        elif arg.startswith("--iset-curved-bend-by="):
+            val = arg[22:]
+            if val in ("player", "level"):
+                iset_curved_bend_by = val
+            else:
+                print(
+                    "Warning: Invalid --iset-curved-bend-by value, expected player/level",
+                    file=sys.stderr,
+                )
         elif arg.startswith("--node-size="):
             try:
                 node_size = float(arg[12:])
@@ -2185,6 +2460,9 @@ def commandline(
         iset_fill,
         iset_fill_opacity,
         iset_boundary,
+        iset_curved,
+        iset_curved_bend,
+        iset_curved_bend_by,
         node_size,
         label_bg,
         label_bg_color,
@@ -2224,6 +2502,9 @@ def ef_to_tex(
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
+    iset_curved: bool = False,
+    iset_curved_bend: float | dict[int, float] = 10.0,
+    iset_curved_bend_by: str = "player",
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -2263,6 +2544,7 @@ def ef_to_tex(
     global scale, grid, node_to_iset_player
     global _font_family, _font_bold, _font_italic, _font_size
     global _iset_fill, _iset_fill_opacity, _iset_boundary, _node_size
+    global _iset_curved, _iset_curved_bend, _iset_curved_bend_by, _iset_index
     global _label_bg, _label_bg_by, _label_bg_style, _label_bg_color, _label_bg_opacity
     global _horizontal, _mirror, _legend_position, _action_label_dist
     global \
@@ -2301,6 +2583,10 @@ def ef_to_tex(
         _iset_fill = iset_fill
         _iset_fill_opacity = iset_fill_opacity
         _iset_boundary = iset_boundary
+        _iset_curved = iset_curved
+        _iset_curved_bend = iset_curved_bend
+        _iset_curved_bend_by = iset_curved_bend_by
+        _iset_index = 0
         _node_size = node_size
         _label_bg = label_bg
         _label_bg_by = label_bg_by
@@ -2427,6 +2713,9 @@ def tikz(
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
+    iset_curved: bool = False,
+    iset_curved_bend: float | dict[int, float] = 10.0,
+    iset_curved_bend_by: str = "player",
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -2538,6 +2827,9 @@ def tikz(
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
         iset_boundary=iset_boundary,
+        iset_curved=iset_curved,
+        iset_curved_bend=iset_curved_bend,
+        iset_curved_bend_by=iset_curved_bend_by,
         node_size=node_size,
         label_bg=label_bg,
         label_bg_color=label_bg_color,
@@ -2820,6 +3112,9 @@ def draw(
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
+    iset_curved: bool = False,
+    iset_curved_bend: float | dict[int, float] = 10.0,
+    iset_curved_bend_by: str = "player",
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -2894,6 +3189,9 @@ def draw(
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
         iset_boundary=iset_boundary,
+        iset_curved=iset_curved,
+        iset_curved_bend=iset_curved_bend,
+        iset_curved_bend_by=iset_curved_bend_by,
         node_size=node_size,
         label_bg=label_bg,
         label_bg_color=label_bg_color,
@@ -3006,6 +3304,9 @@ def tex(
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
+    iset_curved: bool = False,
+    iset_curved_bend: float | dict[int, float] = 10.0,
+    iset_curved_bend_by: str = "player",
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -3099,6 +3400,9 @@ def tex(
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
         iset_boundary=iset_boundary,
+        iset_curved=iset_curved,
+        iset_curved_bend=iset_curved_bend,
+        iset_curved_bend_by=iset_curved_bend_by,
         node_size=node_size,
         label_bg=label_bg,
         label_bg_color=label_bg_color,
@@ -3146,6 +3450,9 @@ def pdf(
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
+    iset_curved: bool = False,
+    iset_curved_bend: float | dict[int, float] = 10.0,
+    iset_curved_bend_by: str = "player",
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -3271,6 +3578,9 @@ def pdf(
         iset_fill=iset_fill,
         iset_fill_opacity=iset_fill_opacity,
         iset_boundary=iset_boundary,
+        iset_curved=iset_curved,
+        iset_curved_bend=iset_curved_bend,
+        iset_curved_bend_by=iset_curved_bend_by,
         node_size=node_size,
         label_bg=label_bg,
         label_bg_color=label_bg_color,
@@ -3362,6 +3672,9 @@ def png(
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
+    iset_curved: bool = False,
+    iset_curved_bend: float | dict[int, float] = 10.0,
+    iset_curved_bend_by: str = "player",
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -3450,6 +3763,9 @@ def png(
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
+                iset_curved=iset_curved,
+                iset_curved_bend=iset_curved_bend,
+                iset_curved_bend_by=iset_curved_bend_by,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -3588,6 +3904,9 @@ def svg(
     iset_fill: bool = False,
     iset_fill_opacity: float = 0.2,
     iset_boundary: str = "solid",
+    iset_curved: bool = False,
+    iset_curved_bend: float | dict[int, float] = 10.0,
+    iset_curved_bend_by: str = "player",
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -3669,6 +3988,9 @@ def svg(
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
+                iset_curved=iset_curved,
+                iset_curved_bend=iset_curved_bend,
+                iset_curved_bend_by=iset_curved_bend_by,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,

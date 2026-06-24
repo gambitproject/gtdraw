@@ -88,6 +88,9 @@ GTDRAW_DEFAULTS: dict = {
     "iset_fill": False,
     "iset_fill_opacity": 0.2,
     "iset_boundary": "solid",
+    "iset_curved": False,
+    "iset_curved_bend": 10.0,
+    "iset_curved_bend_by": "player",
     "node_size": 1.5,
     "label_bg": False,
     "label_bg_by": "player",
@@ -207,6 +210,7 @@ def _apply_yaml_to_session_state(settings: dict) -> None:
         "iset_fill": "gui_iset_fill",
         "iset_fill_opacity": "gui_iset_fill_opacity",
         "iset_boundary": "gui_iset_boundary",
+        "iset_curved": "gui_iset_curved",
         "font_bold": "gui_font_bold",
         "font_italic": "gui_font_italic",
         "legend_position": "gui_legend_position",
@@ -258,6 +262,26 @@ def _apply_yaml_to_session_state(settings: dict) -> None:
         else:
             st.session_state["gui_positioning_mode"] = "Global"
             st.session_state["gui_alp_global"] = float(alp)
+
+    # iset_curved_bend — must set the mode selectbox key so widgets render correctly
+    icb = settings.get("iset_curved_bend")
+    icb_by = settings.get("iset_curved_bend_by", "player")
+    if icb is not None:
+        if isinstance(icb, dict):
+            if icb_by == "level":
+                st.session_state["gui_iset_curved_bend_mode"] = "By Level"
+                for lv, v in icb.items():
+                    st.session_state[f"icb_lv{lv}"] = float(v)
+            else:
+                st.session_state["gui_iset_curved_bend_mode"] = "By Player"
+                if 0 in icb:
+                    st.session_state["icb_chance"] = float(icb[0])
+                for i in range(1, 10):
+                    if i in icb:
+                        st.session_state[f"icb_p{i}"] = float(icb[i])
+        else:
+            st.session_state["gui_iset_curved_bend_mode"] = "Global"
+            st.session_state["gui_iset_curved_bend"] = float(icb)
 
     # label_bg
     lb = settings.get("label_bg")
@@ -940,6 +964,71 @@ def run_app():
                 index=0,
                 key="gui_iset_boundary",
             )
+            iset_curved = st.checkbox(
+                "Curved Information Sets",
+                value=False,
+                key="gui_iset_curved",
+                help="Draw information sets as curved lines using TikZ 'to[bend left]' paths.",
+            )
+            bend_mode = st.selectbox(
+                "Bend Angle vary by",
+                ["Global", "By Player", "By Level"],
+                disabled=not iset_curved,
+                key="gui_iset_curved_bend_mode",
+                help="Set a single global bend angle, or customise per player or per level.",
+            )
+            iset_curved_bend_by = (
+                "player"
+                if bend_mode == "By Player"
+                else "level"
+                if bend_mode == "By Level"
+                else "player"
+            )
+
+            if bend_mode == "Global" or not iset_curved:
+                iset_curved_bend = st.number_input(
+                    "Bend Angle",
+                    min_value=-90.0,
+                    max_value=90.0,
+                    value=10.0,
+                    step=1.0,
+                    disabled=not iset_curved,
+                    key="gui_iset_curved_bend",
+                    help="Positive values curve upward (bend left), negative values curve downward.",
+                )
+            elif bend_mode == "By Player":
+                iset_curved_bend = {}
+                iset_curved_bend[0] = st.number_input(
+                    "Chance Bend Angle",
+                    -90.0,
+                    90.0,
+                    0.0,
+                    1.0,
+                    key="icb_chance",
+                    disabled=not iset_curved,
+                )
+                for i in range(1, num_players + 1):
+                    iset_curved_bend[i] = st.number_input(
+                        f"Player {i} Bend Angle",
+                        -90.0,
+                        90.0,
+                        0.0,
+                        1.0,
+                        key=f"icb_p{i}",
+                        disabled=not iset_curved,
+                    )
+            else:  # By Level
+                iset_curved_bend = {}
+                for lv in game_levels:
+                    iset_curved_bend[lv] = st.number_input(
+                        f"Level {lv} Bend Angle",
+                        -90.0,
+                        90.0,
+                        0.0,
+                        1.0,
+                        key=f"icb_lv{lv}",
+                        disabled=not iset_curved,
+                    )
 
     # ── Snapshot tracking (undo) and YAML save ───────────────────────────────
     if not is_nfg and game_source:
@@ -977,6 +1066,9 @@ def run_app():
                 "iset_fill": iset_fill,
                 "iset_fill_opacity": iset_fill_opacity,
                 "iset_boundary": iset_boundary,
+                "iset_curved": iset_curved,
+                "iset_curved_bend": iset_curved_bend,
+                "iset_curved_bend_by": iset_curved_bend_by,
                 "node_size": node_size,
                 "label_bg": label_bg,
                 "label_bg_by": label_bg_by,
@@ -1128,6 +1220,9 @@ def run_app():
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
+                iset_curved=iset_curved,
+                iset_curved_bend=iset_curved_bend,
+                iset_curved_bend_by=iset_curved_bend_by,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -1176,6 +1271,9 @@ def run_app():
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
+                iset_curved=iset_curved,
+                iset_curved_bend=iset_curved_bend,
+                iset_curved_bend_by=iset_curved_bend_by,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -1212,6 +1310,9 @@ def run_app():
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
+                iset_curved=iset_curved,
+                iset_curved_bend=iset_curved_bend,
+                iset_curved_bend_by=iset_curved_bend_by,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -1250,6 +1351,9 @@ def run_app():
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
+                iset_curved=iset_curved,
+                iset_curved_bend=iset_curved_bend,
+                iset_curved_bend_by=iset_curved_bend_by,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -1289,6 +1393,9 @@ def run_app():
                 iset_fill=iset_fill,
                 iset_fill_opacity=iset_fill_opacity,
                 iset_boundary=iset_boundary,
+                iset_curved=iset_curved,
+                iset_curved_bend=iset_curved_bend,
+                iset_curved_bend_by=iset_curved_bend_by,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,

@@ -25,7 +25,7 @@ gtdraw --gui
 
 This will start a local Streamlit server and automatically open the application in your default web browser at `http://localhost:8501/`. From there, you can:
 - Upload game files
-- Tinker with formatting options (e.g., node size, layouts, colors, label backgrounds)
+- Tinker with formatting options (e.g., node size, layouts, colors, label backgrounds, curved information sets)
 - Download the resulting Tex, SVG, PDF, or PNG images, as well as the active rendering configuration.
 
 ```{image} ../img/gui_screenshot.png
