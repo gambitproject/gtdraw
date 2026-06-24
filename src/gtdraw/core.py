@@ -305,6 +305,43 @@ def _bezier_for_bend(
     return f".. controls {coord(C1x, C1y)} and {coord(C2x, C2y)} .."
 
 
+def _offset_bezier_coords(
+    x1: float, y1: float, x2: float, y2: float, bend: float, d_off: float
+) -> tuple:
+    """
+    Return offset control points (ox1,oy1, oC1x,oC1y, oC2x,oC2y, ox2,oy2)
+    for a Bezier segment equivalent to to[bend left=bend], displaced d_off cm
+    perpendicular to the path (positive d_off = left of travel direction, i.e.
+    the outside of the bend for a positive bend angle).
+    """
+    dx = x2 - x1
+    dy = y2 - y1
+    d = math.sqrt(dx * dx + dy * dy)
+    if d == 0:
+        return (x1, y1, x1, y1, x2, y2, x2, y2)
+    theta = math.atan2(dy, dx)
+    B_rad = bend * math.pi / 180.0
+    cp_dist = d / 3.0
+    A_out = theta + B_rad
+    A_in = theta + math.pi - B_rad
+    # Left-of-travel unit normals (rotate each tangent 90° CCW).
+    # Tangent at start: (cos(A_out), sin(A_out)) → normal: (-sin(A_out), cos(A_out))
+    n0x, n0y = -math.sin(A_out), math.cos(A_out)
+    # Tangent at end going forward: (-cos(A_in), -sin(A_in))
+    # → normal (left of forward travel): (sin(A_in), -cos(A_in))
+    n3x, n3y = math.sin(A_in), -math.cos(A_in)
+    # Offset endpoints and control points (C1 uses start normal, C2 uses end normal).
+    ox1 = x1 + d_off * n0x
+    oy1 = y1 + d_off * n0y
+    oC1x = x1 + cp_dist * math.cos(A_out) + d_off * n0x
+    oC1y = y1 + cp_dist * math.sin(A_out) + d_off * n0y
+    oC2x = x2 + cp_dist * math.cos(A_in) + d_off * n3x
+    oC2y = y2 + cp_dist * math.sin(A_in) + d_off * n3y
+    ox2 = x2 + d_off * n3x
+    oy2 = y2 + d_off * n3y
+    return (ox1, oy1, oC1x, oC1y, oC2x, oC2y, ox2, oy2)
+
+
 def _label_bg_node_opts(
     player_color: str = "", player: int = -1, level: int = -1
 ) -> str:
@@ -806,21 +843,101 @@ def iset(
                     fill_opts.append(f"opacity={fformat(_iset_fill_opacity)}")
                 cmds.append("\\draw [" + ",".join(fill_opts) + "] " + path + ";")
             # fill=False + boundary=none → nothing emitted (same as arc mode)
-        else:
-            # Build ribbon base options (boundary strokes).
-            draw_opts = [thickn]
-            if _iset_boundary == "dotted":
-                draw_opts.append("dotted")
+        elif _iset_boundary == "dotted":
+            # TikZ `double+dotted` with large double_distance inflates each dot into
+            # a large blob.  Instead, draw a single thin dotted path that traces the
+            # full ribbon outline: upper offset edge → 180° arc at the far end →
+            # lower offset edge (reversed) → 180° arc at the near end.  The arcs
+            # match the `line cap=round` semicircular ends of the fill stroke.
+            if _iset_fill and color:
+                fill_opts = [
+                    f"color={color}",
+                    f"line width={fformat(eff_dd)}mm",
+                    "line cap=round",
+                ]
+                if not aeq(_iset_fill_opacity - 1.0):
+                    fill_opts.append(f"opacity={fformat(_iset_fill_opacity)}")
+                cmds.append("\\draw [" + ",".join(fill_opts) + "] " + path + ";")
+
+            # d_off is the perpendicular offset of the ribbon edge in TikZ coordinate
+            # units.  Using the `radius` parameter (= isetradius / scale_factor) keeps
+            # the offset scale-consistent with the absolute `line width=eff_dd mm` fill.
+            d_off = radius
+
+            # Compute offset control points for every segment.
+            segs_u: List[tuple] = []
+            segs_l: List[tuple] = []
+            for i in range(len(nodes) - 1):
+                x1, y1 = nodes[i][0], nodes[i][1]
+                x2, y2 = nodes[i + 1][0], nodes[i + 1][1]
+                segs_u.append(_offset_bezier_coords(x1, y1, x2, y2, eff_bend, +d_off))
+                segs_l.append(_offset_bezier_coords(x1, y1, x2, y2, eff_bend, -d_off))
+
+            # Arc angles for the semicircular end caps (degrees).
+            # A_out_0: outgoing tangent angle at the first node of the first segment.
+            dx0 = nodes[1][0] - nodes[0][0]
+            dy0 = nodes[1][1] - nodes[0][1]
+            A_out_0 = math.degrees(math.atan2(dy0, dx0)) + eff_bend
+            # A_in_N: incoming tangent angle at the last node of the last segment.
+            dxN = nodes[-1][0] - nodes[-2][0]
+            dyN = nodes[-1][1] - nodes[-2][1]
+            A_in_N = math.degrees(math.atan2(dyN, dxN)) + 180 - eff_bend
+
+            # Build the single outline path.
+            parts: List[str] = []
+
+            # --- Upper edge (forward) ---
+            for i, seg in enumerate(segs_u):
+                ox1, oy1, oC1x, oC1y, oC2x, oC2y, ox2, oy2 = seg
+                if i == 0:
+                    parts.append(coord(ox1, oy1))
+                else:
+                    parts.extend(["--", coord(ox1, oy1)])
+                parts.append(f".. controls {coord(oC1x, oC1y)} and {coord(oC2x, oC2y)} ..")
+                parts.append(coord(ox2, oy2))
+
+            # --- End cap: 180° CW arc from upper_end to lower_end at last node ---
+            # CW in TikZ when start_angle > end_angle.
+            parts.append(
+                f"arc [start angle={fformat(A_in_N - 90)},"
+                f"end angle={fformat(A_in_N - 270)},"
+                f"radius={fformat(d_off)}]"
+            )
+
+            # --- Lower edge (reversed) ---
+            for i in range(len(segs_l) - 1, -1, -1):
+                ox1, oy1, oC1x, oC1y, oC2x, oC2y, ox2, oy2 = segs_l[i]
+                # Reversed: ox2→ox1 with control points swapped.
+                if i < len(segs_l) - 1:
+                    parts.extend(["--", coord(ox2, oy2)])
+                parts.append(f".. controls {coord(oC2x, oC2y)} and {coord(oC1x, oC1y)} ..")
+                parts.append(coord(ox1, oy1))
+
+            # --- Start cap: 180° CW arc from lower_start back to upper_start ---
+            parts.append(
+                f"arc [start angle={fformat(A_out_0 - 90)},"
+                f"end angle={fformat(A_out_0 - 270)},"
+                f"radius={fformat(d_off)}]"
+            )
+
+            outline_path = " ".join(parts)
+            boundary_opts = [thickn, "dotted"]
             if isetparams:
-                draw_opts.append(isetparams)
-            draw_opts.extend([f"double distance={fformat(eff_dd)}mm", "line cap=round"])
+                boundary_opts.append(isetparams)
+            cmds.append("\\draw [" + ",".join(boundary_opts) + "] " + outline_path + ";")
+        else:
+            # Solid boundary: double-stroke ribbon.
+            ribbon_opts = [thickn]
+            if isetparams:
+                ribbon_opts.append(isetparams)
+            ribbon_opts.extend([f"double distance={fformat(eff_dd)}mm", "line cap=round"])
 
             if _iset_fill and color:
                 if aeq(_iset_fill_opacity - 1.0):
                     # Full opacity: single `double=color` command.
                     cmds.append(
                         "\\draw ["
-                        + ",".join(draw_opts + [f"double={color}"])
+                        + ",".join(ribbon_opts + [f"double={color}"])
                         + "] " + path + ";"
                     )
                 else:
@@ -829,10 +946,10 @@ def iset(
                     # covers only the corridor (line width = double distance) at the
                     # desired opacity.  The outer boundary strokes lie outside the
                     # corridor and are not affected.
-                    hollow_cmd = (
-                        "\\draw [" + ",".join(draw_opts + ["double"]) + "] " + path + ";"
+                    cmds.append(
+                        "\\draw [" + ",".join(ribbon_opts + ["double"]) + "] " + path + ";"
                     )
-                    fill_cmd = (
+                    cmds.append(
                         "\\draw ["
                         + ",".join([
                             f"color={color}",
@@ -842,11 +959,9 @@ def iset(
                         ])
                         + "] " + path + ";"
                     )
-                    cmds.append(hollow_cmd)
-                    cmds.append(fill_cmd)
             else:
                 cmds.append(
-                    "\\draw [" + ",".join(draw_opts + ["double"]) + "] " + path + ";"
+                    "\\draw [" + ",".join(ribbon_opts + ["double"]) + "] " + path + ";"
                 )
 
         return "\n".join(cmds)

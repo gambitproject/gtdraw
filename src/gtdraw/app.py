@@ -980,19 +980,34 @@ def run_app():
             elif bend_mode == "By Player":
                 iset_curved_bend = {}
                 iset_curved_bend[0] = st.number_input(
-                    "Chance Bend Angle", -90.0, 90.0, 10.0, 1.0, key="icb_chance",
+                    "Chance Bend Angle",
+                    -90.0,
+                    90.0,
+                    0.0,
+                    1.0,
+                    key="icb_chance",
                     disabled=not iset_curved,
                 )
                 for i in range(1, num_players + 1):
                     iset_curved_bend[i] = st.number_input(
-                        f"Player {i} Bend Angle", -90.0, 90.0, 10.0, 1.0, key=f"icb_p{i}",
+                        f"Player {i} Bend Angle",
+                        -90.0,
+                        90.0,
+                        0.0,
+                        1.0,
+                        key=f"icb_p{i}",
                         disabled=not iset_curved,
                     )
             else:  # By Level
                 iset_curved_bend = {}
                 for lv in game_levels:
                     iset_curved_bend[lv] = st.number_input(
-                        f"Level {lv} Bend Angle", -90.0, 90.0, 10.0, 1.0, key=f"icb_lv{lv}",
+                        f"Level {lv} Bend Angle",
+                        -90.0,
+                        90.0,
+                        0.0,
+                        1.0,
+                        key=f"icb_lv{lv}",
                         disabled=not iset_curved,
                     )
 
