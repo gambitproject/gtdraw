@@ -95,10 +95,7 @@ ef_version: int = 1
 _iset_boundary: str = "solid"
 _iset_curved: bool = False
 _iset_curved_bend: float | dict[int, float] = 10.0
-_iset_curved_looseness: float | dict[int, float] = 1.0
 _iset_curved_bend_by: str = "player"
-_iset_curved_looseness_by: str = "player"
-_iset_curved_double_distance: float = 3.0
 _iset_index: int = 0
 _node_size: float = 1.5
 _label_bg: bool | dict[int, bool] = False
@@ -270,15 +267,12 @@ def _resolve_iset_curved_param(
     by: str,
     player: int,
     level: int,
-    iset_idx: int,
     default: float,
 ) -> float:
-    """Return the effective scalar bend/looseness for one information set."""
+    """Return the effective scalar bend angle for one information set."""
     if isinstance(param, dict):
         if by == "level":
             return param.get(level, default)
-        elif by == "iset":
-            return param.get(iset_idx, default)
         else:  # "player"
             return param.get(player, default)
     return param
@@ -761,8 +755,6 @@ def iset(
     nodes: List[List[float]],
     radius: float = isetradius,
     bend: Optional[float] = None,
-    looseness: Optional[float] = None,
-    double_distance: Optional[float] = None,
 ) -> str:
     """
     Create complete TikZ drawing commands for an information set.
@@ -771,8 +763,6 @@ def iset(
         nodes: List of coordinate pairs [x,y].
         radius: Radius for the arcs. Defaults to isetradius.
         bend: Bend angle override for curved mode (uses global if None).
-        looseness: Looseness override for curved mode (uses global if None).
-        double_distance: Ribbon width in mm for curved mode (uses global if None).
 
     Returns:
         Complete TikZ draw command string with semicolon.
@@ -798,10 +788,8 @@ def iset(
         eff_bend = bend if bend is not None else (
             _iset_curved_bend if not isinstance(_iset_curved_bend, dict) else 10.0
         )
-        eff_looseness = looseness if looseness is not None else (
-            _iset_curved_looseness if not isinstance(_iset_curved_looseness, dict) else 1.0
-        )
-        eff_dd = double_distance if double_distance is not None else _iset_curved_double_distance
+        # Ribbon width matches arc-mode oval diameter: 2 × isetradius (in cm) × 10 = 6 mm
+        eff_dd = 2 * isetradius * 10
         # double distance + round caps create the oval/capsule appearance
         options.append(f"double distance={fformat(eff_dd)}mm")
         options.append("line cap=round")
@@ -817,7 +805,7 @@ def iset(
         for i in range(len(nodes) - 1):
             x1, y1 = nodes[i][0], nodes[i][1]
             x2, y2 = nodes[i + 1][0], nodes[i + 1][1]
-            path_parts.append(_bezier_for_bend(x1, y1, x2, y2, eff_bend, eff_looseness))
+            path_parts.append(_bezier_for_bend(x1, y1, x2, y2, eff_bend))
             path_parts.append(coord(x2, y2))
         path = " ".join(path_parts)
         return "\\draw [" + ",".join(options) + "] " + path + ";"
@@ -1852,7 +1840,6 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
     """
     global isetparams, _iset_index
     assert words[0] == "iset"
-    current_iset = _iset_index
     _iset_index += 1
     nodelist = []
     p = -1
@@ -1892,13 +1879,9 @@ def isetgen(words: List[str], color_scheme: str = "default") -> None:
         isetparams = ""
 
     resolved_bend = _resolve_iset_curved_param(
-        _iset_curved_bend, _iset_curved_bend_by, p, node_level, current_iset, 10.0
+        _iset_curved_bend, _iset_curved_bend_by, p, node_level, 10.0
     )
-    resolved_looseness = _resolve_iset_curved_param(
-        _iset_curved_looseness, _iset_curved_looseness_by, p, node_level, current_iset, 1.0
-    )
-    outs(iset(nodelist, radius / scale, bend=resolved_bend, looseness=resolved_looseness,
-              double_distance=_iset_curved_double_distance), stream0)
+    outs(iset(nodelist, radius / scale, bend=resolved_bend), stream0)
 
     # Reset isetparams after drawing
     isetparams = ""
@@ -2011,10 +1994,7 @@ def commandline(
     iset_boundary = "solid"
     iset_curved = False
     iset_curved_bend: float | dict[int, float] = 10.0
-    iset_curved_looseness: float | dict[int, float] = 1.0
     iset_curved_bend_by = "player"
-    iset_curved_looseness_by = "player"
-    iset_curved_double_distance = 3.0
     node_size = 1.5
     label_bg = False
     label_bg_color = "white"
@@ -2199,43 +2179,11 @@ def commandline(
                     )
         elif arg.startswith("--iset-curved-bend-by="):
             val = arg[22:]
-            if val in ("player", "level", "iset"):
+            if val in ("player", "level"):
                 iset_curved_bend_by = val
             else:
                 print(
-                    "Warning: Invalid --iset-curved-bend-by value, expected player/level/iset",
-                    file=sys.stderr,
-                )
-        elif arg.startswith("--iset-curved-looseness="):
-            val = arg[24:]
-            try:
-                iset_curved_looseness = float(val)
-            except ValueError:
-                try:
-                    iset_curved_looseness = {
-                        int(k): float(v)
-                        for k, v in (pair.split(":") for pair in val.split(","))
-                    }
-                except Exception:
-                    print(
-                        "Warning: Invalid --iset-curved-looseness value, expected float or '0:1.0,1:2.0'",
-                        file=sys.stderr,
-                    )
-        elif arg.startswith("--iset-curved-looseness-by="):
-            val = arg[27:]
-            if val in ("player", "level", "iset"):
-                iset_curved_looseness_by = val
-            else:
-                print(
-                    "Warning: Invalid --iset-curved-looseness-by value, expected player/level/iset",
-                    file=sys.stderr,
-                )
-        elif arg.startswith("--iset-curved-double-distance="):
-            try:
-                iset_curved_double_distance = float(arg[30:])
-            except ValueError:
-                print(
-                    "Warning: Invalid --iset-curved-double-distance value, using default 3.0",
+                    "Warning: Invalid --iset-curved-bend-by value, expected player/level",
                     file=sys.stderr,
                 )
         elif arg.startswith("--node-size="):
@@ -2351,10 +2299,7 @@ def commandline(
         iset_boundary,
         iset_curved,
         iset_curved_bend,
-        iset_curved_looseness,
         iset_curved_bend_by,
-        iset_curved_looseness_by,
-        iset_curved_double_distance,
         node_size,
         label_bg,
         label_bg_color,
@@ -2396,10 +2341,7 @@ def ef_to_tex(
     iset_boundary: str = "solid",
     iset_curved: bool = False,
     iset_curved_bend: float | dict[int, float] = 10.0,
-    iset_curved_looseness: float | dict[int, float] = 1.0,
     iset_curved_bend_by: str = "player",
-    iset_curved_looseness_by: str = "player",
-    iset_curved_double_distance: float = 3.0,
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -2439,8 +2381,7 @@ def ef_to_tex(
     global scale, grid, node_to_iset_player
     global _font_family, _font_bold, _font_italic, _font_size
     global _iset_fill, _iset_fill_opacity, _iset_boundary, _node_size
-    global _iset_curved, _iset_curved_bend, _iset_curved_looseness
-    global _iset_curved_bend_by, _iset_curved_looseness_by, _iset_curved_double_distance, _iset_index
+    global _iset_curved, _iset_curved_bend, _iset_curved_bend_by, _iset_index
     global _label_bg, _label_bg_by, _label_bg_style, _label_bg_color, _label_bg_opacity
     global _horizontal, _mirror, _legend_position, _action_label_dist
     global \
@@ -2481,10 +2422,7 @@ def ef_to_tex(
         _iset_boundary = iset_boundary
         _iset_curved = iset_curved
         _iset_curved_bend = iset_curved_bend
-        _iset_curved_looseness = iset_curved_looseness
         _iset_curved_bend_by = iset_curved_bend_by
-        _iset_curved_looseness_by = iset_curved_looseness_by
-        _iset_curved_double_distance = iset_curved_double_distance
         _iset_index = 0
         _node_size = node_size
         _label_bg = label_bg
@@ -2614,10 +2552,7 @@ def tikz(
     iset_boundary: str = "solid",
     iset_curved: bool = False,
     iset_curved_bend: float | dict[int, float] = 10.0,
-    iset_curved_looseness: float | dict[int, float] = 1.0,
     iset_curved_bend_by: str = "player",
-    iset_curved_looseness_by: str = "player",
-    iset_curved_double_distance: float = 3.0,
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -2731,10 +2666,7 @@ def tikz(
         iset_boundary=iset_boundary,
         iset_curved=iset_curved,
         iset_curved_bend=iset_curved_bend,
-        iset_curved_looseness=iset_curved_looseness,
         iset_curved_bend_by=iset_curved_bend_by,
-        iset_curved_looseness_by=iset_curved_looseness_by,
-        iset_curved_double_distance=iset_curved_double_distance,
         node_size=node_size,
         label_bg=label_bg,
         label_bg_color=label_bg_color,
@@ -3019,10 +2951,7 @@ def draw(
     iset_boundary: str = "solid",
     iset_curved: bool = False,
     iset_curved_bend: float | dict[int, float] = 10.0,
-    iset_curved_looseness: float | dict[int, float] = 1.0,
     iset_curved_bend_by: str = "player",
-    iset_curved_looseness_by: str = "player",
-    iset_curved_double_distance: float = 3.0,
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -3099,10 +3028,7 @@ def draw(
         iset_boundary=iset_boundary,
         iset_curved=iset_curved,
         iset_curved_bend=iset_curved_bend,
-        iset_curved_looseness=iset_curved_looseness,
         iset_curved_bend_by=iset_curved_bend_by,
-        iset_curved_looseness_by=iset_curved_looseness_by,
-        iset_curved_double_distance=iset_curved_double_distance,
         node_size=node_size,
         label_bg=label_bg,
         label_bg_color=label_bg_color,
@@ -3217,10 +3143,7 @@ def tex(
     iset_boundary: str = "solid",
     iset_curved: bool = False,
     iset_curved_bend: float | dict[int, float] = 10.0,
-    iset_curved_looseness: float | dict[int, float] = 1.0,
     iset_curved_bend_by: str = "player",
-    iset_curved_looseness_by: str = "player",
-    iset_curved_double_distance: float = 3.0,
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -3316,10 +3239,7 @@ def tex(
         iset_boundary=iset_boundary,
         iset_curved=iset_curved,
         iset_curved_bend=iset_curved_bend,
-        iset_curved_looseness=iset_curved_looseness,
         iset_curved_bend_by=iset_curved_bend_by,
-        iset_curved_looseness_by=iset_curved_looseness_by,
-        iset_curved_double_distance=iset_curved_double_distance,
         node_size=node_size,
         label_bg=label_bg,
         label_bg_color=label_bg_color,
@@ -3369,10 +3289,7 @@ def pdf(
     iset_boundary: str = "solid",
     iset_curved: bool = False,
     iset_curved_bend: float | dict[int, float] = 10.0,
-    iset_curved_looseness: float | dict[int, float] = 1.0,
     iset_curved_bend_by: str = "player",
-    iset_curved_looseness_by: str = "player",
-    iset_curved_double_distance: float = 3.0,
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -3500,10 +3417,7 @@ def pdf(
         iset_boundary=iset_boundary,
         iset_curved=iset_curved,
         iset_curved_bend=iset_curved_bend,
-        iset_curved_looseness=iset_curved_looseness,
         iset_curved_bend_by=iset_curved_bend_by,
-        iset_curved_looseness_by=iset_curved_looseness_by,
-        iset_curved_double_distance=iset_curved_double_distance,
         node_size=node_size,
         label_bg=label_bg,
         label_bg_color=label_bg_color,
@@ -3597,10 +3511,7 @@ def png(
     iset_boundary: str = "solid",
     iset_curved: bool = False,
     iset_curved_bend: float | dict[int, float] = 10.0,
-    iset_curved_looseness: float | dict[int, float] = 1.0,
     iset_curved_bend_by: str = "player",
-    iset_curved_looseness_by: str = "player",
-    iset_curved_double_distance: float = 3.0,
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -3691,10 +3602,7 @@ def png(
                 iset_boundary=iset_boundary,
                 iset_curved=iset_curved,
                 iset_curved_bend=iset_curved_bend,
-                iset_curved_looseness=iset_curved_looseness,
                 iset_curved_bend_by=iset_curved_bend_by,
-                iset_curved_looseness_by=iset_curved_looseness_by,
-                iset_curved_double_distance=iset_curved_double_distance,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -3835,10 +3743,7 @@ def svg(
     iset_boundary: str = "solid",
     iset_curved: bool = False,
     iset_curved_bend: float | dict[int, float] = 10.0,
-    iset_curved_looseness: float | dict[int, float] = 1.0,
     iset_curved_bend_by: str = "player",
-    iset_curved_looseness_by: str = "player",
-    iset_curved_double_distance: float = 3.0,
     node_size: float = 1.5,
     label_bg: bool | dict[int, bool] = False,
     label_bg_color: str = "white",
@@ -3922,10 +3827,7 @@ def svg(
                 iset_boundary=iset_boundary,
                 iset_curved=iset_curved,
                 iset_curved_bend=iset_curved_bend,
-                iset_curved_looseness=iset_curved_looseness,
                 iset_curved_bend_by=iset_curved_bend_by,
-                iset_curved_looseness_by=iset_curved_looseness_by,
-                iset_curved_double_distance=iset_curved_double_distance,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,

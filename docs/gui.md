@@ -56,8 +56,5 @@ The sidebar **Information Sets** section exposes the following controls:
 | **Fill Opacity** | Opacity of the fill (0.0–1.0, enabled when fill is on). |
 | **Boundary Style** | Choose `solid`, `dotted`, or `none` for the outline. |
 | **Curved Information Sets** | Switch from the default closed arc-segment loop to a TikZ `to[bend left]` closed oval through the information set nodes. |
-| **Bend Angle** | Angle of the curve in degrees (−90 to 90). Positive values curve outward; negative values curve inward. Only active when curved mode is on. |
-| **Curve Looseness** | Controls how loose or tight the curve is (TikZ default: 1.0). Higher values produce more exaggerated curves. Only active when curved mode is on. |
-| **Bend Angle grouped by** | When `iset_curved_bend` is set as a dict via the API or a YAML settings file, interpret its keys as player index (`player`), level index (`level`), or information set order index (`iset`). |
-| **Curve Looseness grouped by** | Same grouping selector for `iset_curved_looseness`. |
-| **Ribbon Width (mm)** | Width of the curved information set oval ribbon in mm (TikZ `double distance`, default: 3.0). Only active when curved mode is on. |
+| **Bend Angle vary by** | Set a single global bend angle (`Global`), or customise per player (`By Player`) or per level (`By Level`). Only active when curved mode is on. |
+| **Bend Angle** | Angle of the curve in degrees (−90 to 90). Positive values curve outward; negative values curve inward. Shown when `Global` is selected. |

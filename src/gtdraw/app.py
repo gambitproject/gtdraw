@@ -90,10 +90,7 @@ GTDRAW_DEFAULTS: dict = {
     "iset_boundary": "solid",
     "iset_curved": False,
     "iset_curved_bend": 10.0,
-    "iset_curved_looseness": 1.0,
     "iset_curved_bend_by": "player",
-    "iset_curved_looseness_by": "player",
-    "iset_curved_double_distance": 3.0,
     "node_size": 1.5,
     "label_bg": False,
     "label_bg_by": "player",
@@ -215,10 +212,6 @@ def _apply_yaml_to_session_state(settings: dict) -> None:
         "iset_boundary": "gui_iset_boundary",
         "iset_curved": "gui_iset_curved",
         "iset_curved_bend": "gui_iset_curved_bend",
-        "iset_curved_looseness": "gui_iset_curved_looseness",
-        "iset_curved_bend_by": "gui_iset_curved_bend_by",
-        "iset_curved_looseness_by": "gui_iset_curved_looseness_by",
-        "iset_curved_double_distance": "gui_iset_curved_double_distance",
         "font_bold": "gui_font_bold",
         "font_italic": "gui_font_italic",
         "legend_position": "gui_legend_position",
@@ -958,50 +951,50 @@ def run_app():
                 key="gui_iset_curved",
                 help="Draw information sets as curved lines using TikZ 'to[bend left]' paths.",
             )
-            iset_curved_bend = st.number_input(
-                "Bend Angle",
-                min_value=-90.0,
-                max_value=90.0,
-                value=10.0,
-                step=1.0,
+            bend_mode = st.selectbox(
+                "Bend Angle vary by",
+                ["Global", "By Player", "By Level"],
                 disabled=not iset_curved,
-                key="gui_iset_curved_bend",
-                help="Positive values curve upward (bend left), negative values curve downward.",
+                key="gui_iset_curved_bend_mode",
+                help="Set a single global bend angle, or customise per player or per level.",
             )
-            iset_curved_looseness = st.number_input(
-                "Curve Looseness",
-                min_value=0.1,
-                max_value=5.0,
-                value=1.0,
-                step=0.1,
-                disabled=not iset_curved,
-                key="gui_iset_curved_looseness",
-                help="Controls how loose or tight the curve is (TikZ default: 1.0).",
+            iset_curved_bend_by = (
+                "player"
+                if bend_mode == "By Player"
+                else "level"
+                if bend_mode == "By Level"
+                else "player"
             )
-            iset_curved_bend_by = st.selectbox(
-                "Bend Angle grouped by",
-                ["player", "level", "iset"],
-                disabled=not iset_curved,
-                key="gui_iset_curved_bend_by",
-                help="When Bend Angle is a dict (set via API/CLI), interpret its keys as player index, level index, or information set index.",
-            )
-            iset_curved_looseness_by = st.selectbox(
-                "Curve Looseness grouped by",
-                ["player", "level", "iset"],
-                disabled=not iset_curved,
-                key="gui_iset_curved_looseness_by",
-                help="When Curve Looseness is a dict (set via API/CLI), interpret its keys as player index, level index, or information set index.",
-            )
-            iset_curved_double_distance = st.number_input(
-                "Ribbon Width (mm)",
-                min_value=0.5,
-                max_value=10.0,
-                value=3.0,
-                step=0.5,
-                disabled=not iset_curved,
-                key="gui_iset_curved_double_distance",
-                help="Width of the information set oval ribbon in mm (TikZ double distance, default: 3.0).",
-            )
+
+            if bend_mode == "Global" or not iset_curved:
+                iset_curved_bend = st.number_input(
+                    "Bend Angle",
+                    min_value=-90.0,
+                    max_value=90.0,
+                    value=10.0,
+                    step=1.0,
+                    disabled=not iset_curved,
+                    key="gui_iset_curved_bend",
+                    help="Positive values curve upward (bend left), negative values curve downward.",
+                )
+            elif bend_mode == "By Player":
+                iset_curved_bend = {}
+                iset_curved_bend[0] = st.number_input(
+                    "Chance Bend Angle", -90.0, 90.0, 10.0, 1.0, key="icb_chance",
+                    disabled=not iset_curved,
+                )
+                for i in range(1, num_players + 1):
+                    iset_curved_bend[i] = st.number_input(
+                        f"Player {i} Bend Angle", -90.0, 90.0, 10.0, 1.0, key=f"icb_p{i}",
+                        disabled=not iset_curved,
+                    )
+            else:  # By Level
+                iset_curved_bend = {}
+                for lv in game_levels:
+                    iset_curved_bend[lv] = st.number_input(
+                        f"Level {lv} Bend Angle", -90.0, 90.0, 10.0, 1.0, key=f"icb_lv{lv}",
+                        disabled=not iset_curved,
+                    )
 
     # ── Snapshot tracking (undo) and YAML save ───────────────────────────────
     if not is_nfg and game_source:
@@ -1041,10 +1034,7 @@ def run_app():
                 "iset_boundary": iset_boundary,
                 "iset_curved": iset_curved,
                 "iset_curved_bend": iset_curved_bend,
-                "iset_curved_looseness": iset_curved_looseness,
                 "iset_curved_bend_by": iset_curved_bend_by,
-                "iset_curved_looseness_by": iset_curved_looseness_by,
-                "iset_curved_double_distance": iset_curved_double_distance,
                 "node_size": node_size,
                 "label_bg": label_bg,
                 "label_bg_by": label_bg_by,
@@ -1198,10 +1188,7 @@ def run_app():
                 iset_boundary=iset_boundary,
                 iset_curved=iset_curved,
                 iset_curved_bend=iset_curved_bend,
-                iset_curved_looseness=iset_curved_looseness,
                 iset_curved_bend_by=iset_curved_bend_by,
-                iset_curved_looseness_by=iset_curved_looseness_by,
-                iset_curved_double_distance=iset_curved_double_distance,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -1252,10 +1239,7 @@ def run_app():
                 iset_boundary=iset_boundary,
                 iset_curved=iset_curved,
                 iset_curved_bend=iset_curved_bend,
-                iset_curved_looseness=iset_curved_looseness,
                 iset_curved_bend_by=iset_curved_bend_by,
-                iset_curved_looseness_by=iset_curved_looseness_by,
-                iset_curved_double_distance=iset_curved_double_distance,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -1294,10 +1278,7 @@ def run_app():
                 iset_boundary=iset_boundary,
                 iset_curved=iset_curved,
                 iset_curved_bend=iset_curved_bend,
-                iset_curved_looseness=iset_curved_looseness,
                 iset_curved_bend_by=iset_curved_bend_by,
-                iset_curved_looseness_by=iset_curved_looseness_by,
-                iset_curved_double_distance=iset_curved_double_distance,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -1338,10 +1319,7 @@ def run_app():
                 iset_boundary=iset_boundary,
                 iset_curved=iset_curved,
                 iset_curved_bend=iset_curved_bend,
-                iset_curved_looseness=iset_curved_looseness,
                 iset_curved_bend_by=iset_curved_bend_by,
-                iset_curved_looseness_by=iset_curved_looseness_by,
-                iset_curved_double_distance=iset_curved_double_distance,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
@@ -1383,10 +1361,7 @@ def run_app():
                 iset_boundary=iset_boundary,
                 iset_curved=iset_curved,
                 iset_curved_bend=iset_curved_bend,
-                iset_curved_looseness=iset_curved_looseness,
                 iset_curved_bend_by=iset_curved_bend_by,
-                iset_curved_looseness_by=iset_curved_looseness_by,
-                iset_curved_double_distance=iset_curved_double_distance,
                 node_size=node_size,
                 label_bg=label_bg,
                 label_bg_color=label_bg_color,
