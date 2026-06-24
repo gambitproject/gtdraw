@@ -795,8 +795,6 @@ def iset(
         options.append("line cap=round")
         if _iset_fill and color:
             options.append(f"double={color}")
-            if not aeq(_iset_fill_opacity - 1.0):
-                options.append(f"fill opacity={fformat(_iset_fill_opacity)}")
         else:
             options.append("double")  # white/background centre = hollow ribbon
         # Compute explicit Bezier control points in Python to avoid TikZ's
@@ -808,7 +806,16 @@ def iset(
             path_parts.append(_bezier_for_bend(x1, y1, x2, y2, eff_bend))
             path_parts.append(coord(x2, y2))
         path = " ".join(path_parts)
-        return "\\draw [" + ",".join(options) + "] " + path + ";"
+        draw_cmd = "\\draw [" + ",".join(options) + "] " + path + ";"
+        # TikZ `fill opacity` has no effect on `double=` corridor fills, so
+        # honour opacity by wrapping in a scope when opacity < 1.
+        if _iset_fill and color and not aeq(_iset_fill_opacity - 1.0):
+            return (
+                f"\\begin{{scope}}[opacity={fformat(_iset_fill_opacity)}]\n"
+                f"  {draw_cmd}\n"
+                f"\\end{{scope}}"
+            )
+        return draw_cmd
 
     # Arc mode (default): closed arc-segment loop around nodes
     if _iset_fill and color:
