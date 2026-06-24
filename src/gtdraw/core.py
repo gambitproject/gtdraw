@@ -767,13 +767,6 @@ def iset(
     Returns:
         Complete TikZ draw command string with semicolon.
     """
-    # Build base TikZ options
-    options = [thickn]
-    if _iset_boundary == "dotted":
-        options.append("dotted")
-    elif _iset_boundary == "none":
-        options.append("draw=none")
-
     # Extract player colour from isetparams
     color = None
     if isetparams:
@@ -781,7 +774,6 @@ def iset(
             if opt.startswith("color="):
                 color = opt.split("=")[1]
                 break
-        options.append(isetparams)
 
     # Curved mode: open path styled as a double-stroke oval/capsule (MAS_Fig6_2 style)
     if _iset_curved and len(nodes) > 1:
@@ -790,13 +782,6 @@ def iset(
         )
         # Ribbon width matches arc-mode oval diameter: 2 × isetradius (in cm) × 10 = 6 mm
         eff_dd = 2 * isetradius * 10
-        # double distance + round caps create the oval/capsule appearance
-        options.append(f"double distance={fformat(eff_dd)}mm")
-        options.append("line cap=round")
-        if _iset_fill and color:
-            options.append(f"double={color}")
-        else:
-            options.append("double")  # white/background centre = hollow ribbon
         # Compute explicit Bezier control points in Python to avoid TikZ's
         # dimension-overflow bug when coordinate spans exceed ~30cm at scale=0.8.
         path_parts = [coord(nodes[0][0], nodes[0][1])]
@@ -806,18 +791,37 @@ def iset(
             path_parts.append(_bezier_for_bend(x1, y1, x2, y2, eff_bend))
             path_parts.append(coord(x2, y2))
         path = " ".join(path_parts)
-        draw_cmd = "\\draw [" + ",".join(options) + "] " + path + ";"
-        # TikZ `fill opacity` has no effect on `double=` corridor fills, so
-        # honour opacity by wrapping in a scope when opacity < 1.
-        if _iset_fill and color and not aeq(_iset_fill_opacity - 1.0):
-            return (
-                f"\\begin{{scope}}[opacity={fformat(_iset_fill_opacity)}]\n"
-                f"  {draw_cmd}\n"
-                f"\\end{{scope}}"
+        cmds = []
+        # Fill: separate \fill command so fill opacity is independent of stroke opacity,
+        # matching arc-mode behaviour where boundary strokes stay at full opacity.
+        if _iset_fill and color:
+            cmds.append(
+                f"\\fill [color={color},fill opacity={fformat(_iset_fill_opacity)}] {path};"
             )
-        return draw_cmd
+        # Boundary: hollow double-stroke ribbon (omitted entirely when boundary=none,
+        # so fill still shows — consistent with arc mode).
+        if _iset_boundary != "none":
+            draw_opts = [thickn]
+            if _iset_boundary == "dotted":
+                draw_opts.append("dotted")
+            if isetparams:
+                draw_opts.append(isetparams)
+            draw_opts.extend([
+                f"double distance={fformat(eff_dd)}mm",
+                "line cap=round",
+                "double",  # hollow/white corridor; fill handled by \fill above
+            ])
+            cmds.append("\\draw [" + ",".join(draw_opts) + "] " + path + ";")
+        return "\n".join(cmds)
 
     # Arc mode (default): closed arc-segment loop around nodes
+    options = [thickn]
+    if _iset_boundary == "dotted":
+        options.append("dotted")
+    elif _iset_boundary == "none":
+        options.append("draw=none")
+    if isetparams:
+        options.append(isetparams)
     if _iset_fill and color:
         options.append(f"fill={color}")
         options.append(f"fill opacity={fformat(_iset_fill_opacity)}")
