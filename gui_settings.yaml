@@ -42,7 +42,11 @@ overrides:
     - 28
     - 13
   MAS_Fig6_2:
-    color_scheme: colorblind
+    color_scheme: custom
+    custom_colors:
+      0: '#759138'
+      1: '#000000'
+      2: '#11a1fd'
     font_family: sffamily
     font_italic: true
     action_label_dist: 5.0
