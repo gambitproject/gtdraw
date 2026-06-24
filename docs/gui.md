@@ -45,16 +45,3 @@ If you are a Gambit developer adding new games to the official game catalog, you
 3. Paste or append the configuration under the appropriate key in the master settings file in the Gambit repository: [build_support/catalog/gtdraw_settings.yaml](https://github.com/gambitproject/gambit/blob/master/build_support/catalog/gtdraw_settings.yaml).
 
 Once added, the game will automatically use your custom styles when displayed in the catalog.
-
-## Information Set Options
-
-The sidebar **Information Sets** section exposes the following controls:
-
-| Control | Description |
-|---|---|
-| **Fill Information Sets** | Toggle fill colour inside the information set shape. |
-| **Fill Opacity** | Opacity of the fill (0.0–1.0, enabled when fill is on). |
-| **Boundary Style** | Choose `solid`, `dotted`, or `none` for the outline. |
-| **Curved Information Sets** | Switch from the default closed arc-segment loop to a TikZ `to[bend left]` closed oval through the information set nodes. |
-| **Bend Angle vary by** | Set a single global bend angle (`Global`), or customise per player (`By Player`) or per level (`By Level`). Only active when curved mode is on. |
-| **Bend Angle** | Angle of the curve in degrees (−90 to 90). Positive values curve outward; negative values curve inward. Shown when `Global` is selected. |
