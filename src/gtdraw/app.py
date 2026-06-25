@@ -166,12 +166,21 @@ def _write_game_settings(path: "Path", game_slug: str, settings: dict) -> None:
 
 
 def _effective_settings_for_game(path: "Path", game_slug: str | None) -> dict:
-    """Merge draw defaults ← yaml defaults ← yaml overrides for game."""
+    """Merge draw defaults ← yaml defaults ← yaml overrides for game.
+
+    Override keys are matched if the slug equals the key or starts with
+    key + '/', applied shortest-first so more-specific entries win over
+    group-level entries (e.g. 'myerson1991' is applied before
+    'myerson1991/fig2_1').
+    """
     data = _read_yaml(path)
     merged = {**GTDRAW_DEFAULTS}
     merged.update(data["defaults"] or {})
     if game_slug:
-        merged.update((data["overrides"] or {}).get(game_slug, {}))
+        overrides = data["overrides"] or {}
+        for key in sorted(overrides, key=len):
+            if game_slug == key or game_slug.startswith(key + "/"):
+                merged.update(overrides[key])
     return merged
 
 
