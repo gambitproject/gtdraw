@@ -450,27 +450,12 @@ def _apply_yaml_to_session_state(settings: dict) -> None:
 
 
 def run_app():
-    # Use the project favicon from the installed package, falling back to the
-    # source-tree asset when running directly from a checkout.
-    icon_filename = "favicon_48x48_light green background.png"
-    packaged_icon_path = Path(__file__).parent / "assets" / icon_filename
-    source_icon_path = Path(__file__).parent.parent.parent / "img" / icon_filename
-    icon_path = packaged_icon_path if packaged_icon_path.exists() else source_icon_path
     icon = "🎨"
-    if icon_path.exists():
-        icon = str(icon_path)
 
     st.set_page_config(page_title="GTDraw", layout="wide", page_icon=icon)
 
     # Sidebar: Title and Input
-    if icon_path.exists():
-        col1, col2 = st.sidebar.columns([0.25, 0.75])
-        with col1:
-            st.image(str(icon_path), width=50)
-        with col2:
-            st.title("GTDraw")
-    else:
-        st.sidebar.title("🎨 GTDraw")
+    st.sidebar.title("🎨 GTDraw")
     st.sidebar.markdown(
         "##### Part of the [Gambit project](https://www.gambit-project.org/)."
     )
@@ -1186,20 +1171,10 @@ def run_app():
 
     # Main Area: Display
     if not game_source:
-        if icon_path.exists():
-            c1, c2 = st.columns([0.1, 0.9])
-            with c1:
-                st.image(str(icon_path), width=80)
-            with c2:
-                st.title("GTDraw")
-            st.markdown(
-                "### Part of the [Gambit project](https://www.gambit-project.org/)"
-            )
-        else:
-            st.title("🎨 GTDraw")
-            st.markdown(
-                "### Part of the [Gambit project](https://www.gambit-project.org/)"
-            )
+        st.title("🎨 GTDraw")
+        st.markdown(
+            "### Part of the [Gambit project](https://www.gambit-project.org/)"
+        )
         st.info("Select a game from the sidebar to begin.")
         return
 
