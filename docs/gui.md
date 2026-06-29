@@ -26,6 +26,8 @@ gtdraw --gui
 This will start a local Streamlit server and automatically open the application in your default web browser at `http://localhost:8501/`. From there, you can:
 - Upload game files
 - Tinker with formatting options (e.g., node size, layouts, colors, label backgrounds, curved information sets)
+- Enable the layout editor to drag tree nodes or information sets into a custom layout that is reflected in downloads
+- Undo the last layout edit, or use the main reset button to restore both GUI settings and the editor layout
 - Download the resulting Tex, SVG, PDF, or PNG images, as well as the active rendering configuration.
 
 ```{image} ../img/gui_screenshot.png

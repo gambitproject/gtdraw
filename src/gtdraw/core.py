@@ -278,6 +278,15 @@ def _resolve_iset_curved_param(
     return param
 
 
+def _level_key(level: float | int) -> float | int:
+    """Preserve fractional layout levels while keeping integer keys stable."""
+    try:
+        level_float = float(level)
+    except (TypeError, ValueError):
+        return level
+    return int(level_float) if level_float.is_integer() else level_float
+
+
 def _bezier_for_bend(
     x1: float, y1: float, x2: float, y2: float, bend: float, looseness: float = 1.0
 ) -> str:
@@ -1741,7 +1750,8 @@ def level(
             + "'; node identifiers must be unique within a level "
             "(this entry overwrites the earlier one in the node table)"
         )
-    nodes[nodeid] = {"x": xx, "y": yy, "player": p, "level": int(lev)}
+    node_level_key = _level_key(lev)
+    nodes[nodeid] = {"x": xx, "y": yy, "player": p, "level": node_level_key}
     nodes[nodeid]["xshift"] = xs
     nodes[nodeid]["move"] = mov
     nodes[nodeid]["from"] = fromn
@@ -1757,7 +1767,7 @@ def level(
     parent_color = ""
     edge_color_style = ""
     parent_level = (
-        int(nodes[fromn].get("level", 0)) if existsfrom and fromn in nodes else 0
+        _level_key(nodes[fromn].get("level", 0)) if existsfrom and fromn in nodes else 0
     )
     if existsfrom and fromn in nodes:
         parent_player = nodes[fromn]["player"]
@@ -1799,8 +1809,8 @@ def level(
 
         if color_style:
             node_opts += "," + color_style
-        node_opts += _label_bg_node_opts(player_color, player=p, level=int(lev))
-        this_bg = _label_bg_active(player=p, level=int(lev))
+        node_opts += _label_bg_node_opts(player_color, player=p, level=node_level_key)
+        this_bg = _label_bg_active(player=p, level=node_level_key)
         if not this_bg:
             # Embed player label node in the edge draw command
             s += f" node[{node_opts}]"
@@ -1829,7 +1839,7 @@ def level(
                         if (existsfrom and fromn in nodes)
                         else 0
                     )
-                    pos = action_label_position.get(int(parent_level), 0.5)
+                    pos = action_label_position.get(_level_key(parent_level), 0.5)
                 else:
                     parent_player = (
                         nodes[fromn]["player"]
@@ -1857,10 +1867,7 @@ def level(
                             if (existsfrom and fromn in nodes)
                             else 0
                         )
-                        if (
-                            int(parent_level)
-                            not in _vary_action_label_positions_choices
-                        ):
+                        if parent_level not in _vary_action_label_positions_choices:
                             apply_vary = False
 
                 if apply_vary:
@@ -1911,13 +1918,13 @@ def level(
         if side in ["left", "below"]:
             dist = -dist
 
-        action_bg = _label_bg_active(player=parent_player, level=int(lev))
+        action_bg = _label_bg_active(player=parent_player, level=node_level_key)
         if action_bg:
             opts = []
             if edge_color_style:
                 opts.append(edge_color_style)
             bg_opts = _label_bg_node_opts(
-                parent_color, player=parent_player, level=int(lev)
+                parent_color, player=parent_player, level=node_level_key
             )
             if bg_opts.startswith(","):
                 bg_opts = bg_opts[1:]
@@ -2991,7 +2998,7 @@ def count_levels(
                     level_multiplier=level_scaling * 4,
                     sublevel_multiplier=sublevel_scaling * 2,
                 )
-                levels.add(int(lev))
+                levels.add(_level_key(lev))
             return max(levels) if levels else 0
         except Exception:
             return 0
@@ -3059,7 +3066,7 @@ def get_game_levels(
                     level_multiplier=level_scaling * 4,
                     sublevel_multiplier=sublevel_scaling * 2,
                 )
-                levels.add(int(lev))
+                levels.add(_level_key(lev))
             return sorted(levels) if levels else [0]
         except Exception:
             return [0]

@@ -1,0 +1,546 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body {
+        margin: 0;
+        background: #ffffff;
+        color: #1f2937;
+      }
+
+      #toolbar {
+        align-items: center;
+        border-bottom: 1px solid #d9dee7;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+        justify-content: space-between;
+        min-height: 42px;
+        padding: 6px 10px;
+      }
+
+      #status {
+        color: #5b6472;
+        flex: 1 1 180px;
+        font-size: 13px;
+      }
+
+      #legend {
+        align-items: center;
+        display: flex;
+        flex: 1 1 220px;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        justify-content: center;
+      }
+
+      .legend-item {
+        align-items: center;
+        color: #1f2937;
+        display: inline-flex;
+        font-size: 13px;
+        gap: 5px;
+        line-height: 1;
+        white-space: nowrap;
+      }
+
+      .legend-swatch {
+        border: 1px solid #172033;
+        display: inline-block;
+        height: 11px;
+        width: 11px;
+      }
+
+      .legend-swatch.circle {
+        border-radius: 999px;
+      }
+
+      .legend-swatch.square {
+        border-radius: 2px;
+      }
+
+      #zoomControl {
+        align-items: center;
+        color: #344054;
+        display: flex;
+        flex: 0 0 auto;
+        font-size: 13px;
+        gap: 8px;
+      }
+
+      #zoomSlider {
+        accent-color: #2563eb;
+        width: 150px;
+      }
+
+      #zoomValue {
+        min-width: 42px;
+        text-align: right;
+      }
+
+      #canvas {
+        display: block;
+        height: calc(100vh - 55px);
+        min-height: 420px;
+        touch-action: none;
+        width: 100%;
+      }
+
+      .edge {
+        stroke-linecap: round;
+        stroke-opacity: 1;
+        stroke-width: 2.2px;
+      }
+
+      .iset {
+        cursor: grab;
+        fill: none;
+        stroke-dasharray: 1px 7px;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-opacity: 1;
+        stroke-width: 2.4px;
+      }
+
+      .iset.dragging {
+        cursor: grabbing;
+        filter: drop-shadow(0 2px 4px rgb(17 24 39 / 0.2));
+      }
+
+      .iset-handle {
+        cursor: grab;
+        stroke: #ffffff;
+        stroke-width: 3px;
+      }
+
+      .iset-handle.dragging {
+        cursor: grabbing;
+        filter: drop-shadow(0 2px 4px rgb(17 24 39 / 0.25));
+      }
+
+      .node {
+        cursor: grab;
+        stroke: #172033;
+        stroke-width: 0.035;
+      }
+
+      .node.dragging {
+        cursor: grabbing;
+        filter: drop-shadow(0 2px 4px rgb(17 24 39 / 0.25));
+      }
+
+      .label {
+        font-size: 0.34px;
+        paint-order: stroke;
+        pointer-events: none;
+        stroke: #ffffff;
+        stroke-width: 0.1px;
+        text-anchor: middle;
+        user-select: none;
+      }
+
+      .edge-label {
+        font-size: 0.34px;
+      }
+
+      .payoff-label {
+        font-size: 0.3px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toolbar">
+      <span id="status">Drag nodes to update the active EF layout.</span>
+      <div id="legend" aria-label="Player color legend"></div>
+      <label id="zoomControl">
+        <span>Zoom</span>
+        <input
+          id="zoomSlider"
+          type="range"
+          min="0.7"
+          max="2.5"
+          step="0.05"
+          value="1.35"
+        />
+        <span id="zoomValue">135%</span>
+      </label>
+    </div>
+    <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
+    <script>
+      const MESSAGE_READY = "streamlit:componentReady";
+      const MESSAGE_RENDER = "streamlit:render";
+      const MESSAGE_VALUE = "streamlit:setComponentValue";
+      const MESSAGE_HEIGHT = "streamlit:setFrameHeight";
+
+      const svg = document.getElementById("canvas");
+      const statusEl = document.getElementById("status");
+      const legendEl = document.getElementById("legend");
+      const zoomSlider = document.getElementById("zoomSlider");
+      const zoomValue = document.getElementById("zoomValue");
+
+      let layout = { nodes: [], edges: [], isets: [] };
+      let nodeMap = new Map();
+      let active = null;
+      let revision = 0;
+      let zoom = Number(zoomSlider.value);
+
+      function send(type, payload) {
+        window.parent.postMessage(
+          Object.assign({ isStreamlitMessage: true, type }, payload || {}),
+          "*",
+        );
+      }
+
+      function setHeight() {
+        send(MESSAGE_HEIGHT, { height: Math.max(460, document.body.scrollHeight) });
+      }
+
+      function ready() {
+        send(MESSAGE_READY, { apiVersion: 1 });
+        setHeight();
+      }
+
+      function setValue() {
+        const positions = {};
+        for (const node of layout.nodes) {
+          positions[node.id] = { x: node.x, y: node.y };
+        }
+        send(MESSAGE_VALUE, {
+          dataType: "json",
+          value: { revision, positions },
+        });
+      }
+
+      function svgPoint(evt) {
+        const point = svg.createSVGPoint();
+        point.x = evt.clientX;
+        point.y = evt.clientY;
+        return point.matrixTransform(svg.getScreenCTM().inverse());
+      }
+
+      function nodeFill(node) {
+        if (node.player >= 0 && node.color) return node.color;
+        return node.terminal ? "#fbbf24" : node.color || "#ffffff";
+      }
+
+      function displayY(node) {
+        return -node.y;
+      }
+
+      function formatLabel(text) {
+        return String(text || "")
+          .replace(/~/g, " ")
+          .replace(/\\frac\s*\{([^}]*)\}\s*\{([^}]*)\}/g, "$1/$2")
+          .replace(/\$/g, "");
+      }
+
+      function isetHandlePoint(nodes) {
+        const total = nodes.reduce(
+          (acc, node) => ({
+            x: acc.x + node.x,
+            y: acc.y + displayY(node),
+          }),
+          { x: 0, y: 0 },
+        );
+        return {
+          x: total.x / nodes.length,
+          y: total.y / nodes.length,
+        };
+      }
+
+      function bounds() {
+        if (!layout.nodes.length) return { minX: -2, maxX: 2, minY: -1, maxY: 4 };
+        const xs = layout.nodes.map((node) => node.x);
+        const ys = layout.nodes.map((node) => displayY(node));
+        const margin = 1.2;
+        return {
+          minX: Math.min(...xs) - margin,
+          maxX: Math.max(...xs) + margin,
+          minY: Math.min(...ys) - margin,
+          maxY: Math.max(...ys) + margin,
+        };
+      }
+
+      function setViewBox() {
+        const box = bounds();
+        const width = Math.max(2, box.maxX - box.minX);
+        const height = Math.max(2, box.maxY - box.minY);
+        const centerX = box.minX + width / 2;
+        const centerY = box.minY + height / 2;
+        const zoomedWidth = width / zoom;
+        const zoomedHeight = height / zoom;
+        svg.setAttribute(
+          "viewBox",
+          `${centerX - zoomedWidth / 2} ${centerY - zoomedHeight / 2} ${zoomedWidth} ${zoomedHeight}`,
+        );
+      }
+
+      function clearSvg() {
+        while (svg.firstChild) svg.removeChild(svg.firstChild);
+      }
+
+      function el(name, attrs) {
+        const out = document.createElementNS("http://www.w3.org/2000/svg", name);
+        for (const [key, value] of Object.entries(attrs || {})) {
+          out.setAttribute(key, value);
+        }
+        return out;
+      }
+
+      function renderLegend() {
+        legendEl.replaceChildren();
+        const items = Array.isArray(layout.legend) ? layout.legend : [];
+        for (const item of items) {
+          const label = formatLabel(item.label);
+          if (!label) continue;
+          const row = document.createElement("span");
+          row.className = "legend-item";
+
+          const swatch = document.createElement("span");
+          swatch.className = `legend-swatch ${item.shape || "circle"}`;
+          swatch.style.backgroundColor = item.color || "#111827";
+          swatch.style.borderColor = item.color || "#111827";
+
+          const text = document.createElement("span");
+          text.textContent = label;
+
+          row.appendChild(swatch);
+          row.appendChild(text);
+          legendEl.appendChild(row);
+        }
+      }
+
+      function drawEdges(group) {
+        for (const edge of layout.edges || []) {
+          const parent = nodeMap.get(edge.parent);
+          const child = nodeMap.get(edge.child);
+          if (!parent || !child) continue;
+          group.appendChild(
+            el("line", {
+              class: "edge",
+              x1: parent.x,
+              y1: displayY(parent),
+              x2: child.x,
+              y2: displayY(child),
+              stroke: edge.color || "#243b53",
+              "vector-effect": "non-scaling-stroke",
+            }),
+          );
+          const label = formatLabel(edge.label);
+          if (label) {
+            const midX = (parent.x + child.x) / 2;
+            const midY = (displayY(parent) + displayY(child)) / 2;
+            const text = el("text", {
+              class: "label edge-label",
+              x: midX,
+              y: midY - 0.2,
+              fill: edge.color || "#111827",
+            });
+            text.textContent = label;
+            group.appendChild(text);
+          }
+        }
+      }
+
+      function drawIsets(group) {
+        for (const iset of layout.isets || []) {
+          const nodes = iset.node_ids.map((id) => nodeMap.get(id)).filter(Boolean);
+          if (!nodes.length) continue;
+          const attrs = {
+            "data-iset-id": iset.id,
+            stroke: iset.color || "#8b5d33",
+            "vector-effect": "non-scaling-stroke",
+          };
+          let shape;
+          if (nodes.length === 1) {
+            const n = nodes[0];
+            shape = el("circle", {
+              class: "iset",
+              cx: n.x,
+              cy: displayY(n),
+              r: 0.32,
+              ...attrs,
+            });
+          } else {
+            const sorted = [...nodes].sort((a, b) => a.x - b.x || a.y - b.y);
+            const points = sorted.map((n) => `${n.x},${displayY(n)}`).join(" ");
+            shape = el("polyline", {
+              class: "iset",
+              points,
+              ...attrs,
+            });
+          }
+          shape.addEventListener("pointerdown", isetPointerDown);
+          group.appendChild(shape);
+
+          const handlePoint = isetHandlePoint(nodes);
+          const handle = el("circle", {
+            class: "iset-handle",
+            cx: handlePoint.x,
+            cy: handlePoint.y,
+            r: 0.11,
+            fill: iset.color || "#8b5d33",
+            "data-iset-id": iset.id,
+            "vector-effect": "non-scaling-stroke",
+          });
+          handle.addEventListener("pointerdown", isetPointerDown);
+          group.appendChild(handle);
+        }
+      }
+
+      function drawNodes(group) {
+        for (const node of layout.nodes || []) {
+          const shape =
+            node.player === 0
+              ? el("rect", {
+                  class: "node",
+                  x: node.x - 0.14,
+                  y: displayY(node) - 0.14,
+                  width: 0.28,
+                  height: 0.28,
+                  fill: nodeFill(node),
+                  "data-node-id": node.id,
+                  "vector-effect": "non-scaling-stroke",
+                })
+              : el("circle", {
+                  class: "node",
+                  cx: node.x,
+                  cy: displayY(node),
+                  r: node.terminal ? 0.09 : 0.14,
+                  fill: nodeFill(node),
+                  "data-node-id": node.id,
+                  "vector-effect": "non-scaling-stroke",
+                });
+          shape.addEventListener("pointerdown", pointerDown);
+          group.appendChild(shape);
+
+          if (node.terminal && Array.isArray(node.payoffs) && node.payoffs.length) {
+            const label = el("text", {
+              class: "label payoff-label",
+              x: node.x,
+              y: displayY(node) + 0.52,
+            });
+            node.payoffs.forEach((payoff, idx) => {
+              const tspan = el("tspan", {
+                x: node.x,
+                dy: idx === 0 ? 0 : 0.34,
+                fill: payoff.color || "#111827",
+              });
+              tspan.textContent = formatLabel(payoff.text);
+              label.appendChild(tspan);
+            });
+            group.appendChild(label);
+          }
+        }
+      }
+
+      function render() {
+        nodeMap = new Map(layout.nodes.map((node) => [node.id, node]));
+        clearSvg();
+        renderLegend();
+        setViewBox();
+        const edgeGroup = el("g");
+        const isetGroup = el("g");
+        const nodeGroup = el("g");
+        drawEdges(edgeGroup);
+        drawIsets(isetGroup);
+        drawNodes(nodeGroup);
+        svg.appendChild(edgeGroup);
+        svg.appendChild(isetGroup);
+        svg.appendChild(nodeGroup);
+        setHeight();
+      }
+
+      function pointerDown(evt) {
+        const id = evt.currentTarget.getAttribute("data-node-id");
+        const node = nodeMap.get(id);
+        if (!node) return;
+        const point = svgPoint(evt);
+        active = {
+          kind: "node",
+          id,
+          offsetX: node.x - point.x,
+          offsetY: displayY(node) - point.y,
+        };
+        evt.currentTarget.classList.add("dragging");
+        evt.currentTarget.setPointerCapture(evt.pointerId);
+        statusEl.textContent = "Dragging node";
+      }
+
+      function isetPointerDown(evt) {
+        const isetId = Number(evt.currentTarget.getAttribute("data-iset-id"));
+        const iset = (layout.isets || []).find((candidate) => candidate.id === isetId);
+        if (!iset) return;
+        const ids = iset.node_ids.filter((id) => nodeMap.has(id));
+        if (!ids.length) return;
+        const point = svgPoint(evt);
+        active = {
+          kind: "iset",
+          ids,
+          lastX: point.x,
+          lastY: point.y,
+        };
+        evt.currentTarget.classList.add("dragging");
+        evt.currentTarget.setPointerCapture(evt.pointerId);
+        statusEl.textContent = "Dragging information set";
+      }
+
+      function pointerMove(evt) {
+        if (!active) return;
+        const point = svgPoint(evt);
+        if (active.kind === "iset") {
+          const dx = point.x - active.lastX;
+          const displayDy = point.y - active.lastY;
+          for (const id of active.ids) {
+            const node = nodeMap.get(id);
+            if (!node) continue;
+            node.x += dx;
+            node.y -= displayDy;
+          }
+          active.lastX = point.x;
+          active.lastY = point.y;
+        } else {
+          const node = nodeMap.get(active.id);
+          if (!node) return;
+          node.x = point.x + active.offsetX;
+          node.y = -(point.y + active.offsetY);
+        }
+        render();
+      }
+
+      function pointerUp() {
+        if (!active) return;
+        active = null;
+        revision += 1;
+        statusEl.textContent = "Layout updated.";
+        setValue();
+      }
+
+      svg.addEventListener("pointermove", pointerMove);
+      svg.addEventListener("pointerup", pointerUp);
+      svg.addEventListener("pointercancel", pointerUp);
+
+      window.addEventListener("message", (event) => {
+        const data = event.data || {};
+        if (data.type !== MESSAGE_RENDER) return;
+        layout = data.args.layout || { nodes: [], edges: [], isets: [] };
+        render();
+      });
+
+      window.addEventListener("resize", setHeight);
+      zoomSlider.addEventListener("input", () => {
+        zoom = Number(zoomSlider.value);
+        zoomValue.textContent = `${Math.round(zoom * 100)}%`;
+        setViewBox();
+      });
+      ready();
+    </script>
+  </body>
+</html>

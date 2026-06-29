@@ -1,5 +1,9 @@
-import pygambit
-from typing import Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    import pygambit
 
 
 def determine_node_level(
@@ -50,6 +54,8 @@ def gambit_layout_to_ef(
     Raises:
         ValueError: If any multiplier argument is not positive.
     """
+    import pygambit
+
     if level_multiplier < 0:
         raise ValueError(
             f"level_multiplier must be non-negative, got {level_multiplier}"

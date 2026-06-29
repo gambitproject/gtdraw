@@ -142,6 +142,7 @@ cython_debug/
 *.png
 !/img/*.png
 !/img/*.svg
+!/src/gtdraw/assets/*.png
 *.aux
 *.log
 *.fls
