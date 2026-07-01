@@ -209,9 +209,20 @@ def test_static_component_asset_contains_streamlit_bridge():
     assert 'zoomSlider.addEventListener("input"' in html
     assert "pointerdown" in html
     assert "isetPointerDown" in html
+    assert "selectionPointerDown" in html
+    assert "selection-box" in html
+    assert "function drawSelectionBox(group)" in html
+    assert "function updateBoxSelection()" in html
+    assert "let selectedIds = new Set()" in html
+    assert 'kind: "select"' in html
+    assert 'kind: "group"' in html
+    assert "Dragging selected nodes" in html
+    assert 'svg.addEventListener("pointerdown", selectionPointerDown)' in html
     assert "Dragging information set" in html
     assert 'kind: "iset"' in html
+    assert 'active.kind === "iset" || active.kind === "group"' in html
     assert "node.y -= displayDy" in html
+    assert "nodeClass = selectedIds.has(node.id)" in html
     assert "iset-handle" in html
     assert "function isetHandlePoint(nodes)" in html
     assert "handle.addEventListener(\"pointerdown\", isetPointerDown)" in html
