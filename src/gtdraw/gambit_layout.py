@@ -129,14 +129,15 @@ def _node_outcome(node, game):
     (`None`) if it has none.
 
     Works across `Node.outcome` (an indexable, node-anchored view, older
-    pygambit) and, once `Node.outcome` is removed and `node` is a `History`
-    tuple, `Game.get_outcome` (returning only the outcome's label) combined
-    with `Game.outcomes[label]` to recover an object indexable by player,
-    matching the older `Node.outcome`'s shape.
+    pygambit) and, once `Node.outcome` and `Outcome` are both removed and
+    `node` is a `History` tuple, `Game.get_outcome` (returning only the
+    outcome's label) combined with `Game.get_outcome_payoffs(label)` to
+    recover a mapping indexable by player, matching the older `Node.outcome`'s
+    shape.
     """
     if _is_history(node):
         label = game.get_outcome(_selector(node))
-        return game.outcomes[label] if label is not None else None
+        return game.get_outcome_payoffs(label) if label is not None else None
     return node.outcome
 
 
