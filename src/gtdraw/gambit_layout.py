@@ -3,16 +3,21 @@ from typing import Optional
 
 
 def _is_history(node) -> bool:
-    """Whether `node` is a root-anchored `History` tuple of action labels
-    (newest pygambit, once `Node`/`Game.root` are no longer public), rather
-    than a `Node` object (older pygambit)."""
+    """Whether `node` is a root-anchored `History` (newest pygambit, once
+    `Node`/`Game.root` are no longer public), rather than a `Node` object
+    (older pygambit)."""
     return isinstance(node, tuple)
 
 
 def _selector(history: tuple) -> pygambit.gambit.Selector:
     """The `pygambit.H` Selector resolving to exactly the node `history`
-    (a root-anchored tuple of action labels) identifies."""
-    return pygambit.H.path(*history)
+    (a root-anchored `History`) identifies.
+
+    `History` elements are `HistoryTransition`s (carrying player/state/action),
+    not bare action labels, as of a newer pygambit -- `.actions` projects down
+    to the plain label tuple `H.path` needs.
+    """
+    return pygambit.H.path(*history.actions)
 
 
 def _partition(node, game):
@@ -58,10 +63,10 @@ def _prior_action_prob(node, game):
     must be read via the parent's `Node.action_probs` instead; now that `Node`
     is no longer public and `node` is a `History` tuple, the equivalent is
     `Game.get_action_probs` on the parent's own `History` (`node[:-1]`), keyed
-    by `node`'s own last action label (`node[-1]`).
+    by `node`'s own last action label (`node[-1].action`).
     """
     if _is_history(node):
-        return game.get_action_probs(_selector(node[:-1]))[node[-1]]
+        return game.get_action_probs(_selector(node[:-1]))[node[-1].action]
     try:
         return node.prior_action.prob
     except AttributeError:
@@ -166,13 +171,13 @@ def _node_parent(node, game):
 def _prior_action_label(node):
     """Return the label of the action leading to `node` from its parent.
 
-    Works across `Node.prior_action.label` (older pygambit) and the last
-    element of the `History` tuple, once `Node` is no longer public --
-    `layout_tree`'s own `History` keys are root-anchored paths of exactly the
-    action labels taken to reach each node.
+    Works across `Node.prior_action.label` (older pygambit) and the `.action`
+    of the last element of the `History` tuple, once `Node` is no longer
+    public -- `layout_tree`'s own `History` keys are root-anchored paths of
+    the `HistoryTransition`s taken to reach each node.
     """
     if _is_history(node):
-        return node[-1]
+        return node[-1].action
     return node.prior_action.label
 
 
