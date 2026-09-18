@@ -1362,7 +1362,7 @@ def _simple_ef_content():
 
 def _make_pygambit_game():
     """Create a small pygambit game for end-to-end tests."""
-    g = pygambit.Game.new_tree(players=["Alice", "Bob"], title="integration_test")
+    g = pygambit.ExtensiveGame(players=["Alice", "Bob"], title="integration_test")
     _append_move(g, (), "Alice", ["Left", "Right"])
     _append_move(g, ("Left",), "Bob", ["Up", "Down"])
     _set_outcome(g, ("Left", "Up"), [1, 0])
