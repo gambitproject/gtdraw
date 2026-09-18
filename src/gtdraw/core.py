@@ -3223,19 +3223,14 @@ def draw(
 def _prepare_nfg(game) -> Optional["pygambit.gambit.Game"]:
     """Return a pygambit NFG game object if the input is an NFG, else None.
 
-    Accepts either a .nfg file path string or a pygambit Game object whose
-    is_tree attribute is falsy (i.e. a strategic-form game).
+    Accepts either a .nfg file path string or a pygambit StrategicGame object.
     """
-    if isinstance(game, str) and game.lower().endswith(".nfg"):
-        import pygambit
+    import pygambit
 
+    if isinstance(game, str) and game.lower().endswith(".nfg"):
         return pygambit.read_nfg(game)
-    if not isinstance(game, str):
-        try:
-            if not game.is_tree:
-                return game
-        except AttributeError:
-            pass
+    if isinstance(game, pygambit.StrategicGame):
+        return game
     return None
 
 
