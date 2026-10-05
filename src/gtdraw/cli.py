@@ -38,7 +38,7 @@ def main():
             "  gtdraw <file.ef> --output=name.ext   # Generate with custom filename (.pdf, .png, .svg, or .tex)"
         )
         print(
-            "  gtdraw --gui                         # Launch interactive GUI (requires streamlit)"
+            "  gtdraw --gui                         # Launch interactive GUI (requires gtdraw[gui])"
         )
         print()
         print("Options:")
@@ -135,7 +135,7 @@ def main():
             sys.exit(stcli.main())
         except ImportError:
             print(
-                "Error: Streamlit is required for the GUI. Install it with: pip install streamlit"
+                "Error: Streamlit is required for the GUI. Install it with: pip install 'gtdraw[gui]'"
             )
             sys.exit(1)
 

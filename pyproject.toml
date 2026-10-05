@@ -21,9 +21,10 @@ classifiers = [
 ]
 keywords = ["game theory", "tikz", "visualization", "trees", "economics"]
 
-dependencies = ["jupyter-tikz", "ipykernel", "distinctipy", "streamlit", "pygambit", "pyyaml"]
+dependencies = ["jupyter-tikz", "ipykernel", "distinctipy", "pygambit", "pyyaml"]
 
 [project.optional-dependencies]
+gui = ["streamlit"]
 dev = ["pytest>=7.0.0", "pytest-cov", "jupyter-book>=2.0.0", "sphinx-thebe"]
 
 [project.scripts]
