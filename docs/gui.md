@@ -17,7 +17,13 @@
 
 ## Running the GUI locally
 
-To launch the GUI from your terminal, simply run:
+The GUI requires the optional `gui` extra:
+
+```bash
+pip install "gtdraw[gui]"
+```
+
+To launch the GUI from your terminal, run:
 
 ```bash
 gtdraw --gui

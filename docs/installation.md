@@ -6,6 +6,8 @@ Install GTDraw from PyPI:
 pip install gtdraw
 ```
 
+To use the interactive GUI, install the optional `gui` extra (`pip install "gtdraw[gui]"`); see [Interactive GUI](gui.md).
+
 See the [developer guide](developer/development.md) for developer installation.
 
 ## Requirements
