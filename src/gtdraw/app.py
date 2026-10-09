@@ -5,6 +5,8 @@ import os
 import sys
 import warnings
 import yaml
+import hashlib
+import inspect
 
 # Suppress warnings in the GUI
 warnings.filterwarnings("ignore")
@@ -23,6 +25,13 @@ from gtdraw import (
     get_game_levels,
     ef_to_efg,
     efg_to_ef,
+)
+from gtdraw.layout_editor import (
+    apply_layout_positions,
+    normalise_layout_ef,
+    parse_ef_layout,
+    positions_changed,
+    render_layout_editor,
 )
 
 
@@ -61,6 +70,21 @@ def _get_scheme_colors(color_scheme: str, num_players: int) -> dict[int, str]:
         except Exception:
             return {i: "#000000" for i in range(num_players + 1)}
     return {i: "#000000" for i in range(num_players + 1)}
+
+
+def _editor_player_colors(
+    color_scheme: str,
+    num_players: int,
+    custom_colors: dict[int, str] | None = None,
+) -> dict[int, str]:
+    """Return node colours matching the active publication renderer."""
+    if color_scheme == "custom" and custom_colors:
+        return {int(player): color for player, color in custom_colors.items()}
+    if color_scheme == "default":
+        colors = {0: "#FF0000"}
+        colors.update({player: "#000000" for player in range(1, num_players + 1)})
+        return colors
+    return _get_scheme_colors(color_scheme, num_players)
 
 
 # ── Constants ────────────────────────────────────────────────────────────────
@@ -109,6 +133,8 @@ def _snapshot_settings() -> dict:
     """Capture all layout/aesthetics widget session-state values."""
     snap = {}
     for k, v in st.session_state.items():
+        if k == "gui_layout_editor":
+            continue
         if k.startswith(("gui_", "cp_", "alp_", "lbg_")) or k == "scheme_selector":
             snap[k] = v
     return snap
@@ -117,7 +143,97 @@ def _snapshot_settings() -> dict:
 def _apply_snapshot(snap: dict) -> None:
     """Restore widget session-state from a snapshot."""
     for k, v in snap.items():
+        if k == "gui_layout_editor":
+            continue
         st.session_state[k] = v
+
+
+def _settings_stack_entry(snapshot: dict) -> dict:
+    return {"kind": "settings", "snapshot": snapshot}
+
+
+def _layout_stack_entry(layout_key: str, layout_scope: str, ef_text: str) -> dict:
+    return {
+        "kind": "layout",
+        "layout_key": layout_key,
+        "layout_scope": layout_scope,
+        "ef_text": ef_text,
+    }
+
+
+def _push_stack_entry(stack_name: str, entry: dict, limit: int = 50) -> None:
+    stack = st.session_state.setdefault(stack_name, [])
+    stack.append(entry)
+    if len(stack) > limit:
+        del stack[:-limit]
+
+
+_DRAG_LAYOUT_STATE_PREFIXES = (
+    "drag_layout::",
+    "drag_layout_undo::",
+    "drag_layout_active::",
+    "component_drag_layout::",
+)
+_DRAG_LAYOUT_EPOCH_PREFIX = "drag_layout_epoch::"
+
+
+def _drag_layout_epoch_key(scope: str | None) -> str:
+    return f"{_DRAG_LAYOUT_EPOCH_PREFIX}{scope or '__global__'}"
+
+
+def _drag_layout_scope_matches(key: str, scope: str | None) -> bool:
+    if not scope:
+        return True
+    return f"::{scope}::" in key or key.endswith(f"::{scope}")
+
+
+def _bump_drag_layout_epoch(scope: str | None) -> None:
+    """Force the Streamlit component to remount on the next render."""
+    key = _drag_layout_epoch_key(scope)
+    st.session_state[key] = int(st.session_state.get(key, 0)) + 1
+
+
+def _clear_drag_layout_state(scope: str | None = None) -> None:
+    """Clear saved drag layouts, undo stacks, and stale component values."""
+    for key in list(st.session_state.keys()):
+        if key.startswith(_DRAG_LAYOUT_STATE_PREFIXES) and _drag_layout_scope_matches(
+            key, scope
+        ):
+            st.session_state.pop(key, None)
+    _bump_drag_layout_epoch(scope)
+
+
+def _apply_history_entry(entry: dict, reverse_stack_name: str) -> None:
+    """Apply one undo/redo history entry and push the current state opposite."""
+    keep_layout_editor = bool(st.session_state.get("gui_layout_editor"))
+    if isinstance(entry, dict) and entry.get("kind") == "layout":
+        layout_key = entry.get("layout_key")
+        layout_scope = entry.get("layout_scope")
+        ef_text = entry.get("ef_text")
+        if layout_key and isinstance(ef_text, str):
+            current_text = st.session_state.get(layout_key)
+            if isinstance(current_text, str):
+                _push_stack_entry(
+                    reverse_stack_name,
+                    _layout_stack_entry(layout_key, layout_scope, current_text),
+                )
+            st.session_state[layout_key] = ef_text
+            _bump_drag_layout_epoch(layout_scope)
+        if keep_layout_editor:
+            st.session_state["gui_layout_editor"] = True
+        return
+
+    snapshot = entry.get("snapshot") if isinstance(entry, dict) else entry
+    if isinstance(snapshot, dict):
+        current_snapshot = _snapshot_settings()
+        _apply_snapshot(snapshot)
+        _push_stack_entry(
+            reverse_stack_name,
+            _settings_stack_entry(current_snapshot),
+        )
+        st.session_state["_last_snap"] = _snapshot_settings()
+    if keep_layout_editor:
+        st.session_state["gui_layout_editor"] = True
 
 
 # ── YAML helpers ─────────────────────────────────────────────────────────────
@@ -334,27 +450,12 @@ def _apply_yaml_to_session_state(settings: dict) -> None:
 
 
 def run_app():
-    # Use the project favicon if available
-    icon_path = (
-        Path(__file__).parent.parent.parent
-        / "img"
-        / "favicon_48x48_light green background.png"
-    )
     icon = "🎨"
-    if icon_path.exists():
-        icon = str(icon_path)
 
     st.set_page_config(page_title="GTDraw", layout="wide", page_icon=icon)
 
     # Sidebar: Title and Input
-    if icon_path.exists():
-        col1, col2 = st.sidebar.columns([0.25, 0.75])
-        with col1:
-            st.image(str(icon_path), width=50)
-        with col2:
-            st.title("GTDraw")
-    else:
-        st.sidebar.title("🎨 GTDraw")
+    st.sidebar.title("🎨 GTDraw")
     st.sidebar.markdown(
         "##### Part of the [Gambit project](https://www.gambit-project.org/)."
     )
@@ -379,7 +480,6 @@ def run_app():
 
     _games_dir = _find_games_dir()
     base_path = _games_dir.parent if _games_dir else Path(__file__).parent
-    example_dir = _games_dir or (base_path / "games")
 
     game_source = None
     is_efg = False
@@ -399,42 +499,15 @@ def run_app():
         for g in catalog_games:
             options.append(("Catalog", g, g))
 
-        if example_dir.exists():
-            ef_examples = sorted(list(example_dir.glob("*.ef")))
-            for e in ef_examples:
-                rel_path = str(e.relative_to(base_path))
-                options.append(("EF", e.name, rel_path))
-
-            efg_examples = sorted(list((example_dir / "efg").glob("*.efg")))
-            for e in efg_examples:
-                rel_path = str(e.relative_to(base_path))
-                options.append(("EFG", e.name, rel_path))
-
-            nfg_examples = sorted(list((example_dir / "nfg").glob("*.nfg")))
-            for e in nfg_examples:
-                rel_path = str(e.relative_to(base_path))
-                options.append(("NFG", e.name, rel_path))
-
         def format_option(i):
             cat, name, _ = options[i]
             if cat == "None":
                 return "None"
             return f"[{cat}] {name}"
 
-        # Default selection
         default_idx = 0
-        target_example_path = "games/example.ef"
-        for i, opt in enumerate(options):
-            if opt[2] == target_example_path:
-                default_idx = i
-                break
 
-        help_text = (
-            "**Catalog**: Games from Gambit's catalog.\n\n"
-            "**EF**: GTDraw .ef format games.\n\n"
-            "**EFG**: Gambit .efg files.\n\n"
-            "**NFG**: Gambit .nfg normal form (strategic form) games."
-        )
+        help_text = "**Catalog**: Games from Gambit's catalog."
 
         selected_idx = st.selectbox(
             "Select an example",
@@ -449,12 +522,6 @@ def run_app():
             if cat == "Catalog":
                 game_source = gbt.catalog.load(val)
                 is_efg = True
-            else:
-                game_source = str(base_path / val)
-                if game_source.lower().endswith(".efg"):
-                    is_efg = True
-                elif game_source.lower().endswith(".nfg"):
-                    is_nfg = True
 
         uploaded_file = st.file_uploader(
             "Or upload your own .ef, .efg, or .nfg file", type=["ef", "efg", "nfg"]
@@ -533,6 +600,7 @@ def run_app():
     vary_action_label_positions_by = "all"
     vary_action_label_positions_choices = None
     action_label_position_by = "player"
+    layout_editor_enabled = False
 
     # ── Undo / Redo / Reset buttons ─────────────────────────────────────────
     if not is_nfg:
@@ -542,24 +610,24 @@ def run_app():
                 "↩ Undo",
                 disabled=not st.session_state.get("undo_stack"),
                 use_container_width=True,
-                help="Undo last settings change",
+                help="Undo last settings or layout change",
             ):
-                _redo_snap = _snapshot_settings()
-                _apply_snapshot(st.session_state["undo_stack"].pop())
-                st.session_state.setdefault("redo_stack", []).append(_redo_snap)
-                st.session_state["_last_snap"] = _snapshot_settings()
+                _apply_history_entry(
+                    st.session_state["undo_stack"].pop(),
+                    "redo_stack",
+                )
                 st.rerun()
         with _col_redo:
             if st.button(
                 "↪ Redo",
                 disabled=not st.session_state.get("redo_stack"),
                 use_container_width=True,
-                help="Redo last undone change",
+                help="Redo last undone settings or layout change",
             ):
-                _undo_snap = _snapshot_settings()
-                _apply_snapshot(st.session_state["redo_stack"].pop())
-                st.session_state.setdefault("undo_stack", []).append(_undo_snap)
-                st.session_state["_last_snap"] = _snapshot_settings()
+                _apply_history_entry(
+                    st.session_state["redo_stack"].pop(),
+                    "undo_stack",
+                )
                 st.rerun()
         with _col_reset:
             if st.button(
@@ -568,16 +636,26 @@ def run_app():
                 help="Restore defaults from gui_settings.yaml",
                 disabled=not game_slug,
             ):
-                st.session_state.setdefault("undo_stack", []).append(
-                    _snapshot_settings()
+                _push_stack_entry(
+                    "undo_stack",
+                    _settings_stack_entry(_snapshot_settings()),
                 )
                 st.session_state["redo_stack"] = []
                 _write_game_settings(_yaml, game_slug, {})
                 _loaded = _effective_settings_for_game(_yaml, game_slug)
                 _apply_yaml_to_session_state(_loaded)
+                st.session_state["gui_layout_editor"] = False
+                _clear_drag_layout_state(game_slug)
                 st.session_state.pop("_prev_scheme", None)
                 st.session_state.pop("_last_snap", None)
                 st.rerun()
+
+        layout_editor_enabled = st.sidebar.checkbox(
+            "Layout editor",
+            value=False,
+            key="gui_layout_editor",
+            help="Drag nodes and use the adjusted layout for previews and downloads.",
+        )
 
     if not is_nfg:
         with st.sidebar.expander("📐 Layout", expanded=False):
@@ -1043,12 +1121,11 @@ def run_app():
     if not is_nfg and game_source:
         _current_snap = _snapshot_settings()
         _prev_snap = st.session_state.get("_last_snap")
-        _MAX_UNDO = 50
         if _prev_snap is not None and _current_snap != _prev_snap:
-            _stack = st.session_state.setdefault("undo_stack", [])
-            _stack.append(_prev_snap)
-            if len(_stack) > _MAX_UNDO:
-                _stack.pop(0)
+            _push_stack_entry(
+                "undo_stack",
+                _settings_stack_entry(_prev_snap),
+            )
             st.session_state["redo_stack"] = []
         st.session_state["_last_snap"] = _current_snap
 
@@ -1094,20 +1171,10 @@ def run_app():
 
     # Main Area: Display
     if not game_source:
-        if icon_path.exists():
-            c1, c2 = st.columns([0.1, 0.9])
-            with c1:
-                st.image(str(icon_path), width=80)
-            with c2:
-                st.title("GTDraw")
-            st.markdown(
-                "### Part of the [Gambit project](https://www.gambit-project.org/)"
-            )
-        else:
-            st.title("🎨 GTDraw")
-            st.markdown(
-                "### Part of the [Gambit project](https://www.gambit-project.org/)"
-            )
+        st.title("🎨 GTDraw")
+        st.markdown(
+            "### Part of the [Gambit project](https://www.gambit-project.org/)"
+        )
         st.info("Select a game from the sidebar to begin.")
         return
 
@@ -1118,6 +1185,8 @@ def run_app():
 
             base_name = f"gui_temp_{os.getpid()}"
             output_base = str(work_dir / base_name)
+            render_game_source = game_source
+            active_ef_source = None
 
             if is_nfg:
                 # NFG: get the LaTeX body (always available, no pdflatex needed)
@@ -1201,10 +1270,96 @@ def run_app():
                             )
                 return
 
+            if layout_editor_enabled:
+                try:
+                    st.markdown("#### Editor layout")
+                    base_ef_path = work_dir / f"{base_name}_layout_base.ef"
+                    if is_efg:
+                        efg_to_ef(
+                            game_source,
+                            save_to=str(base_ef_path),
+                            level_scaling=level_scaling,
+                            sublevel_scaling=sublevel_scaling,
+                            width_scaling=width_scaling,
+                            shared_terminal_depth=shared_terminal_depth,
+                        )
+                        base_ef_text = base_ef_path.read_text(encoding="utf-8")
+                    else:
+                        base_ef_text = Path(game_source).read_text(encoding="utf-8")
+
+                    source_hash = hashlib.sha1(
+                        base_ef_text.encode("utf-8")
+                    ).hexdigest()[:12]
+                    layout_scope = game_slug or base_filename
+                    layout_key = (
+                        f"drag_layout::{layout_scope}::{source_hash}::"
+                        f"{level_scaling}:{sublevel_scaling}:{width_scaling}:"
+                        f"{shared_terminal_depth}"
+                    )
+                    st.session_state[f"drag_layout_active::{layout_scope}"] = layout_key
+
+                    if layout_key not in st.session_state:
+                        st.session_state[layout_key] = normalise_layout_ef(
+                            base_ef_text
+                        )
+
+                    current_ef_text = st.session_state[layout_key]
+                    editable_layout = parse_ef_layout(current_ef_text)
+                    editor_colors = _editor_player_colors(
+                        color_scheme,
+                        count_players(render_game_source),
+                        custom_colors,
+                    )
+                    layout_epoch = st.session_state.get(
+                        _drag_layout_epoch_key(layout_scope), 0
+                    )
+                    editor_kwargs = {
+                        "key": f"component_{layout_key}::{layout_epoch}",
+                    }
+                    if "player_colors" in inspect.signature(
+                        render_layout_editor
+                    ).parameters:
+                        editor_kwargs["player_colors"] = editor_colors
+                    drag_result = render_layout_editor(
+                        editable_layout,
+                        **editor_kwargs,
+                    )
+                    if (
+                        isinstance(drag_result, dict)
+                        and isinstance(drag_result.get("positions"), dict)
+                        and positions_changed(
+                            editable_layout, drag_result["positions"]
+                        )
+                    ):
+                        _push_stack_entry(
+                            "undo_stack",
+                            _layout_stack_entry(
+                                layout_key,
+                                layout_scope,
+                                current_ef_text,
+                            ),
+                        )
+                        st.session_state["redo_stack"] = []
+                        st.session_state[layout_key] = apply_layout_positions(
+                            current_ef_text,
+                            drag_result["positions"],
+                        )
+                        st.rerun()
+
+                    active_ef_path = work_dir / f"{base_name}_dragged.ef"
+                    active_ef_path.write_text(
+                        st.session_state[layout_key],
+                        encoding="utf-8",
+                    )
+                    active_ef_source = str(active_ef_path)
+                    render_game_source = active_ef_source
+                except Exception as layout_err:
+                    st.warning(f"Layout editor unavailable: {layout_err}")
+
             svg_path = str(work_dir / f"{base_name}.svg")
 
             svg_code = svg(
-                game=game_source,
+                game=render_game_source,
                 save_to=svg_path,
                 scale_factor=scale_factor,
                 level_scaling=level_scaling,
@@ -1252,11 +1407,14 @@ def run_app():
                 svg_content = f.read()
 
             # Display the responsive SVG directly
+            if layout_editor_enabled:
+                st.markdown("---")
+                st.markdown("#### Displayed layout")
             st.markdown(svg_content, unsafe_allow_html=True)
 
             # Pre-generate all download formats
             tikz_code = tikz(
-                game=game_source,
+                game=render_game_source,
                 save_to=output_base + ".tikz",
                 scale_factor=scale_factor,
                 level_scaling=level_scaling,
@@ -1296,7 +1454,7 @@ def run_app():
             )
 
             tex_path = tex(
-                game=game_source,
+                game=render_game_source,
                 save_to=output_base + ".tex",
                 scale_factor=scale_factor,
                 level_scaling=level_scaling,
@@ -1337,7 +1495,7 @@ def run_app():
                 tex_data = f.read()
 
             pdf_path = pdf(
-                game=game_source,
+                game=render_game_source,
                 save_to=output_base + ".pdf",
                 scale_factor=scale_factor,
                 level_scaling=level_scaling,
@@ -1378,7 +1536,7 @@ def run_app():
                 pdf_data = f.read()
 
             png_path = png(
-                game=game_source,
+                game=render_game_source,
                 save_to=output_base + ".png",
                 scale_factor=scale_factor,
                 level_scaling=level_scaling,
@@ -1425,7 +1583,16 @@ def run_app():
                 ef_data = None
                 efg_data = None
                 try:
-                    if is_efg:
+                    if active_ef_source:
+                        with open(active_ef_source, "r") as f:
+                            ef_data = f.read()
+                        efg_download_path = ef_to_efg(
+                            active_ef_source,
+                            save_to=output_base + ".efg",
+                        )
+                        with open(efg_download_path, "r") as f:
+                            efg_data = f.read()
+                    elif is_efg:
                         # Input was EFG/catalog: generate the EF file
                         ef_download_path = efg_to_ef(
                             game_source,

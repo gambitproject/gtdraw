@@ -39,4 +39,4 @@ Issues = "https://github.com/gambitproject/gtdraw/issues"
 where = ["src"]
 
 [tool.setuptools.package-data]
-gtdraw = ["*.ef"]
+gtdraw = ["*.ef", "components/layout_editor/*"]
