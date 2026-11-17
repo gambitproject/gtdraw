@@ -1,3 +1,10 @@
+% gtdraw: color_scheme custom
+% gtdraw: font_family sffamily
+% gtdraw: font_italic true
+% gtdraw: custom_colors {"0": "#759138", "1": "#000000", "2": "#11a1fd"}
+% gtdraw: action_label_dist 5.0
+% gtdraw: iset_fill true
+% gtdraw: iset_curved true
 player 1 name 1
 player 2 name 2
 level 0 node 1 player 1 

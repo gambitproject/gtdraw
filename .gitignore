@@ -136,6 +136,8 @@ cython_debug/
 
 # Project specific
 *.tex
+# ...but keep the example strategic games (LaTeX bodies of sgame tables)
+!/games/*.tex
 *.pdf
 *.svg
 # Ignore PNGs and SVGs by default, but allow them in the repository `img/` directory

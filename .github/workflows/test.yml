@@ -1,6 +1,7 @@
 name: Test
 
 on:
+  workflow_call:
   push:
     branches:
       - main
@@ -18,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.14"]
+        python-version: ["3.11", "3.14"]
 
     steps:
     - uses: actions/checkout@v4
@@ -28,16 +29,20 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     
-    - name: Install LaTeX and pdf2svg
+    - name: Install LaTeX and poppler
       run: |
         sudo apt-get update
-        sudo apt-get install -y texlive-pictures texlive-latex-extra texlive-games ghostscript pdf2svg
+        sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-pictures texlive-games poppler-utils
         
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e .[dev]
+        pip install -e .[dev,gui]
         
+    - name: Check that pygambit is not installed
+      run: |
+        ! python -c "import pygambit"
+
     - name: Test with pytest
       run: |
         pytest tests/ -v --tb=short

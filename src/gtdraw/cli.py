@@ -7,13 +7,12 @@ import sys
 from pathlib import Path
 from .core import (
     commandline,
-    draw,
     pdf,
     png,
     svg,
     tex,
+    tikz,
 )
-from .converter import ef_to_efg, efg_to_ef
 
 
 def main():
@@ -28,10 +27,10 @@ def main():
             "  gtdraw <file.ef> --pdf [options]     # Generate PDF (requires pdflatex)"
         )
         print(
-            "  gtdraw <file.ef> --png [options]     # Generate PNG (requires pdflatex + imagemagick/ghostscript)"
+            "  gtdraw <file.ef> --png [options]     # Generate PNG (requires pdflatex + pdftocairo)"
         )
         print(
-            "  gtdraw <file.ef> --svg [options]     # Generate SVG (requires pdflatex + pdf2svg)"
+            "  gtdraw <file.ef> --svg [options]     # Generate SVG (requires pdflatex + pdftocairo)"
         )
         print("  gtdraw <file.ef> --tex [options]     # Generate LaTeX document")
         print(
@@ -94,19 +93,13 @@ def main():
             "  --iset-curved-double-distance=X.X  Width of the curved information set ribbon in mm (default: 3.0)"
         )
         print("  --node-size=X Set size of player nodes in mm (default: 1.5)")
-        print("  --level-scaling=X Set level spacing multiplier for .efg files (default: 1.0)")
-        print("  --sublevel-scaling=X Set sublevel spacing multiplier for .efg files (default: 1.0)")
-        print("  --width-scaling=X Set width spacing multiplier for .efg files (default: 1.0)")
-        print("  --shared-terminal-depth Enforce shared terminal node depth for .efg files")
         print()
-        print("Normal form games (NFG):")
-        print("  gtdraw games/nfg/game.nfg            # Print \\begin{game}...\\end{game} body")
-        print("  gtdraw games/nfg/game.nfg --pdf      # Compile payoff table to PDF (requires sgame)")
-        print("  gtdraw games/nfg/game.nfg --png      # Compile payoff table to PNG")
+        print("Strategic games (the LaTeX body of an sgame table, as a .tex file):")
+        print("  gtdraw game.tex                      # Print the \\begin{game}...\\end{game} body")
+        print("  gtdraw game.tex --pdf                # Compile the payoff table to PDF (requires sgame)")
+        print("  gtdraw game.tex --png                # Compile the payoff table to PNG")
         print()
-        print("Format conversion:")
-        print("  --to-efg     Convert .ef file to Gambit .efg format")
-        print("  --to-ef      Convert .efg file to .ef format (requires pygambit)")
+        print("To draw a Gambit game file (.efg, .nfg), convert it to a drawing with pygambit first.")
         print()
         print("Examples:")
         print("  gtdraw games/example.ef --pdf")
@@ -117,11 +110,9 @@ def main():
         print(
             '  gtdraw games/example.ef --png --custom-colors="0:#FF0000,1:#0000FF"'
         )
-        print("  gtdraw games/example.ef --to-efg")
-        print("  gtdraw games/efg/2s2x2x2.efg --to-ef")
         print()
         print(
-            "Note: PDF/PNG/SVG generation requires pdflatex. PNG also needs ImageMagick or Ghostscript. SVG needs pdf2svg."
+            "Note: PDF/PNG/SVG generation requires pdflatex (TeX Live); PNG and SVG also need pdftocairo (poppler-utils)."
         )
         sys.exit(0)
 
@@ -139,79 +130,55 @@ def main():
             )
             sys.exit(1)
 
-    # Process command-line arguments
-    (
-        output_mode,
-        pdf_requested,
-        png_requested,
-        svg_requested,
-        tex_requested,
-        output_file,
-        dpi,
-        font_family,
-        font_bold,
-        font_italic,
-        font_size,
-        custom_colors,
-        horizontal,
-        mirror,
-        legend_position,
-        action_label_dist,
-        iset_fill,
-        iset_fill_opacity,
-        iset_boundary,
-        iset_curved,
-        iset_curved_bend,
-        iset_curved_bend_by,
-        node_size,
-        label_bg,
-        label_bg_color,
-        label_bg_opacity,
-        label_bg_by,
-        label_bg_style,
-        color_scheme,
-        edge_thickness,
-        action_label_position,
-        level_scaling,
-        sublevel_scaling,
-        width_scaling,
-        shared_terminal_depth,
-        to_efg_requested,
-        to_ef_requested,
-        vary_action_label_positions,
-        action_label_position_by,
-        vary_action_label_positions_by,
-        vary_action_label_positions_choices,
-    ) = commandline(sys.argv)
+    # Process command-line arguments. commandline() returns every option, defaults
+    # included, and records in core.cli_given which ones the user gave.
+    values = commandline(sys.argv)
+    output_mode = values[0]
+    output_file = values[5]
+    dpi = values[6]
 
     # Import the core module to access global variables after commandline() has set them
     from . import core
 
     current_ef_file = core.ef_file
-    current_scale = core.scale
-    current_grid = core.grid
+
+    # Pass only the style options the user gave: the rest is left to Style() and to the
+    # style block of the drawing, which a flag overrides, even a flag equal to the default.
+    style_names = {
+        "font_family": values[7],
+        "font_bold": values[8],
+        "font_italic": values[9],
+        "font_size": values[10],
+        "custom_colors": values[11],
+        "horizontal": values[12],
+        "mirror": values[13],
+        "legend_position": values[14],
+        "action_label_dist": values[15],
+        "iset_fill": values[16],
+        "iset_fill_opacity": values[17],
+        "iset_boundary": values[18],
+        "iset_curved": values[19],
+        "iset_curved_bend": values[20],
+        "iset_curved_bend_by": values[21],
+        "node_size": values[22],
+        "label_bg": values[23],
+        "label_bg_color": values[24],
+        "label_bg_opacity": values[25],
+        "label_bg_by": values[26],
+        "label_bg_style": values[27],
+        "color_scheme": values[28],
+        "edge_thickness": values[29],
+        "action_label_position": values[30],
+        "vary_action_label_positions": values[31],
+        "action_label_position_by": values[32],
+        "vary_action_label_positions_by": values[33],
+        "vary_action_label_positions_choices": values[34],
+        "scale_factor": core.scale,
+        "show_grid": core.grid,
+    }
+    options = {k: v for k, v in style_names.items() if k in core.cli_given}
 
     try:
-        # Handle format conversion requests first
-        if to_efg_requested:
-            save_to = output_file
-            result = ef_to_efg(current_ef_file, save_to=save_to)
-            print(f"EFG file generated: {result}")
-            return
-
-        if to_ef_requested:
-            save_to = output_file
-            result = efg_to_ef(
-                current_ef_file,
-                save_to=save_to,
-                level_scaling=level_scaling,
-                sublevel_scaling=sublevel_scaling,
-                width_scaling=width_scaling,
-                shared_terminal_depth=shared_terminal_depth,
-            )
-            print(f"EF file generated: {result}")
-            return
-
         # Use default filename if none specified
         if output_file is None:
             output_file = Path(current_ef_file).stem
@@ -220,44 +187,7 @@ def main():
                 print(f"Generating PDF: {output_file}")
             else:
                 print(f"Generating PDF: {output_file}.pdf")
-            pdf_path = pdf(
-                game=current_ef_file,
-                save_to=output_file,
-                scale_factor=current_scale,
-                show_grid=current_grid,
-                font_family=font_family,
-                font_bold=font_bold,
-                font_italic=font_italic,
-                font_size=font_size,
-                custom_colors=custom_colors,
-                horizontal=horizontal,
-                mirror=mirror,
-                legend_position=legend_position,
-                action_label_dist=action_label_dist,
-                iset_fill=iset_fill,
-                iset_fill_opacity=iset_fill_opacity,
-                iset_boundary=iset_boundary,
-                iset_curved=iset_curved,
-                iset_curved_bend=iset_curved_bend,
-                iset_curved_bend_by=iset_curved_bend_by,
-                node_size=node_size,
-                label_bg=label_bg,
-                label_bg_color=label_bg_color,
-                label_bg_opacity=label_bg_opacity,
-                label_bg_by=label_bg_by,
-                label_bg_style=label_bg_style,
-                color_scheme=color_scheme,
-                edge_thickness=edge_thickness,
-                action_label_position=action_label_position,
-                level_scaling=level_scaling,
-                sublevel_scaling=sublevel_scaling,
-                width_scaling=width_scaling,
-                shared_terminal_depth=shared_terminal_depth,
-                vary_action_label_positions=vary_action_label_positions,
-                action_label_position_by=action_label_position_by,
-                vary_action_label_positions_by=vary_action_label_positions_by,
-                vary_action_label_positions_choices=vary_action_label_positions_choices,
-            )
+            pdf_path = pdf(current_ef_file, save_to=output_file, **options)
             print(f"PDF generated successfully: {pdf_path}")
 
         elif output_mode == "png":
@@ -266,43 +196,10 @@ def main():
             else:
                 print(f"Generating PNG: {output_file}.png")
             png_path = png(
-                game=current_ef_file,
+                current_ef_file,
                 save_to=output_file,
-                scale_factor=current_scale,
-                show_grid=current_grid,
                 dpi=dpi if dpi is not None else 300,
-                font_family=font_family,
-                font_bold=font_bold,
-                font_italic=font_italic,
-                font_size=font_size,
-                custom_colors=custom_colors,
-                horizontal=horizontal,
-                mirror=mirror,
-                legend_position=legend_position,
-                action_label_dist=action_label_dist,
-                iset_fill=iset_fill,
-                iset_fill_opacity=iset_fill_opacity,
-                iset_boundary=iset_boundary,
-                iset_curved=iset_curved,
-                iset_curved_bend=iset_curved_bend,
-                iset_curved_bend_by=iset_curved_bend_by,
-                node_size=node_size,
-                label_bg=label_bg,
-                label_bg_color=label_bg_color,
-                label_bg_opacity=label_bg_opacity,
-                label_bg_by=label_bg_by,
-                label_bg_style=label_bg_style,
-                color_scheme=color_scheme,
-                edge_thickness=edge_thickness,
-                action_label_position=action_label_position,
-                level_scaling=level_scaling,
-                sublevel_scaling=sublevel_scaling,
-                width_scaling=width_scaling,
-                shared_terminal_depth=shared_terminal_depth,
-                vary_action_label_positions=vary_action_label_positions,
-                action_label_position_by=action_label_position_by,
-                vary_action_label_positions_by=vary_action_label_positions_by,
-                vary_action_label_positions_choices=vary_action_label_positions_choices,
+                **options,
             )
             print(f"PNG generated successfully: {png_path}")
 
@@ -311,44 +208,7 @@ def main():
                 print(f"Generating SVG: {output_file}")
             else:
                 print(f"Generating SVG: {output_file}.svg")
-            svg_path = svg(
-                game=current_ef_file,
-                save_to=output_file,
-                scale_factor=current_scale,
-                show_grid=current_grid,
-                font_family=font_family,
-                font_bold=font_bold,
-                font_italic=font_italic,
-                font_size=font_size,
-                custom_colors=custom_colors,
-                horizontal=horizontal,
-                mirror=mirror,
-                legend_position=legend_position,
-                action_label_dist=action_label_dist,
-                iset_fill=iset_fill,
-                iset_fill_opacity=iset_fill_opacity,
-                iset_boundary=iset_boundary,
-                iset_curved=iset_curved,
-                iset_curved_bend=iset_curved_bend,
-                iset_curved_bend_by=iset_curved_bend_by,
-                node_size=node_size,
-                label_bg=label_bg,
-                label_bg_color=label_bg_color,
-                label_bg_opacity=label_bg_opacity,
-                label_bg_by=label_bg_by,
-                label_bg_style=label_bg_style,
-                color_scheme=color_scheme,
-                edge_thickness=edge_thickness,
-                action_label_position=action_label_position,
-                level_scaling=level_scaling,
-                sublevel_scaling=sublevel_scaling,
-                width_scaling=width_scaling,
-                shared_terminal_depth=shared_terminal_depth,
-                vary_action_label_positions=vary_action_label_positions,
-                action_label_position_by=action_label_position_by,
-                vary_action_label_positions_by=vary_action_label_positions_by,
-                vary_action_label_positions_choices=vary_action_label_positions_choices,
-            )
+            svg_path = svg(current_ef_file, save_to=output_file, **options)
             print(f"SVG generated successfully: {svg_path}")
 
         elif output_mode == "tex":
@@ -356,88 +216,12 @@ def main():
                 print(f"Generating LaTeX: {output_file}")
             else:
                 print(f"Generating LaTeX: {output_file}.tex")
-            tex_path = tex(
-                game=current_ef_file,
-                save_to=output_file,
-                scale_factor=current_scale,
-                show_grid=current_grid,
-                font_family=font_family,
-                font_bold=font_bold,
-                font_italic=font_italic,
-                font_size=font_size,
-                custom_colors=custom_colors,
-                horizontal=horizontal,
-                mirror=mirror,
-                legend_position=legend_position,
-                action_label_dist=action_label_dist,
-                iset_fill=iset_fill,
-                iset_fill_opacity=iset_fill_opacity,
-                iset_boundary=iset_boundary,
-                iset_curved=iset_curved,
-                iset_curved_bend=iset_curved_bend,
-                iset_curved_bend_by=iset_curved_bend_by,
-                node_size=node_size,
-                label_bg=label_bg,
-                label_bg_color=label_bg_color,
-                label_bg_opacity=label_bg_opacity,
-                label_bg_by=label_bg_by,
-                label_bg_style=label_bg_style,
-                color_scheme=color_scheme,
-                edge_thickness=edge_thickness,
-                action_label_position=action_label_position,
-                level_scaling=level_scaling,
-                sublevel_scaling=sublevel_scaling,
-                width_scaling=width_scaling,
-                shared_terminal_depth=shared_terminal_depth,
-                vary_action_label_positions=vary_action_label_positions,
-                action_label_position_by=action_label_position_by,
-                vary_action_label_positions_by=vary_action_label_positions_by,
-                vary_action_label_positions_choices=vary_action_label_positions_choices,
-            )
+            tex_path = tex(current_ef_file, save_to=output_file, **options)
             print(f"LaTeX generated successfully: {tex_path}")
 
         else:
-            # Generate TikZ code (original behavior)
-            tikz_code = draw(
-                game=current_ef_file,
-                scale_factor=current_scale,
-                show_grid=current_grid,
-                font_family=font_family,
-                font_bold=font_bold,
-                font_italic=font_italic,
-                font_size=font_size,
-                custom_colors=custom_colors,
-                horizontal=horizontal,
-                mirror=mirror,
-                legend_position=legend_position,
-                action_label_dist=action_label_dist,
-                iset_fill=iset_fill,
-                iset_fill_opacity=iset_fill_opacity,
-                iset_boundary=iset_boundary,
-                iset_curved=iset_curved,
-                iset_curved_bend=iset_curved_bend,
-                iset_curved_bend_by=iset_curved_bend_by,
-                node_size=node_size,
-                label_bg=label_bg,
-                label_bg_color=label_bg_color,
-                label_bg_opacity=label_bg_opacity,
-                label_bg_by=label_bg_by,
-                label_bg_style=label_bg_style,
-                color_scheme=color_scheme,
-                edge_thickness=edge_thickness,
-                action_label_position=action_label_position,
-                level_scaling=level_scaling,
-                sublevel_scaling=sublevel_scaling,
-                width_scaling=width_scaling,
-                shared_terminal_depth=shared_terminal_depth,
-                vary_action_label_positions=vary_action_label_positions,
-                action_label_position_by=action_label_position_by,
-                vary_action_label_positions_by=vary_action_label_positions_by,
-                vary_action_label_positions_choices=vary_action_label_positions_choices,
-            )
-
-            # Output the complete TikZ code
-            print(tikz_code)
+            # Print the complete TikZ code (tikz() returns the code as a string)
+            print(tikz(current_ef_file, **options))
 
     except FileNotFoundError:
         print(f"Error: Could not find file {current_ef_file}", file=sys.stderr)

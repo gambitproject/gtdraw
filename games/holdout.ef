@@ -1,0 +1,154 @@
+player 1 name Player~1
+player 2 name Player~2
+level -2.0 node 1 player 0 
+level 2.0 node 2 player 0 xshift -24.030611991882324 from 1 move High~(\frac{1}{2}) 
+level 6.0 node 3 xshift -14.616765975952148 from 2 move High~(\frac{3}{5}) 
+level 10.0 node 4 xshift -9.122447967529297 from 3 move H 
+level 14.0 node 5 player 0 xshift -15.244895935058594 from 4 move H 
+level 18.0 node 6 xshift -19.510208129882812 from 5 move _1~(\frac{1}{10}) payoffs 
+level 20.0 node 7 xshift 19.510208129882812 from 5 move _2~(\frac{9}{10}) 
+level 22.0 node 8 xshift -7.979583740234375 from 7 move H 
+level 26.0 node 9 player 0 xshift -12.95916748046875 from 8 move H 
+level 30.0 node 10 xshift -16.0816650390625 from 9 move _1~(\frac{1}{10}) payoffs 
+level 32.0 node 11 xshift 16.0816650390625 from 9 move _2~(\frac{9}{10}) 
+level 34.0 node 12 xshift -6.836669921875 from 11 move H 
+level 38.0 node 13 player 0 xshift -10.67333984375 from 12 move H 
+level 42.0 node 14 xshift -12.6533203125 from 13 move _1~(\frac{1}{10}) payoffs 
+level 44.0 node 15 xshift 12.6533203125 from 13 move _2~(\frac{9}{10}) 
+level 46.0 node 16 xshift -5.693359375 from 15 move H 
+level 50.0 node 17 player 0 xshift -8.38671875 from 16 move H 
+level 54.0 node 18 xshift -9.2265625 from 17 move _1~(\frac{1}{10}) payoffs 
+level 56.0 node 19 xshift 9.2265625 from 17 move _2~(\frac{9}{10}) 
+level 58.0 node 20 xshift -4.546875 from 19 move H 
+level 62.0 node 21 player 0 xshift -6.09375 from 20 move H 
+level 66.0 node 22 xshift -5.8125 from 21 move _1~(\frac{1}{10}) payoffs 
+level 68.0 node 23 xshift 5.8125 from 21 move _2~(\frac{9}{10}) 
+level 70.0 node 24 xshift -3.375 from 23 move H 
+level 74.0 node 25 player 0 xshift -3.75 from 24 move H 
+level 78.0 node 26 xshift -2.5 from 25 move _1~(\frac{1}{10}) payoffs 
+level 80.0 node 27 xshift 2.5 from 25 move _2~(\frac{9}{10}) 
+level 82.0 node 28 xshift -2.0 from 27 move H 
+level 86.0 node 29 xshift -1.0 from 28 move H payoffs 0 0 
+level 86.0 node 30 xshift 1.0 from 28 move G payoffs 1 1/2 
+level 82.0 node 31 xshift 2.0 from 27 move G 
+level 86.0 node 32 xshift -1.0 from 31 move H payoffs 1/2 1 
+level 86.0 node 33 xshift 1.0 from 31 move G payoffs 1/2 1/2 
+level 76.0 node 34 xshift 3.75 from 24 move G payoffs 1 1/2 
+level 70.0 node 35 xshift 3.375 from 23 move G 
+level 76.0 node 36 xshift -1.0 from 35 move H payoffs 1/2 1 
+level 76.0 node 37 xshift 1.0 from 35 move G payoffs 1/2 1/2 
+level 64.0 node 38 xshift 6.09375 from 20 move G payoffs 1 1/2 
+level 58.0 node 39 xshift 4.546875 from 19 move G 
+level 64.0 node 40 xshift -1.0 from 39 move H payoffs 1/2 1 
+level 64.0 node 41 xshift 1.0 from 39 move G payoffs 1/2 1/2 
+level 52.0 node 42 xshift 8.38671875 from 16 move G payoffs 1 1/2 
+level 46.0 node 43 xshift 5.693359375 from 15 move G 
+level 52.0 node 44 xshift -1.0 from 43 move H payoffs 1/2 1 
+level 52.0 node 45 xshift 1.0 from 43 move G payoffs 1/2 1/2 
+level 40.0 node 46 xshift 10.67333984375 from 12 move G payoffs 1 1/2 
+level 34.0 node 47 xshift 6.836669921875 from 11 move G 
+level 40.0 node 48 xshift -1.0 from 47 move H payoffs 1/2 1 
+level 40.0 node 49 xshift 1.0 from 47 move G payoffs 1/2 1/2 
+level 28.0 node 50 xshift 12.95916748046875 from 8 move G payoffs 1 1/2 
+level 22.0 node 51 xshift 7.979583740234375 from 7 move G 
+level 28.0 node 52 xshift -1.0 from 51 move H payoffs 1/2 1 
+level 28.0 node 53 xshift 1.0 from 51 move G payoffs 1/2 1/2 
+level 16.0 node 54 xshift 15.244895935058594 from 4 move G payoffs 1 1/2 
+level 10.0 node 55 xshift 9.122447967529297 from 3 move G 
+level 16.0 node 56 xshift -1.0 from 55 move H payoffs 1/2 1 
+level 16.0 node 57 xshift 1.0 from 55 move G payoffs 1/2 1/2 
+level 6.0 node 58 xshift 14.616765975952148 from 2 move Low~(\frac{2}{5}) 
+level 12.0 node 59 xshift -8.888916015625 from 58 move H 
+level 18.0 node 60 player 0 xshift 0.0 from 59 move H 
+level 22.0 node 61 xshift -8.22216796875 from 60 move _1~(\frac{1}{10}) payoffs 
+level 20.0 node 62 xshift 8.22216796875 from 60 move _2~(\frac{9}{10}) 
+level 24.0 node 63 xshift -7.5556640625 from 62 move H 
+level 30.0 node 64 player 0 xshift 0.0 from 63 move H 
+level 34.0 node 65 xshift -6.888671875 from 64 move _1~(\frac{1}{10}) payoffs 
+level 32.0 node 66 xshift 6.888671875 from 64 move _2~(\frac{9}{10}) 
+level 36.0 node 67 xshift -6.22265625 from 66 move H 
+level 42.0 node 68 player 0 xshift 0.0 from 67 move H 
+level 46.0 node 69 xshift -5.5546875 from 68 move _1~(\frac{1}{10}) payoffs 
+level 44.0 node 70 xshift 5.5546875 from 68 move _2~(\frac{9}{10}) 
+level 48.0 node 71 xshift -4.890625 from 70 move H 
+level 54.0 node 72 player 0 xshift 0.0 from 71 move H 
+level 58.0 node 73 xshift -4.21875 from 72 move _1~(\frac{1}{10}) payoffs 
+level 56.0 node 74 xshift 4.21875 from 72 move _2~(\frac{9}{10}) 
+level 60.0 node 75 xshift -3.5625 from 74 move H 
+level 66.0 node 76 player 0 xshift 0.0 from 75 move H 
+level 70.0 node 77 xshift -2.875 from 76 move _1~(\frac{1}{10}) payoffs 
+level 68.0 node 78 xshift 2.875 from 76 move _2~(\frac{9}{10}) 
+level 72.0 node 79 xshift -2.25 from 78 move H 
+level 78.0 node 80 player 0 xshift 0.0 from 79 move H 
+level 82.0 node 81 xshift -1.5 from 80 move _1~(\frac{1}{10}) payoffs 
+level 80.0 node 82 xshift 1.5 from 80 move _2~(\frac{9}{10}) 
+level 84.0 node 83 xshift -1.0 from 82 move H 
+level 86.0 node 84 xshift 0.0 from 83 move H payoffs 0 0 
+level 84.0 node 85 xshift 1.0 from 82 move G 
+level 86.0 node 86 xshift 0.0 from 85 move H payoffs 1/2 1 
+level 72.0 node 87 xshift 2.25 from 78 move G 
+level 76.0 node 88 xshift 0.0 from 87 move H payoffs 1/2 1 
+level 60.0 node 89 xshift 3.5625 from 74 move G 
+level 64.0 node 90 xshift 0.0 from 89 move H payoffs 1/2 1 
+level 48.0 node 91 xshift 4.890625 from 70 move G 
+level 52.0 node 92 xshift 0.0 from 91 move H payoffs 1/2 1 
+level 36.0 node 93 xshift 6.22265625 from 66 move G 
+level 40.0 node 94 xshift 0.0 from 93 move H payoffs 1/2 1 
+level 24.0 node 95 xshift 7.5556640625 from 62 move G 
+level 28.0 node 96 xshift 0.0 from 95 move H payoffs 1/2 1 
+level 12.0 node 97 xshift 8.888916015625 from 58 move G 
+level 16.0 node 98 xshift 0.0 from 97 move H payoffs 1/2 1 
+level 4.0 node 99 player 0 xshift 24.030611991882324 from 1 move Low~(\frac{1}{2}) 
+level 8.0 node 100 xshift -5.4444580078125 from 99 move High~(\frac{3}{5}) 
+level 10.0 node 101 xshift 0.0 from 100 move H 
+level 20.0 node 102 player 0 xshift -8.888916015625 from 101 move H 
+level 22.0 node 103 xshift -8.22216796875 from 102 move _1~(\frac{1}{10}) payoffs 
+level 22.0 node 104 xshift 8.22216796875 from 102 move _2~(\frac{9}{10}) 
+level 26.0 node 105 xshift 0.0 from 104 move H 
+level 32.0 node 106 player 0 xshift -7.5556640625 from 105 move H 
+level 34.0 node 107 xshift -6.888671875 from 106 move _1~(\frac{1}{10}) payoffs 
+level 34.0 node 108 xshift 6.888671875 from 106 move _2~(\frac{9}{10}) 
+level 38.0 node 109 xshift 0.0 from 108 move H 
+level 44.0 node 110 player 0 xshift -6.22265625 from 109 move H 
+level 46.0 node 111 xshift -5.5546875 from 110 move _1~(\frac{1}{10}) payoffs 
+level 46.0 node 112 xshift 5.5546875 from 110 move _2~(\frac{9}{10}) 
+level 50.0 node 113 xshift 0.0 from 112 move H 
+level 56.0 node 114 player 0 xshift -4.890625 from 113 move H 
+level 58.0 node 115 xshift -4.21875 from 114 move _1~(\frac{1}{10}) payoffs 
+level 58.0 node 116 xshift 4.21875 from 114 move _2~(\frac{9}{10}) 
+level 62.0 node 117 xshift 0.0 from 116 move H 
+level 68.0 node 118 player 0 xshift -3.5625 from 117 move H 
+level 70.0 node 119 xshift -2.875 from 118 move _1~(\frac{1}{10}) payoffs 
+level 70.0 node 120 xshift 2.875 from 118 move _2~(\frac{9}{10}) 
+level 74.0 node 121 xshift 0.0 from 120 move H 
+level 80.0 node 122 player 0 xshift -2.25 from 121 move H 
+level 82.0 node 123 xshift -1.5 from 122 move _1~(\frac{1}{10}) payoffs 
+level 82.0 node 124 xshift 1.5 from 122 move _2~(\frac{9}{10}) 
+level 86.0 node 125 xshift 0.0 from 124 move H 
+level 86.0 node 126 xshift -1.0 from 125 move H payoffs 0 0 
+level 86.0 node 127 xshift 1.0 from 125 move G payoffs 1 1/2 
+level 76.0 node 128 xshift 2.25 from 121 move G payoffs 1 1/2 
+level 64.0 node 129 xshift 3.5625 from 117 move G payoffs 1 1/2 
+level 52.0 node 130 xshift 4.890625 from 113 move G payoffs 1 1/2 
+level 40.0 node 131 xshift 6.22265625 from 109 move G payoffs 1 1/2 
+level 28.0 node 132 xshift 7.5556640625 from 105 move G payoffs 1 1/2 
+level 16.0 node 133 xshift 8.888916015625 from 101 move G payoffs 1 1/2 
+level 8.0 node 134 xshift 5.4444580078125 from 99 move Low~(\frac{2}{5}) 
+level 12.0 node 135 xshift 0.0 from 134 move H 
+level 16.0 node 136 xshift 0.0 from 135 move H payoffs 0 0 
+iset 3 58 player 1 
+iset 4 55 101 player 2 
+iset 7 62 player 1 
+iset 8 51 105 player 2 
+iset 11 66 player 1 
+iset 12 47 109 player 2 
+iset 15 70 player 1 
+iset 16 43 113 player 2 
+iset 19 74 player 1 
+iset 20 39 117 player 2 
+iset 23 78 player 1 
+iset 24 35 121 player 2 
+iset 27 82 player 1 
+iset 28 31 125 player 2 
+iset 59 63 67 71 75 79 83 85 87 89 91 93 95 97 135 player 2 
+iset 100 104 108 112 116 120 124 134 player 1 

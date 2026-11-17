@@ -1,54 +1,87 @@
 # Python API
 
 You can use `gtdraw` as a Python library to generate game trees programmatically.
-When working in a Jupyter Notebook, you should use the `draw` function to display the game tree directly in the notebook output:
+When working in a Jupyter Notebook, you should use the `draw` function to display the game tree directly in the notebook output. It returns a `Drawing`, which a notebook shows when it is the last expression of a cell (this needs `pdflatex` and `pdftocairo`; see [Installation](installation.md)):
 
 ```python
 from gtdraw import draw
 draw('games/example.ef')
 ```
 
+The `Drawing` has two attributes: `.tikz`, the TikZ code, and `.source`, the complete LaTeX document that is compiled to show it. It compiles once, when first displayed.
+
 :::{warning}
 Images may not render correctly in notebooks opened in VSCode; we recommend opening notebooks in Jupyter Lab.
 :::
 
-To generate other output formats, use the `tex`, `pdf`, `png`, and `svg` functions, all of which (including `draw` above) accept the same keyword arguments (see below).
+To generate other output formats, use the `tex`, `pdf`, `png`, and `svg` functions, all of which (including `draw` above) take the same style (see [Style](#style)).
 
-Example usage:
+## Sources
+
+The first argument, `source`, is a path or a file-like object (a text buffer):
 
 ```python
-from gtdraw import tex, pdf, png, svg
+import io
+from gtdraw import tikz, pdf
 
-pdf(
-    "game.ef",
-    font_family="sffamily",
-    font_bold=True,
-    font_size="large",
-    horizontal=True,
-)
+tikz("games/example.ef")                          # a path
+tikz(io.StringIO(open("games/example.ef").read())) # a text buffer
+pdf("games/nau2004_sec3.tex", save_to="table")     # the body of a strategic game
+```
+
+The kind of a source is its `format` argument (`"ef"`, a drawing, or `"sgame"`, the LaTeX body of a strategic game), or if there is none, the extension of a path (`.ef` or `.tex`). A text buffer without `format` is a drawing. A string is always a path, never the text of a drawing.
+
+## Style
+
+The look of a drawing is its *style*: the 30 options of `gtdraw.Style`, each with a default and a check of its value. Every output function takes a style in two ways: as a `Style`, and as options by name.
+
+```python
+from gtdraw import Style, tex, pdf, png, svg
+
+house = Style(font_family="sffamily", node_size=2.0)
+
+pdf("game.ef", style=house)                       # a Style
+pdf("game.ef", font_bold=True, horizontal=True)   # options by name
 svg(
-    "game.efg",
+    "game.ef",
+    style=house,                                  # both: the options win
     color_scheme="custom",
     custom_colors={0: "#FF0000", 1: "#0000FF"},
     iset_fill=True,
-    iset_fill_opacity=0.3,
 )
-png(
-    "game.ef",
-    iset_boundary="dotted",
-    node_size=2.0,
-)
+png("game.ef", iset_boundary="dotted", dpi=600)
 ```
 
-## API Keyword Arguments
+`Style` is immutable. `style.replace(node_size=3.0)` gives a changed copy, and `Style()` is gtdraw's own look. An unknown option name raises `TypeError`, which lists the valid names, and a value that is not valid for its option raises `ValueError`.
 
-All output format functions (`draw`, `tikz`, `tex`, `pdf`, `png`, `svg`) accept a variety of keyword arguments to customize the output.
+A drawing can also carry its own style, in a [style block](ef_format.md#style-block) of `%` comment lines. Four layers decide each option, and a later one wins:
 
-| Category | Argument | Description |
+1. the default in `Style()`;
+2. the `style` argument;
+3. the drawing's style block;
+4. options passed by name.
+
+So a house style passed as `style=` gives way to what a drawing says about itself, and an option typed in the call has the last word. `Style.from_block(text)` reads a block and `style.to_block()` writes one (`to_block(base)` writes only what differs from `base`).
+
+## Arguments
+
+All output format functions (`draw`, `tikz`, `tex`, `pdf`, `png`, `svg`) take the arguments below, then the style options.
+
+| Argument | Description |
+| :--- | :--- |
+| `source` | A path or a file-like object (see [Sources](#sources)). |
+| `save_to="filename"` | The output filename (with or without extension), for `tex`, `pdf`, `png` and `svg`. Default: the path's stem, or `drawing` for a buffer. |
+| `format="ef"` or `"sgame"` | The kind of the source; overrides the extension of a path (see [Sources](#sources)). |
+| `style=Style(...)` | The style to draw with; see [Style](#style). |
+| `dpi=X` | PNG resolution in DPI, for `png` (default: 300). |
+| `responsive_sizing=True/False` | Make SVG output responsive, for `svg` (default: False). |
+
+## Style options
+
+These are the fields of `Style`, and the options by name of every output function. The style block uses the same names.
+
+| Category | Option | Description |
 | :--- | :--- | :--- |
-| **Formatting** | `save_to="filename"` | Specify output filename (with or without extension). |
-| | `dpi=X` | Set PNG resolution in DPI for `png` (72-2400, default: 300). |
-| | `responsive_sizing=True/False` | Make SVG output responsive for `svg` (default: False). |
 | **Layout** | `scale_factor=X.X` | Set scale factor (0.01 to 100, default: 1.0). |
 | | `horizontal=True/False` | Switch from vertical to horizontal layout (default: False). |
 | | `mirror=True/False` | Mirror the tree left-to-right by flipping xshift values (default: False). |
@@ -59,10 +92,6 @@ All output format functions (`draw`, `tikz`, `tex`, `pdf`, `png`, `svg`) accept 
 | | `vary_action_label_positions=True/False`| Vary action label positions along child edges of a node to avoid clashes (default: False). |
 | | `vary_action_label_positions_by=\"X\"` | Apply vary logic to `"all"` nodes (default), or selectively to specific `"player"` or `"level"` indices. |
 | | `vary_action_label_positions_choices=[...]` | List of player or level indices to apply vary logic to (used with `vary_action_label_positions_by="player"` or `"level"`). `None` means all (default). |
-| | `level_scaling=X.X` | Level spacing multiplier (for pygambit, default: 1.0). |
-| | `sublevel_scaling=X.X` | Sublevel spacing multiplier (for pygambit, default: 1.0). |
-| | `width_scaling=X.X` | Width spacing multiplier (for pygambit, default: 1.0). |
-| | `shared_terminal_depth=True/False`| Enforce shared terminal node depth (for pygambit, default: False). |
 | **Information Sets**| `iset_fill=True/False` | Fill information sets with player colors (default: False). |
 | | `iset_fill_opacity=X.X` | Opacity of information set fill (0.0-1.0, default: 0.2). |
 | | `iset_boundary="X"` | Boundary style: `"solid"`, `"dotted"`, `"none"` (default: `"solid"`). |
@@ -77,98 +106,35 @@ All output format functions (`draw`, `tikz`, `tex`, `pdf`, `png`, `svg`) accept 
 | **Aesthetics** | `color_scheme="X"` | Set color scheme (`"default"`, `"gambit"`, `"distinctipy"`, `"colorblind"`, `"custom"`). |
 | | `edge_thickness=X.X` | Set thickness of edges (default: 1.0). |
 | | `font_family="X"` | Set the global LaTeX font family (`"rmfamily"`, `"sffamily"`, `"ttfamily"`). |
-| | `font_size="X"` | Set the LaTeX font size command (`"small"`, `"normalsize"`, `"large"`, `"Large"`). |
+| | `font_size="X"` | Set the LaTeX font size command: `"tiny"`, `"scriptsize"`, `"footnotesize"`, `"small"`, `"normalsize"` (default), `"large"`, `"Large"`, `"LARGE"`, `"huge"`, `"Huge"`. |
 | | `font_bold=True/False`, `font_italic=True/False` | Use bold or italic text for labels and payoffs. |
 | | `custom_colors={0: "#HEX",...}` | Map player indices (0=chance) to hex colors. |
 | | `node_size=X.X` | Size of player nodes in mm (default: 1.5). |
 | | `show_grid=True/False` | Show helper grid in the background (default: False). |
 
 
-## Interoperability with pygambit
+## Drawing a Gambit game
 
-`gtdraw` supports `pygambit` game objects directly. Check out the `pygambit` documentation which contains tutorials that use `gtdraw` to render game trees. In particular, read [Tutorial 4) Creating publication-ready game images](https://gambitproject.readthedocs.io/en/latest/tutorials/04_creating_images.html).
+`gtdraw` does not read Gambit's game files and does not depend on `pygambit`. To draw a game made or read with `pygambit`, convert it to a drawing with `pygambit` first, then draw the file. Check out the `pygambit` documentation, which contains tutorials that use `gtdraw` to render game trees. In particular, read [Tutorial 4) Creating publication-ready game images](https://gambitproject.readthedocs.io/en/latest/tutorials/04_creating_images.html).
 
-You can pass a `pygambit` game object to the drawing functions:
+## Strategic Games
 
-```python
-import pygambit as gbt
-from gtdraw import draw, tex, pdf, png, svg
-
-g = gbt.read_efg('somegame.efg')
-draw(g)
-tex(g)
-pdf(g)
-png(g)
-svg(g)
-```
-
-Or pass the path to an `.efg` file directly:
+The LaTeX body of a strategic game (a `\begin{game}...\end{game}` table for the [`sgame`](https://ctan.org/pkg/sgame) package) is a source of kind `"sgame"`:
 
 ```python
-from gtdraw import pdf
-pdf('somegame.efg')
+from gtdraw import draw, tikz, pdf, png, svg
+
+# From a .tex file
+body = tikz("games/nau2004_sec3.tex")   # the body, unchanged
+pdf("games/nau2004_sec3.tex", save_to="battle_of_sexes.pdf")   # compiles the payoff table to PDF
+png("games/nau2004_sec3.tex")   # compiles the payoff table to PNG
+svg("games/nau2004_sec3.tex")   # compiles the payoff table to SVG
+
+# From a buffer
+import io
+pdf(io.StringIO(body), format="sgame", save_to="table")
 ```
 
-::: {note}
-Without setting the `save_to` parameter, the saved file will be based on the title field of the `pygambit` game object.
-:::
+`tikz()` on a strategic game returns the `\begin{game}...\end{game}` LaTeX body (not TikZ code), and `draw()` returns a `Drawing` whose `.tikz` is that body. PDF/PNG/SVG compilation requires `pdflatex` and the `sgame` LaTeX package (`texlive-games` on Ubuntu).
 
-## Format Conversion
-
-`gtdraw` provides two functions for converting between `.ef` and `.efg` file formats:
-
-```python
-from gtdraw import ef_to_efg, efg_to_ef
-
-# Convert EF to Gambit EFG
-ef_to_efg("game.ef")
-ef_to_efg("game.ef", save_to="output.efg", title="My Game")
-
-# Convert EFG to EF (requires pygambit)
-efg_to_ef("game.efg")
-efg_to_ef("game.efg", save_to="output.ef", level_scaling=1.5)
-
-# You can also pass a pygambit Game object
-import pygambit as gbt
-g = gbt.read_efg("game.efg")
-efg_to_ef(g, save_to="output.ef")
-```
-
-### Conversion Arguments
-
-| Function | Argument | Description |
-| :--- | :--- | :--- |
-| **`ef_to_efg`** | `game` | Path to the `.ef` file (required). |
-| | `save_to="filename"` | Output filename. Defaults to the input filename with `.efg` extension. |
-| | `title="My Game"` | Title string for the EFG prologue. Defaults to the input filename stem. |
-| **`efg_to_ef`** | `game` | Path to the `.efg` file, or a `pygambit.gambit.Game` object (required). |
-| | `save_to="filename"` | Output filename. Defaults to the game title with `.ef` extension. |
-| | `level_scaling=X.X` | Level spacing multiplier (default: 1.0). |
-| | `sublevel_scaling=X.X` | Sublevel spacing multiplier (default: 1.0). |
-| | `width_scaling=X.X` | Width spacing multiplier (default: 1.0). |
-| | `shared_terminal_depth=True/False` | Enforce shared terminal node depth (default: False). |
-
-Both functions return the path to the generated output file.
-
-## Normal Form Games (NFG)
-
-`gtdraw` also supports normal form (strategic form) games via pygambit:
-
-```python
-import pygambit as gbt
-from gtdraw import draw, tex, pdf, png, svg
-
-# From a pygambit NFG object
-g = gbt.read_nfg("games/nfg/example.nfg")
-draw(g)       # returns \begin{game}...\end{game} body; displays image in Jupyter
-pdf(g)    # compiles payoff table to PDF
-png(g)    # compiles payoff table to PNG
-svg(g)    # compiles payoff table to SVG
-
-# Or directly from the .nfg file path
-pdf("games/nfg/example.nfg", save_to="battle_of_sexes.pdf")
-```
-
-`tikz()` on an NFG returns the raw `\begin{game}...\end{game}` LaTeX body (not TikZ code). PDF/PNG/SVG compilation requires `pdflatex` and the `sgame` LaTeX package (`texlive-games` on Ubuntu).
-
-Tree-specific keyword arguments (`horizontal`, `mirror`, `iset_fill`, `scale_factor`, etc.) are accepted but silently ignored for NFG inputs.
+Style options (`horizontal`, `mirror`, `iset_fill`, `scale_factor`, etc.) and `style` are accepted but silently ignored for strategic games.

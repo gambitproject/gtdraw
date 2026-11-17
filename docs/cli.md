@@ -8,8 +8,12 @@ gtdraw games/example.ef --pdf
 ```
 
 :::{note}
-You can also use `.efg` files from Gambit instead of `.ef` files.
+The input is a drawing in gtdraw's `.ef` format, or the LaTeX body of a strategic game as a `.tex` file. `gtdraw` does not read Gambit's game files; to draw one, convert it to a drawing with `pygambit` first (see [Creating Games](creating_games.md)).
 :::
+
+## Style block
+
+A drawing can carry its own style as a block of `% gtdraw: <option> <value>` lines (see the [style block](ef_format.md#style-block)), and `gtdraw` applies it. An option given on the command line overrides the block, including one equal to the default: `--edge-thickness=1.0` draws with thickness 1.0 whatever the block says. A flag with an invalid value is ignored with a warning and leaves the block's value.
 
 ## CLI Options
 
@@ -28,10 +32,6 @@ You can also use `.efg` files from Gambit instead of `.ef` files.
 | | `--vary-action-label-positions`| Vary action label positions along child edges of a node to avoid clashes. |
 | | `--vary-action-label-positions-by=[all\|player\|level]` | Apply vary logic to all nodes (default: `all`), or selectively to specific players (`player`) or tree levels (`level`). |
 | | `--vary-action-label-positions-choices=X,Y` | Comma-separated list of player or level indices to which vary logic applies (used with `--vary-action-label-positions-by=player` or `level`). |
-| | `--level-scaling=X.X` | Level spacing multiplier (for `.efg` files, default: 1.0). |
-| | `--sublevel-scaling=X.X` | Sublevel spacing multiplier (for `.efg` files, default: 1.0). |
-| | `--width-scaling=X.X` | Width spacing multiplier (for `.efg` files, default: 1.0). |
-| | `--shared-terminal-depth` | Enforce shared terminal node depth (for `.efg` files). |
 | **Label Background** | `--label-bg` | Add a filled background behind all label text. Use `--label-bg=1,2,3` to enable only for specific player or level indices (combine with `--label-bg-by`). |
 | | `--label-bg-by=[player\|level]` | Interpret `--label-bg=...` indices as player indices (default: `player`) or tree level indices (`level`). |
 | | `--label-bg-style=[player_bg\|white_bg]` | Background style: `player_bg` (player-colour background, white text, default) or `white_bg` (white background, player-colour text). |
@@ -51,39 +51,22 @@ You can also use `.efg` files from Gambit instead of `.ef` files.
 | | `--custom-colors="0:#HEX,..."` | Map player indices (0=chance) to hex colors. |
 | | `--node-size=X.X` | Size of player nodes in mm (default: 1.5). |
 | | `grid` | Show helper grid in the background. |
-| **Conversion** | `--to-efg` | Convert `.ef` file to Gambit `.efg` format (no rendering). |
-| | `--to-ef` | Convert `.efg` file to `.ef` format (requires pygambit, no rendering). |
 
 
-## Format Conversion
+## Strategic Games
 
-The CLI also supports converting between `.ef` and `.efg` formats without rendering:
-
-```bash
-# Convert EF to Gambit EFG
-gtdraw games/example.ef --to-efg
-
-# Convert EFG to EF
-gtdraw games/efg/example.efg --to-ef
-
-# Specify output filename
-gtdraw games/example.ef --to-efg --output=my_game.efg
-```
-
-## Normal Form Games (NFG)
-
-`.nfg` files are supported directly. The default output (no format flag) prints the raw `\begin{game}...\end{game}` LaTeX body; PDF/PNG/SVG compilation requires `pdflatex` and the `sgame` package (`texlive-games`).
+A strategic game is the LaTeX body of an [`sgame`](https://ctan.org/pkg/sgame) table (`\begin{game}...\end{game}`) in a `.tex` file. The default output (no format flag) prints that body unchanged; PDF/PNG/SVG compilation wraps it in a document and requires `pdflatex` and the `sgame` package (`texlive-games`).
 
 ```bash
 # Print \begin{game}...\end{game} body to stdout
-gtdraw games/nfg/example.nfg
+gtdraw games/nau2004_sec3.tex
 
 # Compile payoff table to PDF
-gtdraw games/nfg/example.nfg --pdf
+gtdraw games/nau2004_sec3.tex --pdf
 
 # Compile payoff table to PNG
-gtdraw games/nfg/example.nfg --png
+gtdraw games/nau2004_sec3.tex --png
 
 # Compile payoff table to SVG with custom output name
-gtdraw games/nfg/example.nfg --svg --output=battle_of_sexes.svg
+gtdraw games/nau2004_sec3.tex --svg --output=battle_of_sexes.svg
 ```

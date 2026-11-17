@@ -7,25 +7,27 @@ from extensive form (.ef) files, with support for Jupyter notebooks.
 
 from __future__ import annotations
 
+import io
+import os
 import sys
 import math
 import subprocess
 import tempfile
 import re
+import shutil
 import distinctipy
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    import pygambit
 
 from pathlib import Path
-from typing import List, Optional
-from IPython.core.getipython import get_ipython
+from typing import IO, Any, List, Optional, Union
+
+from .style import Style, _resolve as _resolve_style
 
 # Constants
 DEFAULTFILE: str = "example.ef"
 scale: float = 1
 grid: bool = False
+# Names of the style options the user gave on the command line, set by commandline()
+cli_given: set[str] = set()
 
 maxplayer: int = 4
 payup: float = 0.1  # fraction of paydown to shift first payoff up
@@ -460,6 +462,67 @@ def error(s: str, stream: Optional[List[str]] = None) -> None:
     if stream is None:
         stream = outstream
     outs("% ----- Error: " + s, stream)
+
+
+def _split_lines(text: str) -> List[str]:
+    """Split text into stripped, non-empty lines (as `readfile` does for a file)."""
+    return [line.strip() for line in text.splitlines() if line.strip()]
+
+
+_SOURCE_KINDS = {".ef": "ef", ".tex": "sgame"}
+_FORMATS = ("ef", "sgame")
+
+
+def _resolve_source(
+    source: Union[str, "os.PathLike[str]", IO[str]], format: Optional[str] = None
+) -> tuple[str, str, str, str]:
+    """
+    Read a drawing source, which is a path or a file-like object.
+
+    The kind of a source is its ``format`` if given; otherwise the extension of a
+    path (``.ef``: a drawing; ``.tex``: the body of a strategic game, "sgame"), and
+    ``"ef"`` for a buffer.
+
+    Returns:
+        ``(kind, text, name, stem)``: ``kind`` is ``"ef"`` or ``"sgame"``; ``name``
+        is the path as given, or ``"<buffer>"``; ``stem`` names default outputs: the
+        path's stem, or ``"drawing"`` for a buffer.
+
+    Raises:
+        ValueError: If ``format`` is not ``"ef"`` or ``"sgame"``, or a path has no
+            recognised extension and no ``format`` is given.
+        FileNotFoundError: If the path does not exist.
+    """
+    if format is not None and format not in _FORMATS:
+        raise ValueError(f"format must be one of {list(_FORMATS)}, not {format!r}")
+    if hasattr(source, "read"):
+        text = source.read()
+        if isinstance(text, bytes):
+            text = text.decode("utf-8")
+        return format or "ef", text, "<buffer>", "drawing"
+    path = Path(os.fspath(source))
+    kind = format or _SOURCE_KINDS.get(path.suffix.lower())
+    if kind is None:
+        raise ValueError(
+            f"Cannot tell the kind of {str(path)!r} from its extension: use a .ef "
+            "(drawing) or .tex (strategic game) file, or pass format='ef' or "
+            "format='sgame'."
+        )
+    with open(path, "r", encoding="utf-8") as f:
+        text = f.read()
+    return kind, text, str(source), path.stem
+
+
+def _output_name(save_to: Optional[str], stem: str, suffix: str) -> str:
+    """The output file name: ``save_to`` with ``suffix`` added if missing, else ``stem + suffix``."""
+    if save_to is None:
+        return stem + suffix
+    return save_to if save_to.endswith(suffix) else save_to + suffix
+
+
+def _reopen(source, text: str):
+    """A source that can be read again: the path itself, or a new buffer holding ``text``."""
+    return io.StringIO(text) if hasattr(source, "read") else source
 
 
 def readfile(filename: str) -> List[str]:
@@ -2132,11 +2195,15 @@ def commandline(
         - custom_colors: Dict of custom player colors
         - horizontal: True if horizontal layout requested
         - action_label_dist: Distance of action labels from edges
+
+    The names of the style options the user gave, whose values were accepted,
+    are recorded in the module-level set ``cli_given``.
     """
     global grid
     global scale
     global ef_file
 
+    cli_given.clear()
     pdf_requested = False
     png_requested = False
     svg_requested = False
@@ -2167,12 +2234,6 @@ def commandline(
     color_scheme = "default"
     edge_thickness = 1.0
     action_label_position = 0.5
-    level_scaling = 1.0
-    sublevel_scaling = 1.0
-    width_scaling = 1.0
-    shared_terminal_depth = False
-    to_efg = False
-    to_ef = False
     vary_action_label_positions = False
     action_label_position_by = "player"
     vary_action_label_positions_by = "all"
@@ -2185,6 +2246,7 @@ def commandline(
                 num = float(a[1])
                 if num >= 0.01 and num <= 100:
                     scale = num
+                    cli_given.add("scale_factor")
                 else:
                     outs(
                         "% Command-line argument 'scale=x' needs x in 0.01 .. 100",
@@ -2196,6 +2258,7 @@ def commandline(
                 )
         elif arg == "grid":
             grid = True
+            cli_given.add("show_grid")
         elif arg == "--pdf":
             pdf_requested = True
         elif arg == "--png":
@@ -2230,16 +2293,22 @@ def commandline(
             val = arg[7:].lower()
             if val == "serif":
                 font_family = "rmfamily"
+                cli_given.add("font_family")
             elif val == "sans-serif":
                 font_family = "sffamily"
+                cli_given.add("font_family")
             elif val == "monospace":
                 font_family = "ttfamily"
+                cli_given.add("font_family")
         elif arg == "--bold":
             font_bold = True
+            cli_given.add("font_bold")
         elif arg == "--italic":
             font_italic = True
+            cli_given.add("font_italic")
         elif arg.startswith("--font-size="):
             font_size = arg[12:]
+            cli_given.add("font_size")
         elif arg.startswith("--custom-colors="):
             try:
                 custom_colors = {}
@@ -2247,6 +2316,7 @@ def commandline(
                 for pair in pairs:
                     p, c = pair.split(":")
                     custom_colors[int(p)] = c
+                cli_given.add("custom_colors")
             except Exception:
                 print(
                     "Warning: Invalid custom-colors format, expected '0:#hex,1:#hex'",
@@ -2254,15 +2324,19 @@ def commandline(
                 )
         elif arg == "--horizontal":
             horizontal = True
+            cli_given.add("horizontal")
         elif arg == "--mirror":
             mirror = True
+            cli_given.add("mirror")
         elif arg.startswith("--legend-position="):
             val = arg[18:].lower()
             if val in ["top-left", "top-right", "bottom-left", "bottom-right"]:
                 legend_position = val
+                cli_given.add("legend_position")
         elif arg.startswith("--action-label-dist="):
             try:
                 action_label_dist = float(arg[20:])
+                cli_given.add("action_label_dist")
             except ValueError:
                 print(
                     "Warning: Invalid action-label-dist value, using default 1.0",
@@ -2270,10 +2344,12 @@ def commandline(
                 )
         elif arg == "--label-bg":
             label_bg = True
+            cli_given.add("label_bg")
         elif arg.startswith("--label-bg="):
             val = arg.split("=", 1)[1]
             try:
                 label_bg = {int(x): True for x in val.split(",")}
+                cli_given.add("label_bg")
             except ValueError:
                 print(
                     "Warning: Invalid --label-bg value; use flag alone or '1,2,3' indices",
@@ -2283,6 +2359,7 @@ def commandline(
             val = arg.split("=", 1)[1]
             if val in ("player", "level"):
                 label_bg_by = val
+                cli_given.add("label_bg_by")
             else:
                 print(
                     "Warning: --label-bg-by must be 'player' or 'level'",
@@ -2292,6 +2369,7 @@ def commandline(
             val = arg.split("=", 1)[1]
             if val in ("player_bg", "white_bg"):
                 label_bg_style = val
+                cli_given.add("label_bg_style")
             else:
                 print(
                     "Warning: --label-bg-style must be 'player_bg' or 'white_bg'",
@@ -2299,9 +2377,11 @@ def commandline(
                 )
         elif arg.startswith("--label-bg-color="):
             label_bg_color = arg.split("=", 1)[1]
+            cli_given.add("label_bg_color")
         elif arg.startswith("--label-bg-opacity="):
             try:
                 label_bg_opacity = float(arg[19:])
+                cli_given.add("label_bg_opacity")
             except ValueError:
                 print(
                     "Warning: Invalid label-bg-opacity value, using default 0.8",
@@ -2309,9 +2389,11 @@ def commandline(
                 )
         elif arg == "--iset-fill":
             iset_fill = True
+            cli_given.add("iset_fill")
         elif arg.startswith("--iset-fill-opacity="):
             try:
                 iset_fill_opacity = float(arg[20:])
+                cli_given.add("iset_fill_opacity")
             except ValueError:
                 print(
                     "Warning: Invalid iset-fill-opacity value, using default 0.2",
@@ -2319,22 +2401,27 @@ def commandline(
                 )
         elif arg == "--iset-dotted":
             iset_boundary = "dotted"
+            cli_given.add("iset_boundary")
         elif arg.startswith("--iset-boundary="):
             val = arg[16:].lower()
             if val in ["solid", "dotted", "none"]:
                 iset_boundary = val
+                cli_given.add("iset_boundary")
         elif arg == "--iset-curved":
             iset_curved = True
+            cli_given.add("iset_curved")
         elif arg.startswith("--iset-curved-bend="):
             val = arg[19:]
             try:
                 iset_curved_bend = float(val)
+                cli_given.add("iset_curved_bend")
             except ValueError:
                 try:
                     iset_curved_bend = {
                         int(k): float(v)
                         for k, v in (pair.split(":") for pair in val.split(","))
                     }
+                    cli_given.add("iset_curved_bend")
                 except Exception:
                     print(
                         "Warning: Invalid --iset-curved-bend value, expected float or '0:5.0,1:10.0'",
@@ -2344,6 +2431,7 @@ def commandline(
             val = arg[22:]
             if val in ("player", "level"):
                 iset_curved_bend_by = val
+                cli_given.add("iset_curved_bend_by")
             else:
                 print(
                     "Warning: Invalid --iset-curved-bend-by value, expected player/level",
@@ -2352,6 +2440,7 @@ def commandline(
         elif arg.startswith("--node-size="):
             try:
                 node_size = float(arg[12:])
+                cli_given.add("node_size")
             except ValueError:
                 print(
                     "Warning: Invalid node-size value, using default 1.5",
@@ -2359,15 +2448,18 @@ def commandline(
                 )
         elif arg.startswith("--color-scheme="):
             color_scheme = arg[15:]
+            cli_given.add("color_scheme")
         elif arg.startswith("--edge-thickness="):
             try:
                 edge_thickness = float(arg[17:])
+                cli_given.add("edge_thickness")
             except ValueError:
                 pass
         elif arg.startswith("--action-label-position="):
             val = arg[24:].strip('"')
             try:
                 action_label_position = float(val)
+                cli_given.add("action_label_position")
             except ValueError:
                 try:
                     positions_dict = {}
@@ -2376,6 +2468,7 @@ def commandline(
                         p_str, pos_str = pair.split(":")
                         positions_dict[int(p_str)] = float(pos_str)
                     action_label_position = positions_dict
+                    cli_given.add("action_label_position")
                 except Exception:
                     print(
                         "Warning: Invalid action-label-position format, expected a float or '0:0.3,1:0.6'",
@@ -2385,44 +2478,27 @@ def commandline(
             val = arg[27:].lower()
             if val in ["player", "level"]:
                 action_label_position_by = val
+                cli_given.add("action_label_position_by")
         elif arg.startswith("--vary-action-label-positions-by="):
             val = arg[33:].lower()
             if val in ["all", "player", "level"]:
                 vary_action_label_positions_by = val
+                cli_given.add("vary_action_label_positions_by")
         elif arg.startswith("--vary-action-label-positions-choices="):
             try:
                 vary_action_label_positions_choices = [
                     int(x) for x in arg[38:].split(",")
                 ]
+                cli_given.add("vary_action_label_positions_choices")
             except ValueError:
                 print(
                     "Warning: Invalid vary-action-label-positions-choices, expected comma-separated integers",
                     file=sys.stderr,
                 )
-        elif arg.startswith("--level-scaling="):
-            try:
-                level_scaling = float(arg[16:])
-            except ValueError:
-                pass
-        elif arg.startswith("--sublevel-scaling="):
-            try:
-                sublevel_scaling = float(arg[19:])
-            except ValueError:
-                pass
-        elif arg.startswith("--width-scaling="):
-            try:
-                width_scaling = float(arg[16:])
-            except ValueError:
-                pass
-        elif arg == "--shared-terminal-depth":
-            shared_terminal_depth = True
-        elif arg == "--to-efg":
-            to_efg = True
-        elif arg == "--to-ef":
-            to_ef = True
         elif arg == "--vary-action-label-positions":
             vary_action_label_positions = True
-        elif arg.endswith(".ef"):
+            cli_given.add("vary_action_label_positions")
+        elif arg.endswith((".ef", ".tex")):
             ef_file = arg
         else:
             # For backward compatibility, treat unknown args as filenames
@@ -2472,12 +2548,6 @@ def commandline(
         color_scheme,
         edge_thickness,
         action_label_position,
-        level_scaling,
-        sublevel_scaling,
-        width_scaling,
-        shared_terminal_depth,
-        to_efg,
-        to_ef,
         vary_action_label_positions,
         action_label_position_by,
         vary_action_label_positions_by,
@@ -2485,59 +2555,50 @@ def commandline(
     )
 
 
-def ef_to_tex(
-    ef_file: str,
-    scale_factor: float = 1.0,
-    show_grid: bool = False,
-    color_scheme: str = "default",
-    action_label_position: float | dict[int, float] = 0.5,
-    font_family: str = "rmfamily",
-    font_bold: bool = False,
-    font_italic: bool = False,
-    font_size: str = "normalsize",
-    horizontal: bool = False,
-    mirror: bool = False,
-    legend_position: str = "top-left",
-    action_label_dist: float = 1.0,
-    iset_fill: bool = False,
-    iset_fill_opacity: float = 0.2,
-    iset_boundary: str = "solid",
-    iset_curved: bool = False,
-    iset_curved_bend: float | dict[int, float] = 10.0,
-    iset_curved_bend_by: str = "player",
-    node_size: float = 1.5,
-    label_bg: bool | dict[int, bool] = False,
-    label_bg_color: str = "white",
-    label_bg_opacity: float = 0.8,
-    label_bg_by: str = "player",
-    label_bg_style: str = "player_bg",
-    vary_action_label_positions: bool = False,
-    action_label_position_by: str = "player",
-    vary_action_label_positions_by: str = "all",
-    vary_action_label_positions_choices: Optional[List[int]] = None,
-) -> str:
+def _ef_to_tex(ef_lines: List[str], style: Style) -> str:
     """
-    Convert an extensive form (.ef) file to TikZ code.
+    Convert the lines of a .ef drawing to TikZ code.
 
     This function replicates the main processing logic but returns the TikZ code
     as a string instead of printing it to stdout.
 
     Args:
-        ef_file: Path to the .ef file to process.
-        scale_factor: Scale factor for the diagram (default: 1.0).
-        show_grid: Whether to show grid lines (default: False).
-        color_scheme: Color scheme for player nodes.
-        action_label_position: Position of action labels along edges.
-        font_family: LaTeX font family command (default: "rmfamily").
-        font_bold: Whether to use bold text (default: False).
-        font_italic: Whether to use italic text (default: False).
-        font_size: LaTeX font size command (default: "normalsize").
-        horizontal: Whether to use horizontal layout (default: False).
-        mirror: Whether to mirror the layout left-to-right (default: False).
+        ef_lines: The non-empty, stripped lines of the .ef drawing, without its
+            style block.
+        style: The style to draw with.
 
     Returns:
         Complete TikZ code as a string.
     """
+    scale_factor = style.scale_factor
+    show_grid = style.show_grid
+    color_scheme = style.color_scheme
+    action_label_position = style.action_label_position
+    font_family = style.font_family
+    font_bold = style.font_bold
+    font_italic = style.font_italic
+    font_size = style.font_size
+    horizontal = style.horizontal
+    mirror = style.mirror
+    legend_position = style.legend_position
+    action_label_dist = style.action_label_dist
+    iset_fill = style.iset_fill
+    iset_fill_opacity = style.iset_fill_opacity
+    iset_boundary = style.iset_boundary
+    iset_curved = style.iset_curved
+    iset_curved_bend = style.iset_curved_bend
+    iset_curved_bend_by = style.iset_curved_bend_by
+    node_size = style.node_size
+    label_bg = style.label_bg
+    label_bg_color = style.label_bg_color
+    label_bg_opacity = style.label_bg_opacity
+    label_bg_by = style.label_bg_by
+    label_bg_style = style.label_bg_style
+    vary_action_label_positions = style.vary_action_label_positions
+    action_label_position_by = style.action_label_position_by
+    vary_action_label_positions_by = style.vary_action_label_positions_by
+    vary_action_label_positions_choices = style.vary_action_label_positions_choices
+
     # Scale adjustment
     scale_factor = scale_factor * 0.8
 
@@ -2606,7 +2667,7 @@ def ef_to_tex(
         )
 
         # Process the .ef file
-        lines = readfile(ef_file)
+        lines = list(ef_lines)
 
         # Detect EF format version before all other parsing
         global ef_version
@@ -2689,158 +2750,55 @@ def ef_to_tex(
 
 
 def tikz(
-    game: str | "pygambit.gambit.Game",
-    save_to: Optional[str] = None,
-    scale_factor: float = 1.0,
-    level_scaling: float = 1.0,
-    sublevel_scaling: float = 1.0,
-    width_scaling: float = 1.0,
-    hide_action_labels: bool = False,
-    shared_terminal_depth: bool = False,
-    show_grid: bool = False,
-    color_scheme: str = "default",
-    edge_thickness: float = 1.0,
-    action_label_position: float | dict[int, float] = 0.5,
-    font_family: str = "rmfamily",
-    font_bold: bool = False,
-    font_italic: bool = False,
-    font_size: str = "normalsize",
-    custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False,
-    mirror: bool = False,
-    legend_position: str = "top-left",
-    action_label_dist: float = 1.0,
-    iset_fill: bool = False,
-    iset_fill_opacity: float = 0.2,
-    iset_boundary: str = "solid",
-    iset_curved: bool = False,
-    iset_curved_bend: float | dict[int, float] = 10.0,
-    iset_curved_bend_by: str = "player",
-    node_size: float = 1.5,
-    label_bg: bool | dict[int, bool] = False,
-    label_bg_color: str = "white",
-    label_bg_opacity: float = 0.8,
-    label_bg_by: str = "player",
-    label_bg_style: str = "player_bg",
-    vary_action_label_positions: bool = False,
-    action_label_position_by: str = "player",
-    vary_action_label_positions_by: str = "all",
-    vary_action_label_positions_choices: Optional[List[int]] = None,
+    source: Union[str, "os.PathLike[str]", IO[str]],
+    *,
+    format: Optional[str] = None,
+    style: Optional[Style] = None,
+    **options: Any,
 ) -> str:
-    """
-    Generate complete TikZ code from an extensive form (.ef) file.
+    r"""
+    Generate complete TikZ code from a drawing in gtdraw's format (.ef).
 
     Args:
-        game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
-        save_to: Optional path to save intermediate .ef file when generating from a pygambit.gambit.Game object.
-        scale_factor: Scale factor for the diagram.
-        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
-        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
-        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
-        hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
-        shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
-        show_grid: Whether to show grid lines.
-        color_scheme: Color scheme for player nodes.
-        edge_thickness: Thickness of edges.
-        action_label_position: Position of action labels along edges.
-        font_family: LaTeX font family command (default: "rmfamily").
-        font_bold: Whether to use bold text (default: False).
-        font_italic: Whether to use italic text (default: False).
-        font_size: LaTeX font size command (default: "normalsize").
-        custom_colors: Optional dictionary mapping player index to hex color string for the "custom" scheme.
+        source: Path to a .ef file (a drawing) or a .tex file (the LaTeX body of a
+            strategic game), or a file-like object.
+        format: ``"ef"`` or ``"sgame"``; overrides the extension of a path. The
+            default for a file-like object is ``"ef"``.
+        style: A ``Style``: the style to draw with, instead of ``Style()``. A
+            style block in the drawing overrides it. Ignored for a strategic game.
+        **options: Style options by name (see ``Style``); they override ``style``
+            and the drawing's style block. An unknown name raises ``TypeError``.
 
     Returns:
-        For EF/EFG inputs, complete TikZ code ready for use in Jupyter notebooks or LaTeX documents.
-        For NFG inputs, returns the raw \begin{game}...\end{game} LaTeX body.
+        For a drawing, complete TikZ code ready for use in Jupyter notebooks or LaTeX documents.
+        For a strategic game, the LaTeX body (``\begin{game}...\end{game}``), unchanged.
     """
-    # NFG (strategic/normal form) games are rendered via pygambit's to_latex() — not TikZ.
-    nfg_game = _prepare_nfg(game)
-    if nfg_game is not None:
-        return nfg_game.to_latex()
+    kind, text, name, _ = _resolve_source(source, format)
+    if kind == "sgame":
+        return text
 
-    # If user supplied an EFG file, read it with pygambit to get the pygambit.gambit.Game object.
-    if isinstance(game, str) and game.lower().endswith(".efg"):
-        import pygambit
+    resolved, drawing_lines = _resolve_style(style, text, options)
+    ef_lines = _split_lines("\n".join(drawing_lines))
+    ef_file = name
 
-        game = pygambit.read_efg(game)
-
-    # If user supplied a pygambit.gambit.Game object,
-    # or an EFG file (now converted to a game object), convert the tree to an .ef file.
-    if not isinstance(game, str):
-        from .gambit_layout import gambit_layout_to_ef
-
-        # Generate the ef, use normalised spacing options
-        ef_file = gambit_layout_to_ef(
-            game,
-            save_to=save_to,
-            level_multiplier=level_scaling * 4,
-            sublevel_multiplier=sublevel_scaling * 2,
-            xshift_multiplier=width_scaling * 2,
-            hide_action_labels=hide_action_labels,
-            shared_terminal_depth=shared_terminal_depth,
-        )
-    else:
-        # If user supplied an EF file path directly, use it.
-        ef_file = game
+    node_size = resolved.node_size
+    edge_thickness = resolved.edge_thickness
+    color_scheme = resolved.color_scheme
+    font_family = resolved.font_family
+    font_bold = resolved.font_bold
+    font_italic = resolved.font_italic
+    font_size = resolved.font_size
+    horizontal = resolved.horizontal
 
     # Determine the number of players for dynamic color schemes
-    num_players = 0
-    if not isinstance(game, str):
-        try:
-            num_players = len(game.players)
-        except AttributeError:
-            num_players = 6
-    else:
-        try:
-            player_nums = set()
-            for line in readfile(ef_file):
-                if line.startswith("player"):
-                    try:
-                        p = int(line.split()[1])
-                        if p > 0:
-                            player_nums.add(p)
-                    except (IndexError, ValueError):
-                        pass
-            num_players = len(player_nums) if player_nums else 6
-        except Exception:
-            num_players = 6
+    num_players = _count_players_in_lines(ef_lines)
 
     # Set custom colors if provided
     global _custom_colors
-    _custom_colors = custom_colors
+    _custom_colors = resolved.custom_colors
 
     # Step 1: Generate the tikzpicture content using ef_to_tex logic
-    tikz_picture_content = ef_to_tex(
-        ef_file,
-        scale_factor,
-        show_grid,
-        color_scheme,
-        action_label_position,
-        font_family=font_family,
-        font_bold=font_bold,
-        font_italic=font_italic,
-        font_size=font_size,
-        horizontal=horizontal,
-        mirror=mirror,
-        legend_position=legend_position,
-        action_label_dist=action_label_dist,
-        iset_fill=iset_fill,
-        iset_fill_opacity=iset_fill_opacity,
-        iset_boundary=iset_boundary,
-        iset_curved=iset_curved,
-        iset_curved_bend=iset_curved_bend,
-        iset_curved_bend_by=iset_curved_bend_by,
-        node_size=node_size,
-        label_bg=label_bg,
-        label_bg_color=label_bg_color,
-        label_bg_opacity=label_bg_opacity,
-        label_bg_by=label_bg_by,
-        label_bg_style=label_bg_style,
-        vary_action_label_positions=vary_action_label_positions,
-        action_label_position_by=action_label_position_by,
-        vary_action_label_positions_by=vary_action_label_positions_by,
-        vary_action_label_positions_choices=vary_action_label_positions_choices,
-    )
+    tikz_picture_content = _ef_to_tex(ef_lines, resolved)
 
     # Step 2: Define built-in macro definitions (from macros-drawtree.tex)
     macro_definitions = [
@@ -2919,323 +2877,150 @@ def tikz(
     return tikz_code
 
 
-def count_players(game_source: str | "pygambit.gambit.Game") -> int:
+def _count_players_in_lines(ef_lines: List[str]) -> int:
+    """Number of players (excluding chance) declared in the lines of a .ef drawing; 6 if none."""
+    player_nums = set()
+    for line in ef_lines:
+        if line.startswith("player"):
+            try:
+                p = int(line.split()[1])
+                if p > 0:
+                    player_nums.add(p)
+            except (IndexError, ValueError):
+                pass
+    return len(player_nums) if player_nums else 6
+
+
+def _count_players(ef_path: str) -> int:
     """
-    Count the number of players in a game.
+    Count the number of players in a .ef drawing.
 
     Args:
-        game_source: Path to the .ef or .efg file, or a pygambit.gambit.Game object.
+        ef_path: Path to the .ef file.
 
     Returns:
-        Number of players (excluding chance).
+        Number of players (excluding chance); 6 if the file cannot be read.
     """
-    if not isinstance(game_source, str):
-        try:
-            return len(game_source.players)
-        except AttributeError:
-            return 6
-
-    # If EFG file, read it
-    if game_source.lower().endswith(".efg"):
-        import pygambit
-
-        try:
-            g = pygambit.read_efg(game_source)
-            return len(g.players)
-        except Exception:
-            return 6
-
-    # If EF file, parse for 'player' lines
     try:
-        player_nums = set()
-        for line in readfile(game_source):
-            if line.startswith("player"):
-                try:
-                    p = int(line.split()[1])
-                    if p > 0:
-                        player_nums.add(p)
-                except (IndexError, ValueError):
-                    pass
-        return len(player_nums) if player_nums else 6
+        return _count_players_in_lines(readfile(ef_path))
     except Exception:
         return 6
 
 
-def count_levels(
-    game_source: str | "pygambit.gambit.Game",
-    level_scaling: float = 1.0,
-    sublevel_scaling: float = 1.0,
-) -> int:
+def _level_values(ef_path: str) -> set[int]:
+    """The integer values of the ``level`` lines of a .ef drawing."""
+    levels = set()
+    for line in readfile(ef_path):
+        if line.startswith("level"):
+            try:
+                levels.add(int(float(line.split()[1])))
+            except (IndexError, ValueError):
+                pass
+    return levels
+
+
+def _count_levels(ef_path: str) -> int:
     """
-    Count the number of levels in a game tree.
+    Count the number of levels in a .ef drawing.
 
     Args:
-        game_source: Path to the .ef or .efg file, or a pygambit.gambit.Game object.
-        level_scaling: Level scaling multiplier.
-        sublevel_scaling: Sublevel scaling multiplier.
+        ef_path: Path to the .ef file.
 
     Returns:
-        The maximum level index in the game tree.
+        The maximum level index in the drawing; 0 if the file cannot be read.
     """
-    if not isinstance(game_source, str):
-        try:
-            import pygambit
-            from .gambit_layout import determine_node_level
-
-            layout = pygambit.layout_tree(game_source)
-            levels = set()
-            for coords in layout.values():
-                lev = determine_node_level(
-                    coords.level,
-                    coords.sublevel,
-                    level_multiplier=level_scaling * 4,
-                    sublevel_multiplier=sublevel_scaling * 2,
-                )
-                levels.add(int(lev))
-            return max(levels) if levels else 0
-        except Exception:
-            return 0
-
-    # If EFG file, read it with pygambit first
-    if game_source.lower().endswith(".efg"):
-        try:
-            import pygambit
-
-            g = pygambit.read_efg(game_source)
-            return count_levels(g, level_scaling, sublevel_scaling)
-        except Exception:
-            return 0
-
-    # If EF file, parse for 'level' lines
     try:
-        levels = set()
-        for line in readfile(game_source):
-            if line.startswith("level"):
-                try:
-                    lev = int(float(line.split()[1]))
-                    levels.add(lev)
-                except (IndexError, ValueError):
-                    pass
+        levels = _level_values(ef_path)
         return max(levels) if levels else 0
     except Exception:
         return 0
 
 
-def get_game_levels(
-    game_source: str | "pygambit.gambit.Game",
-    level_scaling: float = 1.0,
-    sublevel_scaling: float = 1.0,
-) -> list[int]:
+def _get_game_levels(ef_path: str) -> list[int]:
     """
-    Return the sorted list of unique integer level values present in the game tree.
+    Return the sorted list of unique integer level values present in a .ef drawing.
 
-    Unlike ``count_levels``, which returns only the maximum, this returns every
+    Unlike ``_count_levels``, which returns only the maximum, this returns every
     distinct level so the GUI can show only the options that actually exist.
-    The ``level_scaling`` and ``sublevel_scaling`` parameters must match those
-    used for rendering so that the returned values agree with what ends up in
-    the ``nodes`` dict during TikZ generation.
 
     Args:
-        game_source: Path to the .ef or .efg file, or a pygambit.gambit.Game.
-        level_scaling: Level spacing multiplier (default 1.0).
-        sublevel_scaling: Sublevel spacing multiplier (default 1.0).
+        ef_path: Path to the .ef file.
 
     Returns:
-        Sorted list of unique integer level values, e.g. ``[0, 2, 4]`` or
-        ``[2, 6, 10]`` for a pygambit game with default scaling.  Falls back
-        to ``[0]`` if parsing fails.
+        Sorted list of unique integer level values, e.g. ``[0, 2, 4]``. Falls
+        back to ``[0]`` if parsing fails.
     """
-    if not isinstance(game_source, str):
-        try:
-            import pygambit
-            from .gambit_layout import determine_node_level
-
-            layout = pygambit.layout_tree(game_source)
-            levels = set()
-            for coords in layout.values():
-                lev = determine_node_level(
-                    coords.level,
-                    coords.sublevel,
-                    level_multiplier=level_scaling * 4,
-                    sublevel_multiplier=sublevel_scaling * 2,
-                )
-                levels.add(int(lev))
-            return sorted(levels) if levels else [0]
-        except Exception:
-            return [0]
-
-    if game_source.lower().endswith(".efg"):
-        try:
-            import pygambit
-
-            g = pygambit.read_efg(game_source)
-            return get_game_levels(g, level_scaling, sublevel_scaling)
-        except Exception:
-            return [0]
-
     try:
-        levels = set()
-        for line in readfile(game_source):
-            if line.startswith("level"):
-                try:
-                    lev = int(float(line.split()[1]))
-                    levels.add(lev)
-                except (IndexError, ValueError):
-                    pass
+        levels = _level_values(ef_path)
         return sorted(levels) if levels else [0]
     except Exception:
         return [0]
 
 
-def draw(
-    game: str | "pygambit.gambit.Game",
-    save_to: Optional[str] = None,
-    scale_factor: float = 1.0,
-    level_scaling: float = 1.0,
-    sublevel_scaling: float = 1.0,
-    width_scaling: float = 1.0,
-    hide_action_labels: bool = False,
-    shared_terminal_depth: bool = False,
-    show_grid: bool = False,
-    color_scheme: str = "default",
-    edge_thickness: float = 1.0,
-    action_label_position: float | dict[int, float] = 0.5,
-    font_family: str = "rmfamily",
-    font_bold: bool = False,
-    font_italic: bool = False,
-    font_size: str = "normalsize",
-    custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False,
-    mirror: bool = False,
-    legend_position: str = "top-left",
-    action_label_dist: float = 1.0,
-    iset_fill: bool = False,
-    iset_fill_opacity: float = 0.2,
-    iset_boundary: str = "solid",
-    iset_curved: bool = False,
-    iset_curved_bend: float | dict[int, float] = 10.0,
-    iset_curved_bend_by: str = "player",
-    node_size: float = 1.5,
-    label_bg: bool | dict[int, bool] = False,
-    label_bg_color: str = "white",
-    label_bg_opacity: float = 0.8,
-    label_bg_by: str = "player",
-    label_bg_style: str = "player_bg",
-    vary_action_label_positions: bool = False,
-    action_label_position_by: str = "player",
-    vary_action_label_positions_by: str = "all",
-    vary_action_label_positions_choices: Optional[List[int]] = None,
-) -> Optional[str]:
+class Drawing:
     """
-    Generate TikZ code and display in Jupyter notebooks.
+    A drawing that displays itself in a notebook.
+
+    ``draw()`` returns one. As the last expression of a Jupyter cell it shows the
+    drawing as an image (through ``_repr_svg_``); the LaTeX document is compiled
+    when it is first displayed, and the image is kept, so making a ``Drawing``
+    costs nothing and displaying it twice compiles once.
+
+    Attributes:
+        tikz: The TikZ code of the drawing (for a strategic game, the LaTeX body).
+        source: The complete LaTeX document that is compiled to show it.
+    """
+
+    def __init__(self, tikz: str, source: str, hint: str = "") -> None:
+        self.tikz = tikz
+        self.source = source
+        self._hint = hint
+        self._svg: Optional[str] = None
+
+    def _repr_svg_(self) -> str:
+        if self._svg is None:
+            pdf_bytes = _pdf_bytes(self.source, self._hint)
+            self._svg = _pdftocairo(
+                pdf_bytes, ["-svg"], "out.svg", "out.svg"
+            ).decode("utf-8")
+        return self._svg
+
+    def __repr__(self) -> str:
+        return f"<gtdraw.Drawing: {len(self.tikz)} characters of TikZ>"
+
+
+def draw(
+    source: Union[str, "os.PathLike[str]", IO[str]],
+    *,
+    format: Optional[str] = None,
+    style: Optional[Style] = None,
+    **options: Any,
+) -> Drawing:
+    """
+    Draw a game, for display in Jupyter notebooks.
 
     Args:
-        game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
-        save_to: Optional path to save intermediate .ef file when generating from a pygambit.gambit.Game object.
-        scale_factor: Scale factor for the diagram.
-        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
-        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
-        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
-        hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
-        shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
-        show_grid: Whether to show grid lines.
-        color_scheme: Color scheme for player nodes.
-        edge_thickness: Thickness of edges.
-        action_label_position: Position of action labels along edges.
+        source: Path to a .ef file (a drawing) or a .tex file (the LaTeX body of a
+            strategic game), or a file-like object.
+        format: ``"ef"`` or ``"sgame"``; overrides the extension of a path. The
+            default for a file-like object is ``"ef"``.
+        style: A ``Style``: the style to draw with, instead of ``Style()``. A
+            style block in the drawing overrides it. Ignored for a strategic game.
+        **options: Style options by name (see ``Style``); they override ``style``
+            and the drawing's style block. An unknown name raises ``TypeError``.
 
     Returns:
-        The result of the Jupyter cell magic execution, or the TikZ code string
-        if cell magic fails.
+        A ``Drawing``. As the last expression of a notebook cell it displays the
+        drawing (compiling needs ``pdflatex`` and ``pdftocairo``); ``.tikz`` is
+        the TikZ code and ``.source`` the LaTeX document.
     """
-    # NFG (strategic/normal form): display compiled image in Jupyter or return LaTeX body.
-    nfg_game = _prepare_nfg(game)
-    if nfg_game is not None:
-        latex_body = nfg_game.to_latex()
-        ip = get_ipython()
-        if ip is not None:
-            try:
-                from IPython.display import Image, display
-
-                png_path = png(game, save_to=save_to)
-                display(Image(png_path))
-                return None
-            except Exception:
-                pass
-        return latex_body
-
-    # Generate TikZ code
-    tikz_code = tikz(
-        game,
-        save_to=save_to,
-        scale_factor=scale_factor,
-        level_scaling=level_scaling,
-        sublevel_scaling=sublevel_scaling,
-        width_scaling=width_scaling,
-        show_grid=show_grid,
-        shared_terminal_depth=shared_terminal_depth,
-        hide_action_labels=hide_action_labels,
-        color_scheme=color_scheme,
-        edge_thickness=edge_thickness,
-        action_label_position=action_label_position,
-        font_family=font_family,
-        font_bold=font_bold,
-        font_italic=font_italic,
-        font_size=font_size,
-        custom_colors=custom_colors,
-        horizontal=horizontal,
-        mirror=mirror,
-        legend_position=legend_position,
-        action_label_dist=action_label_dist,
-        iset_fill=iset_fill,
-        iset_fill_opacity=iset_fill_opacity,
-        iset_boundary=iset_boundary,
-        iset_curved=iset_curved,
-        iset_curved_bend=iset_curved_bend,
-        iset_curved_bend_by=iset_curved_bend_by,
-        node_size=node_size,
-        label_bg=label_bg,
-        label_bg_color=label_bg_color,
-        label_bg_opacity=label_bg_opacity,
-        label_bg_by=label_bg_by,
-        label_bg_style=label_bg_style,
-        vary_action_label_positions=vary_action_label_positions,
-        action_label_position_by=action_label_position_by,
-        vary_action_label_positions_by=vary_action_label_positions_by,
-        vary_action_label_positions_choices=vary_action_label_positions_choices,
-    )
-
-    # Execute cell magic or return TikZ
-    ip = get_ipython()
-    if ip:
-        em = getattr(ip, "extension_manager", None)
-        loaded = getattr(em, "loaded", None)
-        try:
-            jpt_loaded = "jupyter_tikz" in loaded  # type: ignore
-        except Exception:
-            jpt_loaded = False
-        if not jpt_loaded:
-            ip.run_line_magic("load_ext", "jupyter_tikz")
-        return ip.run_cell_magic("tikz", "", tikz_code)
-    else:
-        return tikz_code
+    kind, text, _, _ = _resolve_source(source, format)
+    tikz_code, latex, hint = _document(kind, source, text, style, options)
+    return Drawing(tikz_code, latex, hint)
 
 
-def _prepare_nfg(game) -> Optional["pygambit.gambit.Game"]:
-    """Return a pygambit NFG game object if the input is an NFG, else None.
-
-    Accepts either a .nfg file path string or a pygambit StrategicGame object.
-    """
-    import pygambit
-
-    if isinstance(game, str) and game.lower().endswith(".nfg"):
-        return pygambit.read_nfg(game)
-    if isinstance(game, pygambit.StrategicGame):
-        return game
-    return None
-
-
-def nfg_latex_wrapper(latex_body: str) -> str:
-    """Wrap NFG LaTeX body in a standalone document using the sgame package."""
+def sgame_wrapper(latex_body: str) -> str:
+    """Wrap the LaTeX body of a strategic game in a standalone document using the sgame package."""
     return (
         "\\documentclass{article}\n"
         "\\usepackage[active,tightpage]{preview}\n"
@@ -3275,43 +3060,12 @@ def latex_wrapper(tikz_code: str) -> str:
 
 
 def tex(
-    game: str | "pygambit.gambit.Game",
+    source: Union[str, "os.PathLike[str]", IO[str]],
     save_to: Optional[str] = None,
-    scale_factor: float = 1.0,
-    level_scaling: float = 1.0,
-    sublevel_scaling: float = 1.0,
-    width_scaling: float = 1.0,
-    hide_action_labels: bool = False,
-    shared_terminal_depth: bool = False,
-    show_grid: bool = False,
-    color_scheme: str = "default",
-    edge_thickness: float = 1.0,
-    action_label_position: float | dict[int, float] = 0.5,
-    font_family: str = "rmfamily",
-    font_bold: bool = False,
-    font_italic: bool = False,
-    font_size: str = "normalsize",
-    custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False,
-    mirror: bool = False,
-    legend_position: str = "top-left",
-    action_label_dist: float = 1.0,
-    iset_fill: bool = False,
-    iset_fill_opacity: float = 0.2,
-    iset_boundary: str = "solid",
-    iset_curved: bool = False,
-    iset_curved_bend: float | dict[int, float] = 10.0,
-    iset_curved_bend_by: str = "player",
-    node_size: float = 1.5,
-    label_bg: bool | dict[int, bool] = False,
-    label_bg_color: str = "white",
-    label_bg_opacity: float = 0.8,
-    label_bg_by: str = "player",
-    label_bg_style: str = "player_bg",
-    vary_action_label_positions: bool = False,
-    action_label_position_by: str = "player",
-    vary_action_label_positions_by: str = "all",
-    vary_action_label_positions_choices: Optional[List[int]] = None,
+    *,
+    format: Optional[str] = None,
+    style: Optional[Style] = None,
+    **options: Any,
 ) -> str:
     """
     Generate a complete LaTeX document file directly from an extensive form (.ef) file.
@@ -3320,23 +3074,16 @@ def tex(
     and saves it to a .tex file.
 
     Args:
-        game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
-        save_to: path to save intermediate .ef file when generating from a pygambit.gambit.Game object and output tex file.
-        scale_factor: Scale factor for the diagram.
-        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
-        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
-        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
-        hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
-        shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
-        show_grid: Whether to show grid lines.
-        color_scheme: Color scheme for player nodes.
-        edge_thickness: Thickness of edges.
-        action_label_position: Position of action labels along edges.
-        font_family: LaTeX font family command (default: "rmfamily").
-        font_bold: Whether to use bold text (default: False).
-        font_italic: Whether to use italic text (default: False).
-        font_size: LaTeX font size command (default: "normalsize").
-        custom_colors: Optional dictionary mapping player index to hex color string for the "custom" scheme.
+        source: Path to a .ef file (a drawing) or a .tex file (the LaTeX body of a
+            strategic game), or a file-like object.
+        save_to: Output path, with or without the extension. Default: the source's
+            stem (``drawing`` for a file-like object) in the current directory.
+        format: ``"ef"`` or ``"sgame"``; overrides the extension of a path. The
+            default for a file-like object is ``"ef"``.
+        style: A ``Style``: the style to draw with, instead of ``Style()``. A
+            style block in the drawing overrides it. Ignored for a strategic game.
+        **options: Style options by name (see ``Style``); they override ``style``
+            and the drawing's style block. An unknown name raises ``TypeError``.
 
     Returns:
         Path to the generated LaTeX file.
@@ -3344,70 +3091,21 @@ def tex(
     Raises:
         FileNotFoundError: If the .ef file doesn't exist.
     """
-    # NFG (strategic/normal form) games: wrap to_latex() output with sgame preamble.
-    nfg_game = _prepare_nfg(game)
-    if nfg_game is not None:
-        stem = Path(game).stem if isinstance(game, str) else (nfg_game.title or "game")
-        if save_to and save_to.endswith(".tex"):
-            output_tex = save_to
-        else:
-            output_tex = (save_to or stem) + ".tex"
-        with open(output_tex, "w", encoding="utf-8") as f:
-            f.write(nfg_latex_wrapper(nfg_game.to_latex()))
-        return str(Path(output_tex).absolute())
+    kind, text, _, stem = _resolve_source(source, format)
+    output_tex = _output_name(save_to, stem, ".tex")
 
-    # Determine output filename
-    if save_to is None:
-        if isinstance(game, str):
-            game_path = Path(game)
-        else:
-            game_path = Path(game.title + ".ef")
-        output_tex = game_path.with_suffix(".tex").name
-    else:
-        if not save_to.endswith(".tex"):
-            output_tex = save_to + ".tex"
-        else:
-            output_tex = save_to
+    if kind == "sgame":
+        # Strategic game: wrap the body with the sgame preamble.
+        with open(output_tex, "w", encoding="utf-8") as f:
+            f.write(sgame_wrapper(text))
+        return str(Path(output_tex).absolute())
 
     # Generate TikZ content using tikz
     tikz_code = tikz(
-        game,
-        save_to=save_to,
-        scale_factor=scale_factor,
-        level_scaling=level_scaling,
-        sublevel_scaling=sublevel_scaling,
-        width_scaling=width_scaling,
-        show_grid=show_grid,
-        shared_terminal_depth=shared_terminal_depth,
-        hide_action_labels=hide_action_labels,
-        color_scheme=color_scheme,
-        edge_thickness=edge_thickness,
-        action_label_position=action_label_position,
-        font_family=font_family,
-        font_bold=font_bold,
-        font_italic=font_italic,
-        font_size=font_size,
-        custom_colors=custom_colors,
-        horizontal=horizontal,
-        mirror=mirror,
-        legend_position=legend_position,
-        action_label_dist=action_label_dist,
-        iset_fill=iset_fill,
-        iset_fill_opacity=iset_fill_opacity,
-        iset_boundary=iset_boundary,
-        iset_curved=iset_curved,
-        iset_curved_bend=iset_curved_bend,
-        iset_curved_bend_by=iset_curved_bend_by,
-        node_size=node_size,
-        label_bg=label_bg,
-        label_bg_color=label_bg_color,
-        label_bg_opacity=label_bg_opacity,
-        label_bg_by=label_bg_by,
-        label_bg_style=label_bg_style,
-        vary_action_label_positions=vary_action_label_positions,
-        action_label_position_by=action_label_position_by,
-        vary_action_label_positions_by=vary_action_label_positions_by,
-        vary_action_label_positions_choices=vary_action_label_positions_choices,
+        _reopen(source, text),
+        format=kind,
+        style=style,
+        **options,
     )
 
     # Wrap in complete LaTeX document
@@ -3420,187 +3118,53 @@ def tex(
     return str(Path(output_tex).absolute())
 
 
-def pdf(
-    game: str | "pygambit.gambit.Game",
-    save_to: Optional[str] = None,
-    scale_factor: float = 1.0,
-    level_scaling: float = 1.0,
-    sublevel_scaling: float = 1.0,
-    width_scaling: float = 1.0,
-    hide_action_labels: bool = False,
-    shared_terminal_depth: bool = False,
-    show_grid: bool = False,
-    color_scheme: str = "default",
-    edge_thickness: float = 1.0,
-    action_label_position: float | dict[int, float] = 0.5,
-    font_family: str = "rmfamily",
-    font_bold: bool = False,
-    font_italic: bool = False,
-    font_size: str = "normalsize",
-    custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False,
-    mirror: bool = False,
-    legend_position: str = "top-left",
-    action_label_dist: float = 1.0,
-    iset_fill: bool = False,
-    iset_fill_opacity: float = 0.2,
-    iset_boundary: str = "solid",
-    iset_curved: bool = False,
-    iset_curved_bend: float | dict[int, float] = 10.0,
-    iset_curved_bend_by: str = "player",
-    node_size: float = 1.5,
-    label_bg: bool | dict[int, bool] = False,
-    label_bg_color: str = "white",
-    label_bg_opacity: float = 0.8,
-    label_bg_by: str = "player",
-    label_bg_style: str = "player_bg",
-    vary_action_label_positions: bool = False,
-    action_label_position_by: str = "player",
-    vary_action_label_positions_by: str = "all",
-    vary_action_label_positions_choices: Optional[List[int]] = None,
-) -> str:
+_TEX_PACKAGES = "texlive-latex-base, texlive-latex-extra, texlive-pictures, texlive-games"
+
+
+def _document(
+    kind: str,
+    source: Any,
+    text: str,
+    style: Optional[Style],
+    options: dict,
+) -> "tuple[str, str, str]":
     """
-    Generate a PDF directly from an extensive form (.ef) file.
-
-    This function creates a complete LaTeX document, compiles it to PDF,
-    and optionally cleans up temporary files.
-
-    Args:
-        game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
-        save_to: path to save intermediate .ef file when generating from a pygambit.gambit.Game object and output pdf file.
-        scale_factor: Scale factor for the diagram.
-        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
-        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
-        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
-        hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
-        shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
-        show_grid: Whether to show grid lines.
-        color_scheme: Color scheme for player nodes.
-        edge_thickness: Thickness of edges.
-        action_label_position: Position of action labels along edges.
-        font_family: LaTeX font family command (default: "rmfamily").
-        font_bold: Whether to use bold text (default: False).
-        font_italic: Whether to use italic text (default: False).
-        font_size: LaTeX font size command (default: "normalsize").
-        custom_colors: Optional dictionary mapping player index to hex color string for the "custom" scheme.
+    Build the LaTeX document of a drawing.
 
     Returns:
-        Path to the generated PDF file.
+        ``(tikz_code, latex_document, hint)``: the TikZ code (for a strategic
+        game, its LaTeX body), the complete document, and a line to add to the
+        error if compiling it fails.
+    """
+    if kind == "sgame":
+        return (
+            text,
+            sgame_wrapper(text),
+            "Ensure the sgame LaTeX package (texlive-games) is installed.",
+        )
+    tikz_code = tikz(_reopen(source, text), format=kind, style=style, **options)
+    return tikz_code, latex_wrapper(tikz_code), ""
+
+
+def _pdf_bytes(latex_document: str, hint: str = "") -> bytes:
+    """
+    Compile a LaTeX document to a PDF with ``pdflatex``.
+
+    Args:
+        latex_document: The complete LaTeX document.
+        hint: Added to the error message if compilation fails.
+
+    Returns:
+        The bytes of the PDF.
 
     Raises:
-        FileNotFoundError: If the .ef file doesn't exist.
-        subprocess.CalledProcessError: If LaTeX compilation fails.
+        RuntimeError: If ``pdflatex`` is missing or the compilation fails.
     """
-    # NFG (strategic/normal form) games: compile sgame table directly to PDF.
-    nfg_game = _prepare_nfg(game)
-    if nfg_game is not None:
-        stem = Path(game).stem if isinstance(game, str) else (nfg_game.title or "game")
-        if save_to and save_to.endswith(".pdf"):
-            output_pdf = save_to
-        else:
-            output_pdf = (save_to or stem) + ".pdf"
-        latex_doc = nfg_latex_wrapper(nfg_game.to_latex())
-        with tempfile.TemporaryDirectory() as temp_dir:
-            tex_file = Path(temp_dir) / "output.tex"
-            tex_file.write_text(latex_doc, encoding="utf-8")
-            try:
-                subprocess.run(
-                    [
-                        "pdflatex",
-                        "-interaction=nonstopmode",
-                        "-output-directory",
-                        temp_dir,
-                        str(tex_file),
-                    ],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-            except subprocess.CalledProcessError as e:
-                # pdflatex writes errors to stdout, not stderr
-                detail = (e.stdout or "") + (e.stderr or "")
-                raise RuntimeError(
-                    "LaTeX compilation failed for NFG.\n"
-                    "Ensure pdflatex and the sgame LaTeX package (texlive-games) are installed.\n\n"
-                    f"pdflatex output:\n{detail}"
-                )
-            except FileNotFoundError:
-                raise RuntimeError(
-                    "pdflatex not found. Please install a LaTeX distribution "
-                    "(e.g., TeX Live with texlive-games, MiKTeX)."
-                )
-            import shutil
-
-            shutil.copy(Path(temp_dir) / "output.pdf", output_pdf)
-        return str(Path(output_pdf).absolute())
-
-    # Determine output filename
-    if save_to is None:
-        if isinstance(game, str):
-            game_path = Path(game)
-        else:
-            game_path = Path(game.title + ".ef")
-        output_pdf = game_path.with_suffix(".pdf").name
-    else:
-        if not save_to.endswith(".pdf"):
-            output_pdf = save_to + ".pdf"
-        else:
-            output_pdf = save_to
-
-    # Generate TikZ content using tikz
-    tikz_code = tikz(
-        game,
-        save_to=save_to,
-        scale_factor=scale_factor,
-        level_scaling=level_scaling,
-        sublevel_scaling=sublevel_scaling,
-        width_scaling=width_scaling,
-        show_grid=show_grid,
-        shared_terminal_depth=shared_terminal_depth,
-        hide_action_labels=hide_action_labels,
-        color_scheme=color_scheme,
-        edge_thickness=edge_thickness,
-        action_label_position=action_label_position,
-        font_family=font_family,
-        font_bold=font_bold,
-        font_italic=font_italic,
-        font_size=font_size,
-        custom_colors=custom_colors,
-        horizontal=horizontal,
-        mirror=mirror,
-        legend_position=legend_position,
-        action_label_dist=action_label_dist,
-        iset_fill=iset_fill,
-        iset_fill_opacity=iset_fill_opacity,
-        iset_boundary=iset_boundary,
-        iset_curved=iset_curved,
-        iset_curved_bend=iset_curved_bend,
-        iset_curved_bend_by=iset_curved_bend_by,
-        node_size=node_size,
-        label_bg=label_bg,
-        label_bg_color=label_bg_color,
-        label_bg_opacity=label_bg_opacity,
-        label_bg_by=label_bg_by,
-        label_bg_style=label_bg_style,
-        vary_action_label_positions=vary_action_label_positions,
-        action_label_position_by=action_label_position_by,
-        vary_action_label_positions_by=vary_action_label_positions_by,
-        vary_action_label_positions_choices=vary_action_label_positions_choices,
-    )
-
-    # Create LaTeX wrapper document
-    latex_document = latex_wrapper(tikz_code)
-
-    # Use temporary directory for LaTeX compilation
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
-
-        # Write LaTeX file
         tex_file = temp_path / "output.tex"
-        with open(tex_file, "w", encoding="utf-8") as f:
-            f.write(latex_document)
+        tex_file.write_text(latex_document, encoding="utf-8")
 
-        # Compile with pdflatex
         try:
             subprocess.run(
                 [
@@ -3614,437 +3178,212 @@ def pdf(
                 text=True,
                 check=True,
             )
-
-            # Move the generated PDF to the desired location
-            generated_pdf = temp_path / "output.pdf"
-            final_pdf_path = Path(output_pdf)
-
-            if generated_pdf.exists():
-                # Copy to final destination
-                import shutil
-
-                shutil.copy2(generated_pdf, final_pdf_path)
-                return str(final_pdf_path.absolute())
-            else:
-                raise RuntimeError("PDF was not generated successfully")
-
         except subprocess.CalledProcessError as e:
-            error_msg = f"LaTeX compilation failed:\n{e.stderr}"
-            if "command not found" in e.stderr or "No such file" in str(e):
-                error_msg += (
-                    "\n\nMake sure pdflatex is installed and available in your PATH."
-                )
+            # pdflatex writes errors to stdout, not stderr
+            detail = (e.stdout or "") + (e.stderr or "")
+            error_msg = f"LaTeX compilation failed:\n{detail}"
+            if hint:
+                error_msg += f"\n\n{hint}"
             raise RuntimeError(error_msg)
         except FileNotFoundError:
             raise RuntimeError(
-                "pdflatex not found. Please install a LaTeX distribution (e.g., TeX Live, MiKTeX)."
+                "pdflatex not found. Please install TeX Live "
+                f"(Ubuntu: sudo apt-get install {_TEX_PACKAGES}; "
+                "macOS: brew install --cask mactex-no-gui) or MiKTeX."
             )
+
+        generated_pdf = temp_path / "output.pdf"
+        if not generated_pdf.exists():
+            raise RuntimeError("PDF was not generated successfully")
+        return generated_pdf.read_bytes()
+
+
+def _pdftocairo(
+    pdf_bytes: bytes, flags: List[str], out_arg: str, out_file: str
+) -> bytes:
+    """
+    Convert a PDF to an image with ``pdftocairo``.
+
+    Args:
+        pdf_bytes: The PDF.
+        flags: Format flags, e.g. ``["-svg"]``.
+        out_arg: The output argument given to ``pdftocairo``.
+        out_file: The name of the file it then writes in its directory.
+
+    Returns:
+        The bytes of the image.
+
+    Raises:
+        RuntimeError: If ``pdftocairo`` is missing or fails.
+    """
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        (temp_path / "in.pdf").write_bytes(pdf_bytes)
+        try:
+            subprocess.run(
+                ["pdftocairo", *flags, str(temp_path / "in.pdf"), str(temp_path / out_arg)],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(
+                f"pdftocairo failed:\n{(e.stdout or '') + (e.stderr or '')}"
+            )
+        except FileNotFoundError:
+            raise RuntimeError(
+                "pdftocairo not found. Please install poppler "
+                "(Ubuntu: sudo apt-get install poppler-utils; macOS: brew install poppler)."
+            )
+        result = temp_path / out_file
+        if not result.exists():
+            raise RuntimeError("pdftocairo did not write an image")
+        return result.read_bytes()
+
+
+def pdf(
+    source: Union[str, "os.PathLike[str]", IO[str]],
+    save_to: Optional[str] = None,
+    *,
+    format: Optional[str] = None,
+    style: Optional[Style] = None,
+    **options: Any,
+) -> str:
+    """
+    Generate a PDF directly from an extensive form (.ef) file.
+
+    This function creates a complete LaTeX document and compiles it to PDF
+    with ``pdflatex``, which must be installed.
+
+    Args:
+        source: Path to a .ef file (a drawing) or a .tex file (the LaTeX body of a
+            strategic game), or a file-like object.
+        save_to: Output path, with or without the extension. Default: the source's
+            stem (``drawing`` for a file-like object) in the current directory.
+        format: ``"ef"`` or ``"sgame"``; overrides the extension of a path. The
+            default for a file-like object is ``"ef"``.
+        style: A ``Style``: the style to draw with, instead of ``Style()``. A
+            style block in the drawing overrides it. Ignored for a strategic game.
+        **options: Style options by name (see ``Style``); they override ``style``
+            and the drawing's style block. An unknown name raises ``TypeError``.
+
+    Returns:
+        Path to the generated PDF file.
+
+    Raises:
+        FileNotFoundError: If the .ef file doesn't exist.
+        RuntimeError: If ``pdflatex`` is missing or LaTeX compilation fails.
+    """
+    kind, text, _, stem = _resolve_source(source, format)
+    output_pdf = _output_name(save_to, stem, ".pdf")
+    _, latex, hint = _document(kind, source, text, style, options)
+    final_pdf_path = Path(output_pdf)
+    final_pdf_path.write_bytes(_pdf_bytes(latex, hint))
+    return str(final_pdf_path.absolute())
 
 
 def png(
-    game: str | "pygambit.gambit.Game",
+    source: Union[str, "os.PathLike[str]", IO[str]],
     save_to: Optional[str] = None,
-    scale_factor: float = 1.0,
-    level_scaling: float = 1.0,
-    sublevel_scaling: float = 1.0,
-    width_scaling: float = 1.0,
-    hide_action_labels: bool = False,
-    shared_terminal_depth: bool = False,
-    show_grid: bool = False,
-    color_scheme: str = "default",
-    edge_thickness: float = 1.0,
-    action_label_position: float | dict[int, float] = 0.5,
+    *,
+    format: Optional[str] = None,
+    style: Optional[Style] = None,
     dpi: int = 300,
-    font_family: str = "rmfamily",
-    font_bold: bool = False,
-    font_italic: bool = False,
-    font_size: str = "normalsize",
-    custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False,
-    mirror: bool = False,
-    legend_position: str = "top-left",
-    action_label_dist: float = 1.0,
-    iset_fill: bool = False,
-    iset_fill_opacity: float = 0.2,
-    iset_boundary: str = "solid",
-    iset_curved: bool = False,
-    iset_curved_bend: float | dict[int, float] = 10.0,
-    iset_curved_bend_by: str = "player",
-    node_size: float = 1.5,
-    label_bg: bool | dict[int, bool] = False,
-    label_bg_color: str = "white",
-    label_bg_opacity: float = 0.8,
-    label_bg_by: str = "player",
-    label_bg_style: str = "player_bg",
-    vary_action_label_positions: bool = False,
-    action_label_position_by: str = "player",
-    vary_action_label_positions_by: str = "all",
-    vary_action_label_positions_choices: Optional[List[int]] = None,
+    **options: Any,
 ) -> str:
     """
     Generate a PNG image directly from an extensive form (.ef) file.
 
-    This function creates a PDF first, then converts it to PNG using external tools.
-    Requires both pdflatex and either ImageMagick (convert) or Ghostscript (gs).
+    This function compiles the drawing to a PDF with ``pdflatex`` and converts it
+    to PNG with ``pdftocairo``; both must be installed.
 
     Args:
-        game: Path to the .ef or .efg file to process, or a pygambit.gambit.Game object.
-        save_to: Path to save intermediate .ef file when generating from a pygambit.gambit.Game object and output png file.
-        scale_factor: Scale factor for the diagram.
-        level_scaling: Level spacing multiplier used when generating from a pygambit.gambit.Game object.
-        sublevel_scaling: Sublevel spacing multiplier used when generating from a pygambit.gambit.Game object.
-        width_scaling: Width spacing multiplier used when generating from a pygambit.gambit.Game object.
-        hide_action_labels: Whether to hide action labels when generating from a pygambit.gambit.Game object.
-        shared_terminal_depth: Whether to enforce shared terminal depth when generating from a pygambit.gambit.Game object.
-        show_grid: Whether to show grid lines.
-        color_scheme: Color scheme for player nodes.
-        edge_thickness: Thickness of edges.
-        action_label_position: Position of action labels along edges.
+        source: Path to a .ef file (a drawing) or a .tex file (the LaTeX body of a
+            strategic game), or a file-like object.
+        save_to: Output path, with or without the extension. Default: the source's
+            stem (``drawing`` for a file-like object) in the current directory.
+        format: ``"ef"`` or ``"sgame"``; overrides the extension of a path. The
+            default for a file-like object is ``"ef"``.
+        style: A ``Style``: the style to draw with, instead of ``Style()``. A
+            style block in the drawing overrides it. Ignored for a strategic game.
         dpi: Set PNG resolution in DPI (default: 300).
-        font_family: LaTeX font family command (default: "rmfamily").
-        font_bold: Whether to use bold text (default: False).
-        font_italic: Whether to use italic text (default: False).
-        font_size: LaTeX font size command (default: "normalsize").
-        custom_colors: Optional dictionary mapping player index to hex color string for the "custom" scheme.
+        **options: Style options by name (see ``Style``); they override ``style``
+            and the drawing's style block. An unknown name raises ``TypeError``.
 
     Returns:
         Path to the generated PNG file.
 
     Raises:
         FileNotFoundError: If the .ef file doesn't exist.
-        RuntimeError: If PDF generation or PNG conversion fails.
+        RuntimeError: If ``pdflatex`` or ``pdftocairo`` is missing or fails.
     """
-    # Determine output filename
-    if save_to is None:
-        if isinstance(game, str):
-            game_path = Path(game)
-        else:
-            game_path = Path(game.title + ".ef")
-        output_png = game_path.with_suffix(".png").name
-    else:
-        if not save_to.endswith(".png"):
-            output_png = save_to + ".png"
-        else:
-            output_png = save_to
-
-    # Step 1: Generate PDF first
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_pdf = str(Path(temp_dir) / "temp_output.pdf")
-
-        try:
-            # Generate PDF using existing function
-            pdf(
-                game=game,
-                save_to=temp_pdf,
-                scale_factor=scale_factor,
-                level_scaling=level_scaling,
-                sublevel_scaling=sublevel_scaling,
-                width_scaling=width_scaling,
-                hide_action_labels=hide_action_labels,
-                shared_terminal_depth=shared_terminal_depth,
-                show_grid=show_grid,
-                color_scheme=color_scheme,
-                edge_thickness=edge_thickness,
-                action_label_position=action_label_position,
-                font_family=font_family,
-                font_bold=font_bold,
-                font_italic=font_italic,
-                font_size=font_size,
-                custom_colors=custom_colors,
-                horizontal=horizontal,
-                mirror=mirror,
-                legend_position=legend_position,
-                action_label_dist=action_label_dist,
-                iset_fill=iset_fill,
-                iset_fill_opacity=iset_fill_opacity,
-                iset_boundary=iset_boundary,
-                iset_curved=iset_curved,
-                iset_curved_bend=iset_curved_bend,
-                iset_curved_bend_by=iset_curved_bend_by,
-                node_size=node_size,
-                label_bg=label_bg,
-                label_bg_color=label_bg_color,
-                label_bg_opacity=label_bg_opacity,
-                label_bg_by=label_bg_by,
-                label_bg_style=label_bg_style,
-                vary_action_label_positions=vary_action_label_positions,
-                action_label_position_by=action_label_position_by,
-                vary_action_label_positions_by=vary_action_label_positions_by,
-                vary_action_label_positions_choices=vary_action_label_positions_choices,
-            )
-
-            # Step 2: Convert PDF to PNG
-            final_png_path = Path(output_png)
-
-            # Try different conversion methods in order of preference
-            conversion_success = False
-
-            # Method 1: Try ImageMagick convert
-            try:
-                subprocess.run(
-                    [
-                        "convert",
-                        "-density",
-                        str(dpi),
-                        "-quality",
-                        "100",
-                        str(temp_pdf),
-                        str(final_png_path),
-                    ],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-                conversion_success = True
-            except (subprocess.CalledProcessError, FileNotFoundError):
-                pass
-
-            # Method 2: Try Ghostscript if ImageMagick failed
-            if not conversion_success:
-                try:
-                    subprocess.run(
-                        [
-                            "gs",
-                            "-dNOPAUSE",
-                            "-dBATCH",
-                            "-sDEVICE=png16m",
-                            f"-r{dpi}",
-                            f"-sOutputFile={final_png_path}",
-                            str(temp_pdf),
-                        ],
-                        capture_output=True,
-                        text=True,
-                        check=True,
-                    )
-                    conversion_success = True
-                except (subprocess.CalledProcessError, FileNotFoundError):
-                    pass
-
-            # Method 3: Try pdftoppm + convert if available
-            if not conversion_success:
-                try:
-                    temp_ppm = Path(temp_dir) / "temp_output"
-                    # Convert PDF to PPM first
-                    subprocess.run(
-                        ["pdftoppm", "-r", str(dpi), str(temp_pdf), str(temp_ppm)],
-                        capture_output=True,
-                        text=True,
-                        check=True,
-                    )
-
-                    # Find the generated PPM file (pdftoppm adds -1.ppm suffix)
-                    ppm_file = Path(temp_dir) / f"{temp_ppm.name}-1.ppm"
-                    if ppm_file.exists():
-                        # Convert PPM to PNG
-                        subprocess.run(
-                            ["convert", str(ppm_file), str(final_png_path)],
-                            capture_output=True,
-                            text=True,
-                            check=True,
-                        )
-                        conversion_success = True
-                except (subprocess.CalledProcessError, FileNotFoundError):
-                    pass
-
-            if not conversion_success:
-                raise RuntimeError(
-                    "PNG conversion failed. Please install one of the following:\n"
-                    "  - ImageMagick (provides 'convert' command)\n"
-                    "  - Ghostscript (provides 'gs' command)\n"
-                    "  - Poppler utils (provides 'pdftoppm' command)\n\n"
-                    "Installation examples:\n"
-                    "  macOS: brew install imagemagick ghostscript poppler\n"
-                    "  Ubuntu: sudo apt-get install imagemagick ghostscript poppler-utils\n"
-                    "  Windows: Install ImageMagick or Ghostscript from their websites"
-                )
-
-            if final_png_path.exists():
-                return str(final_png_path.absolute())
-            else:
-                raise RuntimeError("PNG was not generated successfully")
-
-        except FileNotFoundError:
-            # Re-raise file not found errors directly
-            raise
-        except RuntimeError:
-            # Re-raise PDF generation errors
-            raise
-        except Exception as e:
-            raise RuntimeError(f"PNG generation failed: {e}")
+    kind, text, _, stem = _resolve_source(source, format)
+    output_png = _output_name(save_to, stem, ".png")
+    _, latex, hint = _document(kind, source, text, style, options)
+    image = _pdftocairo(
+        _pdf_bytes(latex, hint),
+        ["-png", "-r", str(dpi), "-singlefile"],
+        "out",
+        "out.png",
+    )
+    final_png_path = Path(output_png)
+    final_png_path.write_bytes(image)
+    return str(final_png_path.absolute())
 
 
 def svg(
-    game: str | "pygambit.gambit.Game",
+    source: Union[str, "os.PathLike[str]", IO[str]],
     save_to: Optional[str] = None,
-    scale_factor: float = 1.0,
-    level_scaling: float = 1.0,
-    sublevel_scaling: float = 1.0,
-    width_scaling: float = 1.0,
-    hide_action_labels: bool = False,
-    shared_terminal_depth: bool = False,
-    show_grid: bool = False,
-    color_scheme: str = "default",
-    edge_thickness: float = 1.0,
-    action_label_position: float | dict[int, float] = 0.5,
+    *,
+    format: Optional[str] = None,
+    style: Optional[Style] = None,
     responsive_sizing: bool = False,
-    font_family: str = "rmfamily",
-    font_bold: bool = False,
-    font_italic: bool = False,
-    font_size: str = "normalsize",
-    custom_colors: Optional[dict[int, str]] = None,
-    horizontal: bool = False,
-    mirror: bool = False,
-    legend_position: str = "top-left",
-    action_label_dist: float = 1.0,
-    iset_fill: bool = False,
-    iset_fill_opacity: float = 0.2,
-    iset_boundary: str = "solid",
-    iset_curved: bool = False,
-    iset_curved_bend: float | dict[int, float] = 10.0,
-    iset_curved_bend_by: str = "player",
-    node_size: float = 1.5,
-    label_bg: bool | dict[int, bool] = False,
-    label_bg_color: str = "white",
-    label_bg_opacity: float = 0.8,
-    label_bg_by: str = "player",
-    label_bg_style: str = "player_bg",
-    vary_action_label_positions: bool = False,
-    action_label_position_by: str = "player",
-    vary_action_label_positions_by: str = "all",
-    vary_action_label_positions_choices: Optional[List[int]] = None,
+    **options: Any,
 ) -> str:
     """
     Generate an SVG image directly from an extensive form (.ef) file.
 
-    Creates a PDF first, then converts it to SVG using pdf2svg.
-    Requires pdflatex and pdf2svg to be installed.
+    Compiles the drawing to a PDF with ``pdflatex`` and converts it to SVG with
+    ``pdftocairo``; both must be installed.
 
     Args:
-        game: Path to the .ef or .efg file, or a pygambit.gambit.Game object.
-        save_to: Output path (without extension) or full filename.
-        scale_factor: Scale factor for the diagram.
-        level_scaling: Level spacing multiplier (pygambit only).
-        sublevel_scaling: Sublevel spacing multiplier (pygambit only).
-        width_scaling: Width spacing multiplier (pygambit only).
-        hide_action_labels: Hide action labels (pygambit only).
-        shared_terminal_depth: Enforce shared terminal depth (pygambit only).
-        show_grid: Whether to show grid lines.
-        color_scheme: Color scheme for player nodes.
-        edge_thickness: Thickness of edges.
-        action_label_position: Position of action labels along edges.
+        source: Path to a .ef file (a drawing) or a .tex file (the LaTeX body of a
+            strategic game), or a file-like object.
+        save_to: Output path, with or without the extension. Default: the source's
+            stem (``drawing`` for a file-like object) in the current directory.
+        format: ``"ef"`` or ``"sgame"``; overrides the extension of a path. The
+            default for a file-like object is ``"ef"``.
+        style: A ``Style``: the style to draw with, instead of ``Style()``. A
+            style block in the drawing overrides it. Ignored for a strategic game.
         responsive_sizing: Whether to make the SVG responsive (width="100%", height="auto").
-        font_family: LaTeX font family command (default: "rmfamily").
-        font_bold: Whether to use bold text (default: False).
-        font_italic: Whether to use italic text (default: False).
-        font_size: LaTeX font size command (default: "normalsize").
-        custom_colors: Optional dictionary mapping player index to hex color string for the "custom" scheme.
+        **options: Style options by name (see ``Style``); they override ``style``
+            and the drawing's style block. An unknown name raises ``TypeError``.
 
     Returns:
         Absolute path to the generated SVG file.
+
+    Raises:
+        FileNotFoundError: If the .ef file doesn't exist.
+        RuntimeError: If ``pdflatex`` or ``pdftocairo`` is missing or fails.
     """
-    if save_to is None:
-        if isinstance(game, str):
-            game_path = Path(game)
-        else:
-            game_path = Path(game.title + ".ef")
-        output_svg = game_path.with_suffix(".svg").name
-    else:
-        if not save_to.endswith(".svg"):
-            output_svg = save_to + ".svg"
-        else:
-            output_svg = save_to
+    kind, text, _, stem = _resolve_source(source, format)
+    output_svg = _output_name(save_to, stem, ".svg")
+    _, latex, hint = _document(kind, source, text, style, options)
+    svg_content = _pdftocairo(
+        _pdf_bytes(latex, hint), ["-svg"], "out.svg", "out.svg"
+    ).decode("utf-8")
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_pdf = str(Path(temp_dir) / "temp_output.pdf")
+    if responsive_sizing:
+        # Remove fixed width and height
+        svg_content = re.sub(r'(<svg[^>]*?)\bwidth="[^"]*"', r"\1", svg_content)
+        svg_content = re.sub(r'(<svg[^>]*?)\bheight="[^"]*"', r"\1", svg_content)
+        # Add responsive attributes
+        svg_content = re.sub(
+            r"<svg",
+            '<svg width="100%" height="auto" style="max-height: 80vh;"',
+            svg_content,
+        )
 
-        try:
-            pdf(
-                game=game,
-                save_to=temp_pdf,
-                scale_factor=scale_factor,
-                level_scaling=level_scaling,
-                sublevel_scaling=sublevel_scaling,
-                width_scaling=width_scaling,
-                hide_action_labels=hide_action_labels,
-                shared_terminal_depth=shared_terminal_depth,
-                show_grid=show_grid,
-                color_scheme=color_scheme,
-                edge_thickness=edge_thickness,
-                action_label_position=action_label_position,
-                font_family=font_family,
-                font_bold=font_bold,
-                font_italic=font_italic,
-                font_size=font_size,
-                custom_colors=custom_colors,
-                horizontal=horizontal,
-                mirror=mirror,
-                legend_position=legend_position,
-                action_label_dist=action_label_dist,
-                iset_fill=iset_fill,
-                iset_fill_opacity=iset_fill_opacity,
-                iset_boundary=iset_boundary,
-                iset_curved=iset_curved,
-                iset_curved_bend=iset_curved_bend,
-                iset_curved_bend_by=iset_curved_bend_by,
-                node_size=node_size,
-                label_bg=label_bg,
-                label_bg_color=label_bg_color,
-                label_bg_opacity=label_bg_opacity,
-                label_bg_by=label_bg_by,
-                label_bg_style=label_bg_style,
-                vary_action_label_positions=vary_action_label_positions,
-                action_label_position_by=action_label_position_by,
-                vary_action_label_positions_by=vary_action_label_positions_by,
-                vary_action_label_positions_choices=vary_action_label_positions_choices,
-            )
-
-            # Convert PDF to SVG using pdf2svg
-            final_svg_path = Path(output_svg)
-
-            try:
-                subprocess.run(
-                    ["pdf2svg", str(temp_pdf), str(final_svg_path)],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-            except (subprocess.CalledProcessError, FileNotFoundError) as e:
-                raise RuntimeError(
-                    "SVG conversion failed. Please install pdf2svg.\n\n"
-                    "Installation examples:\n"
-                    "  macOS: brew install pdf2svg\n"
-                    "  Ubuntu: sudo apt-get install pdf2svg\n"
-                    "  Windows: Download binaries from GitHub or use WSL"
-                )
-
-            if final_svg_path.exists():
-                if responsive_sizing:
-                    import re
-
-                    with open(final_svg_path, "r") as f:
-                        svg_content = f.read()
-                    # Remove fixed width and height
-                    svg_content = re.sub(
-                        r'(<svg[^>]*?)\bwidth="[^"]*"', r"\1", svg_content
-                    )
-                    svg_content = re.sub(
-                        r'(<svg[^>]*?)\bheight="[^"]*"', r"\1", svg_content
-                    )
-                    # Add responsive attributes
-                    svg_content = re.sub(
-                        r"<svg",
-                        '<svg width="100%" height="auto" style="max-height: 80vh;"',
-                        svg_content,
-                    )
-                    with open(final_svg_path, "w") as f:
-                        f.write(svg_content)
-                return str(final_svg_path.absolute())
-            else:
-                raise RuntimeError("SVG was not generated successfully")
-
-        except FileNotFoundError:
-            raise
-        except RuntimeError:
-            raise
-        except Exception as e:
-            raise RuntimeError(f"SVG generation failed: {e}")
+    final_svg_path = Path(output_svg)
+    final_svg_path.write_text(svg_content, encoding="utf-8")
+    return str(final_svg_path.absolute())

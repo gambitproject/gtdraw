@@ -1,0 +1,56 @@
+player 1 name Player~1
+player 2 name Player~2
+level -2.0 node 1 player 0 
+level 2.0 node 2 xshift -24.515625 from 1 move Chamber~1~(\frac{1}{6}) 
+level 6.0 node 3 xshift -1.0 from 2 move Pull payoffs -1 1 
+level 6.0 node 4 xshift 1.0 from 2 move Quit payoffs 0 1 
+level 2.0 node 5 xshift -19.015625 from 1 move Chamber~2~(\frac{1}{6}) 
+level 8.0 node 6 xshift -1.5 from 5 move Pull 
+level 10.0 node 7 xshift -1.0 from 6 move Pull payoffs 1 -1 
+level 10.0 node 8 xshift 1.0 from 6 move Quit payoffs 1 0 
+level 6.0 node 9 xshift 1.5 from 5 move Quit payoffs 0 1 
+level 2.0 node 10 xshift -11.265625 from 1 move Chamber~3~(\frac{1}{6}) 
+level 8.0 node 11 xshift -1.75 from 10 move Pull 
+level 12.0 node 12 xshift -1.5 from 11 move Pull 
+level 14.0 node 13 xshift -1.0 from 12 move Pull payoffs -1 1 
+level 14.0 node 14 xshift 1.0 from 12 move Quit payoffs 0 1 
+level 10.0 node 15 xshift 1.5 from 11 move Quit payoffs 1 0 
+level 6.0 node 16 xshift 1.75 from 10 move Quit payoffs 0 1 
+level 2.0 node 17 xshift -1.390625 from 1 move Chamber~4~(\frac{1}{6}) 
+level 8.0 node 18 xshift -1.875 from 17 move Pull 
+level 12.0 node 19 xshift -1.75 from 18 move Pull 
+level 16.0 node 20 xshift -1.5 from 19 move Pull 
+level 18.0 node 21 xshift -1.0 from 20 move Pull payoffs 1 -1 
+level 18.0 node 22 xshift 1.0 from 20 move Quit payoffs 1 0 
+level 14.0 node 23 xshift 1.5 from 19 move Quit payoffs 0 1 
+level 10.0 node 24 xshift 1.75 from 18 move Quit payoffs 1 0 
+level 6.0 node 25 xshift 1.875 from 17 move Quit payoffs 0 1 
+level 2.0 node 26 xshift 10.546875 from 1 move Chamber~5~(\frac{1}{6}) 
+level 8.0 node 27 xshift -1.9375 from 26 move Pull 
+level 12.0 node 28 xshift -1.875 from 27 move Pull 
+level 16.0 node 29 xshift -1.75 from 28 move Pull 
+level 20.0 node 30 xshift -1.5 from 29 move Pull 
+level 22.0 node 31 xshift -1.0 from 30 move Pull payoffs -1 1 
+level 22.0 node 32 xshift 1.0 from 30 move Quit payoffs 0 1 
+level 18.0 node 33 xshift 1.5 from 29 move Quit payoffs 1 0 
+level 14.0 node 34 xshift 1.75 from 28 move Quit payoffs 0 1 
+level 10.0 node 35 xshift 1.875 from 27 move Quit payoffs 1 0 
+level 6.0 node 36 xshift 1.9375 from 26 move Quit payoffs 0 1 
+level 2.0 node 37 xshift 24.515625 from 1 move Chamber~6~(\frac{1}{6}) 
+level 8.0 node 38 xshift -1.96875 from 37 move Pull 
+level 12.0 node 39 xshift -1.9375 from 38 move Pull 
+level 16.0 node 40 xshift -1.875 from 39 move Pull 
+level 20.0 node 41 xshift -1.75 from 40 move Pull 
+level 24.0 node 42 player 2 xshift -1.5 from 41 move Pull 
+level 26.0 node 43 xshift -1.0 from 42 move Pull payoffs 1 -1 
+level 26.0 node 44 xshift 1.0 from 42 move Quit payoffs 1 0 
+level 22.0 node 45 xshift 1.5 from 41 move Quit payoffs 0 1 
+level 18.0 node 46 xshift 1.75 from 40 move Quit payoffs 1 0 
+level 14.0 node 47 xshift 1.875 from 39 move Quit payoffs 0 1 
+level 10.0 node 48 xshift 1.9375 from 38 move Quit payoffs 1 0 
+level 6.0 node 49 xshift 1.96875 from 37 move Quit payoffs 0 1 
+iset 2 5 10 17 26 37 player 1 
+iset 6 11 18 27 38 player 2 
+iset 12 19 28 39 player 1 
+iset 20 29 40 player 2 
+iset 30 41 player 1 

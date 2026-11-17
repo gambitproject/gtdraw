@@ -1,0 +1,79 @@
+% gtdraw: scale_factor 0.65
+% gtdraw: color_scheme colorblind
+% gtdraw: iset_fill true
+% gtdraw: iset_boundary none
+% gtdraw: iset_curved true
+% gtdraw: iset_curved_bend {"-3": 0.0, "3": 0.0, "5": 0.0, "7": 0.0, "10": 0.0, "12": 0.0, "14": 0.0, "16": 0.0, "17": 0.0, "18": 0.0, "19": 0.0, "20": 0.0, "21": -20.0, "23": -20.0, "24": 0.0}
+% gtdraw: iset_curved_bend_by level
+% gtdraw: label_bg {"0": true}
+% gtdraw: label_bg_opacity 0.95
+% gtdraw: label_bg_style white_bg
+player 1 name Player~One
+player 2 name Player~Two
+level -2.0 node 1 player 0 
+level 2.0 node 2 xshift -25.0 from 1 move P1:K~P2:Q~(\frac{1}{6}) 
+level 6.0 node 3 xshift -2.75 from 2 move Check 
+level 10.0 node 4 xshift -1.5 from 3 move Check payoffs 1 -1 
+level 12.0 node 5 xshift 1.5 from 3 move Bet 
+level 14.0 node 6 xshift -1.0 from 5 move Fold payoffs -1 1 
+level 14.0 node 7 xshift 1.0 from 5 move Call payoffs 2 -2 
+level 8.0 node 8 xshift 2.75 from 2 move Bet 
+level 10.0 node 9 xshift -1.0 from 8 move Fold payoffs 1 -1 
+level 10.0 node 10 xshift 1.0 from 8 move Call payoffs 2 -2 
+level 2.0 node 11 xshift -15.0 from 1 move P1:K~P2:J~(\frac{1}{6}) 
+level 10.0 node 12 xshift -2.75 from 11 move Check 
+level 14.0 node 13 xshift -1.5 from 12 move Check payoffs 1 -1 
+level 12.0 node 14 xshift 1.5 from 12 move Bet 
+level 14.0 node 15 xshift -1.0 from 14 move Fold payoffs -1 1 
+level 14.0 node 16 xshift 1.0 from 14 move Call payoffs 2 -2 
+level 12.0 node 17 xshift 2.75 from 11 move Bet 
+level 14.0 node 18 xshift -1.0 from 17 move Fold payoffs 1 -1 
+level 14.0 node 19 xshift 1.0 from 17 move Call payoffs 2 -2 
+level 4.0 node 20 xshift -5.0 from 1 move P1:Q~P2:K~(\frac{1}{6}) 
+level 14.0 node 21 xshift -2.75 from 20 move Check 
+level 18.0 node 22 xshift -1.5 from 21 move Check payoffs -1 1 
+level 18.0 node 23 xshift 1.5 from 21 move Bet 
+level 18.0 node 24 xshift -1.0 from 23 move Fold payoffs -1 1 
+level 18.0 node 25 xshift 1.0 from 23 move Call payoffs -2 2 
+level 16.0 node 26 xshift 2.75 from 20 move Bet 
+level 18.0 node 27 xshift -1.0 from 26 move Fold payoffs 1 -1 
+level 18.0 node 28 xshift 1.0 from 26 move Call payoffs -2 2 
+level 4.0 node 29 xshift 5.0 from 1 move P1:Q~P2:J~(\frac{1}{6}) 
+level 10.0 node 30 xshift -2.75 from 29 move Check 
+level 14.0 node 31 xshift -1.5 from 30 move Check payoffs 1 -1 
+level 14.0 node 32 xshift 1.5 from 30 move Bet 
+level 18.0 node 33 xshift -1.0 from 32 move Fold payoffs -1 1 
+level 18.0 node 34 xshift 1.0 from 32 move Call payoffs 2 -2 
+level 12.0 node 35 xshift 2.75 from 29 move Bet 
+level 14.0 node 36 xshift -1.0 from 35 move Fold payoffs 1 -1 
+level 14.0 node 37 xshift 1.0 from 35 move Call payoffs 2 -2 
+level 6.0 node 38 xshift 15.0 from 1 move P1:J~P2:K~(\frac{1}{6}) 
+level 14.0 node 39 xshift -2.75 from 38 move Check 
+level 18.0 node 40 xshift -1.5 from 39 move Check payoffs -1 1 
+level 16.0 node 41 xshift 1.5 from 39 move Bet 
+level 18.0 node 42 xshift -1.0 from 41 move Fold payoffs -1 1 
+level 18.0 node 43 xshift 1.0 from 41 move Call payoffs -2 2 
+level 16.0 node 44 xshift 2.75 from 38 move Bet 
+level 18.0 node 45 xshift -1.0 from 44 move Fold payoffs 1 -1 
+level 18.0 node 46 xshift 1.0 from 44 move Call payoffs -2 2 
+level 6.0 node 47 xshift 25.0 from 1 move P1:J~P2:Q~(\frac{1}{6}) 
+level 10.0 node 48 xshift -2.75 from 47 move Check 
+level 10.0 node 49 xshift -1.5 from 48 move Check payoffs -1 1 
+level 16.0 node 50 xshift 1.5 from 48 move Bet 
+level 18.0 node 51 xshift -1.0 from 50 move Fold payoffs -1 1 
+level 18.0 node 52 xshift 1.0 from 50 move Call payoffs -2 2 
+level 8.0 node 53 xshift 2.75 from 47 move Bet 
+level 10.0 node 54 xshift -1.0 from 53 move Fold payoffs 1 -1 
+level 10.0 node 55 xshift 1.0 from 53 move Call payoffs -2 2 
+iset 2 11 player 1 
+iset 3 48 player 2 
+iset 5 14 player 1 
+iset 8 53 player 2 
+iset 12 30 player 2 
+iset 17 35 player 2 
+iset 20 29 player 1 
+iset 21 39 player 2 
+iset 23 32 player 1 
+iset 26 44 player 2 
+iset 38 47 player 1 
+iset 41 50 player 1 
