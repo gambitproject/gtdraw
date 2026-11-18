@@ -1,0 +1,25 @@
+player 1 name Player~1
+player 2 name Player~2
+level -2.0 node 1 player 1 
+level 2.0 node 2 xshift -5.0 from 1 move 1 
+level 6.0 node 3 xshift -2.25 from 2 move 1 
+level 10.0 node 4 xshift -1.5 from 3 move 1 
+level 14.0 node 5 xshift -1.0 from 4 move 1 payoffs 
+level 14.0 node 6 xshift 1.0 from 4 move 2 payoffs 
+level 12.0 node 7 xshift 1.5 from 3 move 2 payoffs 
+level 6.0 node 8 xshift 2.25 from 2 move 2 
+level 12.0 node 9 xshift -1.0 from 8 move 1 payoffs 
+level 12.0 node 10 xshift 1.0 from 8 move 2 payoffs 
+level 4.0 node 11 xshift 5.0 from 1 move 2 
+level 8.0 node 12 xshift -2.25 from 11 move 1 
+level 14.0 node 13 xshift -1.5 from 12 move 1 
+level 18.0 node 14 xshift -1.0 from 13 move 1 payoffs 
+level 18.0 node 15 xshift 1.0 from 13 move 2 payoffs 
+level 12.0 node 16 xshift 1.5 from 12 move 2 payoffs 
+level 8.0 node 17 xshift 2.25 from 11 move 2 
+level 12.0 node 18 xshift -1.0 from 17 move 1 payoffs 
+level 12.0 node 19 xshift 1.0 from 17 move 2 payoffs 
+iset 2 13 player 2 
+iset 3 8 player 1 
+iset 4 11 player 2 
+iset 12 17 player 1 

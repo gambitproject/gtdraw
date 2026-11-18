@@ -6,19 +6,19 @@ including unit tests for utility functions, integration tests for file processin
 and validation of TikZ output generation.
 """
 
+import io
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-import pygambit
 import pytest
 
 # Import the module under test
 import gtdraw.core as core
-from _pygambit_compat import append_move as _append_move, set_outcome as _set_outcome
-from gtdraw.converter import ef_to_efg, efg_to_ef
 
 
 class TestUtilityFunctions:
@@ -293,57 +293,43 @@ class TestGTDrawFunction:
         finally:
             os.unlink(ef_file_path)
 
-    def test_draw_calls_ipython_magic_when_available(self):
-        """When IPython is available, draw should load the jupyter_tikz
-        extension if needed and call the tikz cell magic with the generated code.
-        """
-        # Create a simple .ef file for testing
-        with tempfile.NamedTemporaryFile(
-            mode="w", delete=False, suffix=".ef"
-        ) as ef_file:
-            ef_file.write("player 1\n")
-            ef_file.write("level 0 node root player 1\n")
-            ef_file_path = ef_file.name
+    def test_draw_returns_drawing_with_tikz_and_source(self, tmp_path):
+        """draw returns a Drawing: .tikz is the TikZ code and .source the document."""
+        ef = tmp_path / "g.ef"
+        ef.write_text("player 1\nlevel 0 node root player 1\n")
+        d = core.draw(str(ef))
+        assert isinstance(d, core.Drawing)
+        assert d.tikz == core.tikz(str(ef))
+        assert d.source == core.latex_wrapper(d.tikz)
 
-        class DummyEM:
-            def __init__(self, loaded=None):
-                self.loaded = loaded or set()
+    def test_draw_compiles_only_when_displayed_and_once(self, tmp_path):
+        """Making a Drawing compiles nothing; displaying it compiles once and caches."""
+        ef = tmp_path / "g.ef"
+        ef.write_text("player 1\nlevel 0 node root player 1\n")
+        with patch("gtdraw.core._pdf_bytes", return_value=b"%PDF") as mk_pdf, patch(
+            "gtdraw.core._pdftocairo", return_value=b"<svg></svg>"
+        ) as mk_svg:
+            d = core.draw(str(ef))
+            assert mk_pdf.call_count == 0 and mk_svg.call_count == 0
+            assert d._repr_svg_() == "<svg></svg>"
+            assert d._repr_svg_() == "<svg></svg>"
+            assert mk_pdf.call_count == 1 and mk_svg.call_count == 1
+            assert mk_svg.call_args.args[1] == ["-svg"]
 
-        class DummyIP:
-            def __init__(self, em):
-                self.extension_manager = em
-                self._loaded_magics = []
-                self._run_cell_magic_calls = []
-
-            def run_line_magic(self, name, arg):
-                # record that load_ext was called
-                self._loaded_magics.append((name, arg))
-
-            def run_cell_magic(self, magic_name, args, code):
-                # record call and return a sentinel
-                self._run_cell_magic_calls.append((magic_name, args, code))
-                return "MAGIC-RESULT"
-
-        try:
-            # Case 1: extension already loaded
-            em = DummyEM(loaded={"jupyter_tikz"})
-            ip = DummyIP(em)
-            with patch("gtdraw.core.get_ipython", return_value=ip):
-                res = core.draw(ef_file_path)
-                # Should call run_cell_magic and return its value
-                assert res == "MAGIC-RESULT"
-
-            # Case 2: extension not loaded -> run_line_magic should be called
-            em2 = DummyEM(loaded=set())
-            ip2 = DummyIP(em2)
-            with patch("gtdraw.core.get_ipython", return_value=ip2):
-                res2 = core.draw(ef_file_path)
-                assert res2 == "MAGIC-RESULT"
-                # run_line_magic should have been called to load the extension
-                assert ("load_ext", "jupyter_tikz") in ip2._loaded_magics
-
-        finally:
-            os.unlink(ef_file_path)
+    def test_core_does_not_import_ipython(self):
+        """Drawing and draw need no IPython: import and draw in a process without it."""
+        code = (
+            "import sys\n"
+            "sys.modules['IPython'] = None\n"
+            "sys.modules['jupyter_tikz'] = None\n"
+            "import io, gtdraw\n"
+            "d = gtdraw.draw(io.StringIO('player 1\\nlevel 0 node root player 1\\n'))\n"
+            "assert '\\\\begin{tikzpicture}' in d.tikz\n"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", code], capture_output=True, text=True
+        )
+        assert result.returncode == 0, result.stderr
 
     def test_draw_with_options(self):
         """Test draw with different options."""
@@ -659,12 +645,6 @@ class TestCommandlineArguments:
             color_scheme,
             edge_thickness,
             action_label_position,
-            level_scaling,
-            sublevel_scaling,
-            width_scaling,
-            shared_terminal_depth,
-            to_efg,
-            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -713,12 +693,6 @@ class TestCommandlineArguments:
             color_scheme,
             edge_thickness,
             action_label_position,
-            level_scaling,
-            sublevel_scaling,
-            width_scaling,
-            shared_terminal_depth,
-            to_efg,
-            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -767,12 +741,6 @@ class TestCommandlineArguments:
             color_scheme,
             edge_thickness,
             action_label_position,
-            level_scaling,
-            sublevel_scaling,
-            width_scaling,
-            shared_terminal_depth,
-            to_efg,
-            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -821,12 +789,6 @@ class TestCommandlineArguments:
             color_scheme,
             edge_thickness,
             action_label_position,
-            level_scaling,
-            sublevel_scaling,
-            width_scaling,
-            shared_terminal_depth,
-            to_efg,
-            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -875,12 +837,6 @@ class TestCommandlineArguments:
             color_scheme,
             edge_thickness,
             action_label_position,
-            level_scaling,
-            sublevel_scaling,
-            width_scaling,
-            shared_terminal_depth,
-            to_efg,
-            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -929,12 +885,6 @@ class TestCommandlineArguments:
             color_scheme,
             edge_thickness,
             action_label_position,
-            level_scaling,
-            sublevel_scaling,
-            width_scaling,
-            shared_terminal_depth,
-            to_efg,
-            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -984,12 +934,6 @@ class TestCommandlineArguments:
             color_scheme,
             edge_thickness,
             action_label_position,
-            level_scaling,
-            sublevel_scaling,
-            width_scaling,
-            shared_terminal_depth,
-            to_efg,
-            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -1031,12 +975,6 @@ class TestCommandlineArguments:
             color_scheme,
             edge_thickness,
             action_label_position,
-            level_scaling,
-            sublevel_scaling,
-            width_scaling,
-            shared_terminal_depth,
-            to_efg,
-            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -1079,12 +1017,6 @@ class TestCommandlineArguments:
             color_scheme,
             edge_thickness,
             action_label_position,
-            level_scaling,
-            sublevel_scaling,
-            width_scaling,
-            shared_terminal_depth,
-            to_efg,
-            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -1127,12 +1059,6 @@ class TestCommandlineArguments:
             color_scheme,
             edge_thickness,
             action_label_position,
-            level_scaling,
-            sublevel_scaling,
-            width_scaling,
-            shared_terminal_depth,
-            to_efg,
-            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -1181,12 +1107,6 @@ class TestCommandlineArguments:
             color_scheme,
             edge_thickness,
             action_label_position,
-            level_scaling,
-            sublevel_scaling,
-            width_scaling,
-            shared_terminal_depth,
-            to_efg,
-            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -1327,24 +1247,9 @@ def test_commandline_vary_choices_level():
 # Skip markers for integration tests requiring external tools
 # ---------------------------------------------------------------------------
 
-requires_pdflatex = pytest.mark.skipif(
-    shutil.which("pdflatex") is None,
-    reason="pdflatex not available",
-)
-
-requires_pdf_to_png = pytest.mark.skipif(
-    shutil.which("pdflatex") is None
-    or (
-        shutil.which("convert") is None
-        and shutil.which("gs") is None
-        and shutil.which("pdftoppm") is None
-    ),
-    reason="pdflatex and a PDF-to-PNG converter (convert/gs/pdftoppm) required",
-)
-
-requires_pdf2svg = pytest.mark.skipif(
-    shutil.which("pdflatex") is None or shutil.which("pdf2svg") is None,
-    reason="pdflatex and pdf2svg required",
+requires_tex_tools = pytest.mark.skipif(
+    shutil.which("pdflatex") is None or shutil.which("pdftocairo") is None,
+    reason="pdflatex and pdftocairo required",
 )
 
 
@@ -1360,15 +1265,6 @@ def _simple_ef_content():
     return "player 1\nlevel 0 node root player 1\n"
 
 
-def _make_pygambit_game():
-    """Create a small pygambit game for end-to-end tests."""
-    g = pygambit.ExtensiveGame(players=["Alice", "Bob"], title="integration_test")
-    _append_move(g, (), "Alice", ["Left", "Right"])
-    _append_move(g, ("Left",), "Bob", ["Up", "Down"])
-    _set_outcome(g, ("Left", "Up"), [1, 0])
-    _set_outcome(g, ("Left", "Down"), [0, 1])
-    _set_outcome(g, ("Right",), [2, 2])
-    return g
 
 
 # ---------------------------------------------------------------------------
@@ -1379,7 +1275,7 @@ def _make_pygambit_game():
 class TestPdfGenerationIntegration:
     """Integration tests that actually compile LaTeX to PDF."""
 
-    @requires_pdflatex
+    @requires_tex_tools
     def test_pdf_from_ef_file(self, tmp_path):
         ef_file = tmp_path / "game.ef"
         ef_file.write_text(_simple_ef_content())
@@ -1389,7 +1285,7 @@ class TestPdfGenerationIntegration:
         with open(pdf_path, "rb") as f:
             assert f.read(4) == b"%PDF"
 
-    @requires_pdflatex
+    @requires_tex_tools
     def test_pdf_save_to_custom_path(self, tmp_path):
         ef_file = tmp_path / "game.ef"
         ef_file.write_text(_simple_ef_content())
@@ -1399,16 +1295,8 @@ class TestPdfGenerationIntegration:
         assert pdf_path == str(Path(custom).absolute())
         assert os.path.isfile(pdf_path)
 
-    @requires_pdflatex
-    def test_pdf_from_pygambit_game(self, tmp_path):
-        """End-to-end: pygambit Game → .ef → .tex → .pdf"""
-        g = _make_pygambit_game()
-        pdf_path = core.pdf(g, save_to=str(tmp_path / "pygambit.pdf"))
-        assert os.path.isfile(pdf_path)
-        with open(pdf_path, "rb") as f:
-            assert f.read(4) == b"%PDF"
 
-    @requires_pdflatex
+    @requires_tex_tools
     def test_pdf_from_repo_ef_file(self, tmp_path):
         """Test with a real game file from the repository."""
         ef_file = GAMES_DIR / "x1.ef"
@@ -1428,7 +1316,7 @@ class TestPdfGenerationIntegration:
 class TestPngGenerationIntegration:
     """Integration tests that actually generate PNG images."""
 
-    @requires_pdf_to_png
+    @requires_tex_tools
     def test_png_from_ef_file(self, tmp_path):
         ef_file = tmp_path / "game.ef"
         ef_file.write_text(_simple_ef_content())
@@ -1438,14 +1326,6 @@ class TestPngGenerationIntegration:
         with open(png_path, "rb") as f:
             assert f.read(4) == b"\x89PNG"
 
-    @requires_pdf_to_png
-    def test_png_from_pygambit_game(self, tmp_path):
-        """End-to-end: pygambit Game → .ef → .tex → .pdf → .png"""
-        g = _make_pygambit_game()
-        png_path = core.png(g, save_to=str(tmp_path / "pygambit.png"))
-        assert os.path.isfile(png_path)
-        with open(png_path, "rb") as f:
-            assert f.read(4) == b"\x89PNG"
 
 
 # ---------------------------------------------------------------------------
@@ -1456,7 +1336,7 @@ class TestPngGenerationIntegration:
 class TestSvgGenerationIntegration:
     """Integration tests that actually generate SVG files."""
 
-    @requires_pdf2svg
+    @requires_tex_tools
     def test_svg_from_ef_file(self, tmp_path):
         ef_file = tmp_path / "game.ef"
         ef_file.write_text(_simple_ef_content())
@@ -1467,17 +1347,8 @@ class TestSvgGenerationIntegration:
             content = f.read()
         assert "<svg" in content
 
-    @requires_pdf2svg
-    def test_svg_from_pygambit_game(self, tmp_path):
-        """End-to-end: pygambit Game → .ef → .tex → .pdf → .svg"""
-        g = _make_pygambit_game()
-        svg_path = core.svg(g, save_to=str(tmp_path / "pygambit.svg"))
-        assert os.path.isfile(svg_path)
-        with open(svg_path) as f:
-            content = f.read()
-        assert "<svg" in content
 
-    @requires_pdf2svg
+    @requires_tex_tools
     def test_svg_responsive(self, tmp_path):
         """Verify that responsive_sizing=True modifies the SVG content."""
         ef_file = tmp_path / "game.ef"
@@ -1551,138 +1422,332 @@ class TestGenerateTikzOptions:
         assert "\\treethickn2.0pt" in result
         assert "\\begin{tikzpicture}" in result
 
-    def test_pygambit_game_with_layout_options(self, tmp_path):
-        """Test pygambit-specific options: level_scaling, sublevel_scaling,
-        width_scaling, shared_terminal_depth, hide_action_labels."""
-        g = _make_pygambit_game()
-        result = core.tikz(
-            g,
-            save_to=str(tmp_path / "opts.ef"),
-            level_scaling=2,
-            sublevel_scaling=2,
-            width_scaling=2,
-            shared_terminal_depth=True,
-            hide_action_labels=True,
-        )
-        assert "\\begin{tikzpicture}" in result
-        # hide_action_labels means no "move" keyword in the intermediate .ef
-        ef_content = (tmp_path / "opts.ef").read_text()
-        assert "move" not in ef_content
 
 
 # ---------------------------------------------------------------------------
-# Smoke test: tikz over all repo .efg files via pygambit
+# Sources: paths and buffers; drawings (.ef) and strategic games (.tex)
 # ---------------------------------------------------------------------------
 
+# Examples converted from Gambit's game files (once, with the converters gtdraw had then)
+_CONVERTED_EF_FILES = sorted(
+    GAMES_DIR / f"{name}.ef"
+    for name in (
+        "alt_russian_fixed",
+        "alt_russian_sequential",
+        "cross",
+        "holdout",
+        "kuhn-3-card-v1",
+        "kuhn-4-card",
+        "tiny_hanabi",
+        "trust_game",
+    )
+)
+_SGAME_FILES = sorted(GAMES_DIR.glob("*.tex"))
+_ALL_EF_FILES = sorted(GAMES_DIR.glob("*.ef"))
+_SGAME_PATH = str(GAMES_DIR / "nau2004_sec3.tex")
 
-def _find_efg_files():
-    """Return list of .efg paths under games/efg/."""
-    efg_dir = GAMES_DIR / "efg"
-    if not efg_dir.exists():
-        return []
-    return sorted(efg_dir.glob("*.efg"))
+
+def _without_source_line(tikz_code):
+    """TikZ text without the comment line that names the source."""
+    return "\n".join(
+        line
+        for line in tikz_code.splitlines()
+        if not line.startswith("% Game tree content from")
+    )
 
 
-_EFG_FILES = _find_efg_files()
+def test_example_files_are_present():
+    """The converted drawings and strategic games are in games/, and no Gambit game files are."""
+    assert len(_CONVERTED_EF_FILES) == 8
+    assert all(p.is_file() for p in _CONVERTED_EF_FILES)
+    assert len(_SGAME_FILES) == 4
+    assert not (GAMES_DIR / "efg").exists()
+    assert not (GAMES_DIR / "nfg").exists()
 
 
-@pytest.mark.parametrize("efg_path", _EFG_FILES, ids=[p.name for p in _EFG_FILES])
-def test_pygambit_tikz_smoke(efg_path, tmp_path):
-    """Smoke test: read each .efg with pygambit and generate TikZ without
-    crashing. This replaces the tutorial notebooks' role as a crash-check
-    for the pygambit → draw pipeline."""
-    g = pygambit.read_efg(str(efg_path))
-    result = core.tikz(g, save_to=str(tmp_path / "smoke.ef"))
-    assert isinstance(result, str)
+@pytest.fixture
+def keep_module_state():
+    """Undo what rendering leaves in `core.playername`.
+
+    A render's `player 0 name ...` line stays in a module global after the render
+    (a known leak, until per-render state lands), so a test that renders many
+    examples restores it for the tests that follow.
+    """
+    saved = list(core.playername)
+    yield
+    core.playername[:] = saved
+
+
+@pytest.mark.parametrize("ef_path", _ALL_EF_FILES, ids=[p.name for p in _ALL_EF_FILES])
+def test_tikz_smoke(ef_path, keep_module_state):
+    """tikz succeeds on every example drawing, and gives a tikzpicture."""
+    result = core.tikz(str(ef_path))
     assert "\\begin{tikzpicture}" in result
     assert len(result) > 100  # sanity check: non-trivial output
 
 
-@pytest.mark.parametrize("efg_path", _EFG_FILES, ids=[p.name for p in _EFG_FILES])
-@requires_pdflatex
-def test_pygambit_pdf_smoke(efg_path, tmp_path):
-    """Smoke test: read each .efg with pygambit and generate PDF.
-    Verifies the full pipeline doesn't crash and produces a valid PDF."""
-    g = pygambit.read_efg(str(efg_path))
-    pdf_path = core.pdf(g, save_to=str(tmp_path / "smoke.pdf"))
+@pytest.mark.parametrize(
+    "ef_path", _CONVERTED_EF_FILES, ids=[p.name for p in _CONVERTED_EF_FILES]
+)
+@requires_tex_tools
+def test_pdf_smoke_converted_examples(ef_path, tmp_path, keep_module_state):
+    """pdf compiles each drawing converted from a Gambit game file to a valid PDF."""
+    pdf_path = core.pdf(str(ef_path), save_to=str(tmp_path / "smoke.pdf"))
     assert os.path.isfile(pdf_path)
     with open(pdf_path, "rb") as f:
         assert f.read(4) == b"%PDF"
 
 
-# ---------------------------------------------------------------------------
-# NFG (Normal Form Game) rendering tests
-# ---------------------------------------------------------------------------
+class TestDrawingHelpers:
+    """The private helpers that read a .ef drawing for the app."""
+
+    def _write(self, tmp_path, text):
+        path = tmp_path / "d.ef"
+        path.write_text(text)
+        return str(path)
+
+    def test_count_players_ignores_chance(self, tmp_path):
+        path = self._write(
+            tmp_path, "player 0 name Chance\nplayer 1\nplayer 2\nlevel 0 node root player 0\n"
+        )
+        assert core._count_players(path) == 2
+
+    def test_count_players_unreadable_file(self, tmp_path):
+        assert core._count_players(str(tmp_path / "missing.ef")) == 6
+
+    def test_levels(self, tmp_path):
+        path = self._write(
+            tmp_path,
+            "player 1\nlevel 0 node root player 1\n"
+            "level 2 node a from root\nlevel 6 node b from root\nlevel 2 node c from root\n",
+        )
+        assert core._get_game_levels(path) == [0, 2, 6]
+        assert core._count_levels(path) == 6
+
+    def test_levels_unreadable_file(self, tmp_path):
+        missing = str(tmp_path / "missing.ef")
+        assert core._get_game_levels(missing) == [0]
+        assert core._count_levels(missing) == 0
 
 
-def _find_nfg_files():
-    """Return list of .nfg paths under games/nfg/."""
-    nfg_dir = GAMES_DIR / "nfg"
-    if not nfg_dir.exists():
-        return []
-    return sorted(nfg_dir.glob("*.nfg"))
+class TestSources:
+    """A source is a path or a file-like object; its kind is its extension or `format`."""
+
+    EF_TEXT = "player 1\nlevel 0 node root player 1\nlevel 1 node a from 0,root move L payoffs 1 0\n"
+
+    def test_buffer_gives_same_tikz_as_path(self, tmp_path):
+        """A text buffer is a drawing by default and gives the same TikZ as its file."""
+        path = tmp_path / "d.ef"
+        path.write_text(self.EF_TEXT)
+        from_path = core.tikz(str(path))
+        from_buffer = core.tikz(io.StringIO(self.EF_TEXT))
+        assert _without_source_line(from_path) == _without_source_line(from_buffer)
+
+    def test_pathlike_source(self, tmp_path):
+        """A pathlib.Path is a path."""
+        path = tmp_path / "d.ef"
+        path.write_text(self.EF_TEXT)
+        assert core.tikz(path) == core.tikz(str(path))
+
+    def test_file_object_source(self, tmp_path):
+        """An open text file is a buffer."""
+        path = tmp_path / "d.ef"
+        path.write_text(self.EF_TEXT)
+        with open(path) as f:
+            result = core.tikz(f)
+        assert _without_source_line(result) == _without_source_line(core.tikz(str(path)))
+
+    def test_bytes_buffer_is_decoded(self):
+        """A binary buffer is read as UTF-8."""
+        result = core.tikz(io.BytesIO(self.EF_TEXT.encode("utf-8")))
+        assert "\\begin{tikzpicture}" in result
+
+    def test_buffer_source_line_names_buffer(self):
+        """For a buffer, the comment line naming the source says so."""
+        assert "% Game tree content from <buffer>" in core.tikz(io.StringIO(self.EF_TEXT))
+
+    def test_path_source_line_names_path(self, tmp_path):
+        """For a path, the comment line naming the source is the path as given."""
+        path = tmp_path / "d.ef"
+        path.write_text(self.EF_TEXT)
+        assert f"% Game tree content from {path}" in core.tikz(str(path))
+
+    def test_format_overrides_extension(self, tmp_path):
+        """format='ef' makes a file with another extension a drawing."""
+        path = tmp_path / "d.txt"
+        path.write_text(self.EF_TEXT)
+        assert "\\begin{tikzpicture}" in core.tikz(str(path), format="ef")
+
+    def test_unknown_extension_without_format_is_an_error(self, tmp_path):
+        """An unrecognised extension without format is a ValueError that names the choices."""
+        path = tmp_path / "d.txt"
+        path.write_text(self.EF_TEXT)
+        with pytest.raises(ValueError, match=r"\.ef.*\.tex"):
+            core.tikz(str(path))
+
+    def test_efg_extension_is_not_a_drawing(self, tmp_path):
+        """A Gambit game file is not read: its extension is not recognised."""
+        path = tmp_path / "g.efg"
+        path.write_text('EFG 2 R "x" { "1" "2" }\n""\n')
+        with pytest.raises(ValueError):
+            core.tikz(str(path))
+
+    def test_bad_format_is_an_error(self):
+        """format must be 'ef' or 'sgame'."""
+        with pytest.raises(ValueError, match="format"):
+            core.tikz(io.StringIO(self.EF_TEXT), format="efg")
+
+    def test_missing_file(self, tmp_path):
+        """A path that does not exist is a FileNotFoundError."""
+        with pytest.raises(FileNotFoundError):
+            core.tikz(str(tmp_path / "missing.ef"))
+
+    def test_string_is_a_path_not_text(self):
+        """A string is never read as the text of a drawing."""
+        with pytest.raises((ValueError, FileNotFoundError)):
+            core.tikz(self.EF_TEXT)
+
+    def test_removed_layout_options_are_rejected(self):
+        """The layout options that belonged to Gambit's layout are no longer accepted."""
+        for option in (
+            "level_scaling",
+            "sublevel_scaling",
+            "width_scaling",
+            "hide_action_labels",
+            "shared_terminal_depth",
+        ):
+            with pytest.raises(TypeError):
+                core.tikz(io.StringIO(self.EF_TEXT), **{option: 1})
+
+    @requires_tex_tools
+    def test_default_output_name_is_the_stem(self, tmp_path, monkeypatch):
+        """Without save_to the output is named from the path's stem, in the current directory."""
+        src = tmp_path / "mygame.ef"
+        src.write_text(self.EF_TEXT)
+        monkeypatch.chdir(tmp_path)
+        out = core.tex(str(src))
+        assert Path(out) == (tmp_path / "mygame.tex").resolve()
+
+    @requires_tex_tools
+    def test_default_output_name_for_a_buffer(self, tmp_path, monkeypatch):
+        """Without save_to a buffer's output is named 'drawing'."""
+        monkeypatch.chdir(tmp_path)
+        out = core.tex(io.StringIO(self.EF_TEXT))
+        assert Path(out) == (tmp_path / "drawing.tex").resolve()
+
+    def test_save_to_adds_extension(self, tmp_path):
+        """save_to names the output; the extension is added if missing."""
+        out = core.tex(io.StringIO(self.EF_TEXT), save_to=str(tmp_path / "named"))
+        assert Path(out) == (tmp_path / "named.tex").resolve()
+        assert "\\begin{tikzpicture}" in Path(out).read_text()
+
+    def test_save_to_writes_only_the_output(self, tmp_path):
+        """save_to no longer saves an intermediate drawing beside the output."""
+        core.tex(io.StringIO(self.EF_TEXT), save_to=str(tmp_path / "named.tex"))
+        assert sorted(p.name for p in tmp_path.iterdir()) == ["named.tex"]
 
 
-_NFG_FILES = _find_nfg_files()
-_NFG_PATH = str(GAMES_DIR / "nfg" / "nau2004_sec3.nfg")
+class TestNoPygambit:
+    """gtdraw imports and renders without pygambit."""
+
+    def test_import_and_render_without_pygambit(self):
+        """In a fresh process that cannot import pygambit, a drawing renders."""
+        code = (
+            "import sys\n"
+            "sys.modules['pygambit'] = None\n"  # an import of pygambit raises ImportError
+            "import io, gtdraw\n"
+            "out = gtdraw.tikz(io.StringIO('player 1\\nlevel 0 node root player 1\\n'))\n"
+            "assert 'tikzpicture' in out\n"
+            "assert 'pygambit' not in sys.modules or sys.modules['pygambit'] is None\n"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", code], capture_output=True, text=True
+        )
+        assert result.returncode == 0, result.stderr
+
+    def test_public_names(self):
+        """gtdraw exports the drawing functions and nothing from Gambit's formats."""
+        import gtdraw
+
+        assert sorted(gtdraw.__all__) == sorted(
+            ["draw", "tikz", "tex", "pdf", "png", "svg", "latex_wrapper", "Style"]
+        )
+        for removed in (
+            "ef_to_efg",
+            "efg_to_ef",
+            "gambit_layout_to_ef",
+            "count_players",
+            "count_levels",
+            "get_game_levels",
+            "ef_to_tex",
+        ):
+            assert not hasattr(gtdraw, removed)
+
+    def test_no_syntax_warnings_in_sources(self):
+        """The package's modules compile without a SyntaxWarning (an invalid escape in a docstring)."""
+        import warnings
+
+        for path in sorted(Path(core.__file__).parent.glob("*.py")):
+            with warnings.catch_warnings():
+                warnings.simplefilter("error", SyntaxWarning)
+                compile(path.read_text(encoding="utf-8"), str(path), "exec")
 
 
-class TestNFGRendering:
-    """Tests for Normal Form Game (NFG) rendering support."""
+class TestSgameRendering:
+    """Strategic games: the LaTeX body of an sgame table, as a .tex file or a buffer."""
 
-    def _skip_if_no_nfg(self):
-        if not os.path.exists(_NFG_PATH):
-            pytest.skip("NFG test file not found")
-
-    def test_tikz_from_nfg_file(self):
-        """tikz on an NFG file path returns the LaTeX game environment."""
-        self._skip_if_no_nfg()
-        result = core.tikz(_NFG_PATH)
+    def test_tikz_returns_the_body_unchanged(self):
+        """tikz on a .tex file returns its text, not TikZ."""
+        result = core.tikz(_SGAME_PATH)
+        assert result == Path(_SGAME_PATH).read_text()
         assert "\\begin{game}" in result
         assert "\\end{game}" in result
 
-    def test_tikz_from_pygambit_nfg_object(self):
-        """tikz on a pygambit NFG Game object returns the LaTeX game environment."""
-        self._skip_if_no_nfg()
-        g = pygambit.read_nfg(_NFG_PATH)
-        result = core.tikz(g)
-        assert "\\begin{game}" in result
-        assert "\\end{game}" in result
+    def test_tikz_does_not_contain_tikzpicture(self):
+        """A payoff table is not a tree: no TikZ markup."""
+        assert "\\begin{tikzpicture}" not in core.tikz(_SGAME_PATH)
 
-    def test_tikz_nfg_does_not_contain_tikzpicture(self):
-        """NFG output must not contain TikZ markup — it is a payoff table, not a tree."""
-        self._skip_if_no_nfg()
-        result = core.tikz(_NFG_PATH)
-        assert "\\begin{tikzpicture}" not in result
+    def test_buffer_with_format_sgame(self):
+        """A buffer is a strategic game when format='sgame'."""
+        text = Path(_SGAME_PATH).read_text()
+        assert core.tikz(io.StringIO(text), format="sgame") == text
 
-    def test_tex_from_nfg(self, tmp_path):
-        """tex for NFG produces a .tex file with the sgame package."""
-        self._skip_if_no_nfg()
-        out = core.tex(_NFG_PATH, save_to=str(tmp_path / "out"))
+    def test_tex_wraps_with_sgame_package(self, tmp_path):
+        """tex wraps the body in a document that uses the sgame package."""
+        out = core.tex(_SGAME_PATH, save_to=str(tmp_path / "out"))
         assert out.endswith(".tex")
         content = Path(out).read_text()
         assert "\\usepackage{sgame}" in content
         assert "\\begin{game}" in content
+        assert core.sgame_wrapper(Path(_SGAME_PATH).read_text()) == content
 
-    def test_draw_nfg_returns_latex_body(self):
-        """draw() on an NFG outside Jupyter returns the LaTeX body string."""
-        self._skip_if_no_nfg()
-        result = core.draw(_NFG_PATH)
-        assert result is not None
-        assert "\\begin{game}" in result
+    def test_draw_returns_drawing_of_latex_body(self):
+        """draw() on a strategic game returns a Drawing whose .tikz is the LaTeX body."""
+        result = core.draw(_SGAME_PATH)
+        assert isinstance(result, core.Drawing)
+        assert "\\begin{game}" in result.tikz
+        assert result.source == core.sgame_wrapper(result.tikz)
 
-    @pytest.mark.parametrize("nfg_path", _NFG_FILES, ids=[p.name for p in _NFG_FILES])
-    def test_nfg_tikz_smoke(self, nfg_path):
-        """tikz succeeds on all .nfg files in games/nfg/."""
-        result = core.tikz(str(nfg_path))
-        assert "\\begin{game}" in result, f"No game env in output for {nfg_path}"
+    @pytest.mark.parametrize("path", _SGAME_FILES, ids=[p.name for p in _SGAME_FILES])
+    def test_sgame_tikz_smoke(self, path):
+        """tikz succeeds on every example strategic game."""
+        assert "\\begin{game}" in core.tikz(str(path))
 
-    @pytest.mark.parametrize("nfg_path", _NFG_FILES, ids=[p.name for p in _NFG_FILES])
-    @requires_pdflatex
-    def test_nfg_pdf_smoke(self, nfg_path, tmp_path):
-        """pdf compiles each NFG to a valid PDF."""
-        pdf_path = core.pdf(str(nfg_path), save_to=str(tmp_path / "out.pdf"))
+    @pytest.mark.parametrize("path", _SGAME_FILES, ids=[p.name for p in _SGAME_FILES])
+    @requires_tex_tools
+    def test_sgame_pdf_smoke(self, path, tmp_path):
+        """pdf compiles each strategic game to a valid PDF."""
+        pdf_path = core.pdf(str(path), save_to=str(tmp_path / "out.pdf"))
         assert os.path.isfile(pdf_path)
+        with open(pdf_path, "rb") as f:
+            assert f.read(4) == b"%PDF"
+
+    @requires_tex_tools
+    def test_pdf_from_buffer(self, tmp_path):
+        """pdf of a strategic game given as a buffer."""
+        text = Path(_SGAME_PATH).read_text()
+        pdf_path = core.pdf(io.StringIO(text), save_to=str(tmp_path / "t"), format="sgame")
+        assert pdf_path.endswith("t.pdf")
         with open(pdf_path, "rb") as f:
             assert f.read(4) == b"%PDF"
 
@@ -1740,7 +1805,7 @@ class TestCustomColors:
             ef_file_path = f.name
 
         try:
-            assert core.count_players(ef_file_path) == 2
+            assert core._count_players(ef_file_path) == 2
             # Chance player name should be capitalized
             assert core.playername[0] == "Chance"
         finally:
@@ -1825,24 +1890,6 @@ def test_commandline_edge_and_label_options():
     )
     assert result[29] == 2.0
     assert result[30] == 0.7
-
-
-def test_commandline_efg_scaling_options():
-    """Test parsing of scaling and layout options specific to EFG files."""
-    result = core.commandline(
-        [
-            "core.py",
-            "test.ef",
-            "--level-scaling=1.5",
-            "--sublevel-scaling=0.8",
-            "--width-scaling=1.2",
-            "--shared-terminal-depth",
-        ]
-    )
-    assert result[31] == 1.5
-    assert result[32] == 0.8
-    assert result[33] == 1.2
-    assert result[34] is True
 
 
 class TestHorizontalLayout:
@@ -2444,318 +2491,6 @@ def test_payoff_font_family():
     assert "$\\mathsf{" in res_sans
 
 
-class TestConverter:
-    """Tests for ef_to_efg and efg_to_ef converter functions."""
-
-    def test_ef_to_efg_basic(self, tmp_path):
-        """Test basic EF to EFG conversion produces valid EFG output."""
-        ef_file = "games/example.ef"
-        if not os.path.exists(ef_file):
-            ef_file = os.path.join(
-                os.path.dirname(__file__), "..", "games", "example.ef"
-            )
-        if not os.path.exists(ef_file):
-            pytest.skip("example.ef not found")
-
-        out_path = str(tmp_path / "example.efg")
-        result = ef_to_efg(ef_file, save_to=out_path)
-
-        assert os.path.exists(result)
-        with open(result) as f:
-            content = f.read()
-        assert content.startswith("EFG 2 R")
-        assert '"I"' in content
-        assert '"II"' in content
-        # Should contain terminal nodes
-        assert content.count("\nt ") >= 1
-
-    def test_ef_to_efg_save_to(self, tmp_path):
-        """Test that save_to controls the output filename."""
-        ef_file = "games/example.ef"
-        if not os.path.exists(ef_file):
-            ef_file = os.path.join(
-                os.path.dirname(__file__), "..", "games", "example.ef"
-            )
-        if not os.path.exists(ef_file):
-            pytest.skip("example.ef not found")
-
-        custom_path = str(tmp_path / "my_custom_game.efg")
-        result = ef_to_efg(ef_file, save_to=custom_path)
-        assert result == custom_path
-        assert os.path.exists(custom_path)
-
-    def test_ef_to_efg_auto_extension(self, tmp_path):
-        """Test that .efg extension is added automatically if missing."""
-        ef_file = "games/example.ef"
-        if not os.path.exists(ef_file):
-            ef_file = os.path.join(
-                os.path.dirname(__file__), "..", "games", "example.ef"
-            )
-        if not os.path.exists(ef_file):
-            pytest.skip("example.ef not found")
-
-        base_path = str(tmp_path / "my_game")
-        result = ef_to_efg(ef_file, save_to=base_path)
-        assert result.endswith(".efg")
-        assert os.path.exists(result)
-
-    def test_ef_to_efg_title(self, tmp_path):
-        """Test that custom title is used in the EFG prologue."""
-        ef_file = "games/example.ef"
-        if not os.path.exists(ef_file):
-            ef_file = os.path.join(
-                os.path.dirname(__file__), "..", "games", "example.ef"
-            )
-        if not os.path.exists(ef_file):
-            pytest.skip("example.ef not found")
-
-        out_path = str(tmp_path / "titled.efg")
-        ef_to_efg(ef_file, save_to=out_path, title="My Game")
-        with open(out_path) as f:
-            content = f.read()
-        assert '"My Game"' in content
-
-    def test_ef_to_efg_payoff_preservation(self, tmp_path):
-        """Test that payoff values survive EF to EFG conversion."""
-        ef_file = "games/example.ef"
-        if not os.path.exists(ef_file):
-            ef_file = os.path.join(
-                os.path.dirname(__file__), "..", "games", "example.ef"
-            )
-        if not os.path.exists(ef_file):
-            pytest.skip("example.ef not found")
-
-        out_path = str(tmp_path / "payoffs.efg")
-        ef_to_efg(ef_file, save_to=out_path)
-        with open(out_path) as f:
-            content = f.read()
-
-        # The example.ef has payoffs like "3 3", "1 -1", "5 1", etc.
-        assert "3 3" in content
-        assert "5 1" in content
-        assert "2 0" in content
-
-    def test_ef_to_efg_pygambit_loadable(self, tmp_path):
-        """Test that the generated EFG file can be loaded by pygambit."""
-        ef_file = "games/example.ef"
-        if not os.path.exists(ef_file):
-            ef_file = os.path.join(
-                os.path.dirname(__file__), "..", "games", "example.ef"
-            )
-        if not os.path.exists(ef_file):
-            pytest.skip("example.ef not found")
-
-        import pygambit
-
-        out_path = str(tmp_path / "loadable.efg")
-        ef_to_efg(ef_file, save_to=out_path)
-        game = pygambit.read_efg(out_path)
-        assert game.title == "example"
-        assert len(game.players) == 2
-
-    def test_ef_to_efg_file_not_found(self):
-        """Test that FileNotFoundError is raised for missing file."""
-        with pytest.raises(FileNotFoundError):
-            ef_to_efg("nonexistent.ef")
-
-    def test_efg_to_ef_basic(self, tmp_path):
-        """Test basic EFG to EF conversion."""
-        efg_file = "games/efg/2s2x2x2.efg"
-        if not os.path.exists(efg_file):
-            efg_file = os.path.join(
-                os.path.dirname(__file__), "..", "games", "efg", "2s2x2x2.efg"
-            )
-        if not os.path.exists(efg_file):
-            pytest.skip("2s2x2x2.efg not found")
-
-        out_path = str(tmp_path / "converted.ef")
-        result = efg_to_ef(efg_file, save_to=out_path)
-        assert os.path.exists(result)
-        with open(result) as f:
-            content = f.read()
-        assert "player" in content
-        assert "level" in content
-
-    def test_efg_to_ef_save_to(self, tmp_path):
-        """Test that save_to controls the output filename."""
-        efg_file = "games/efg/2s2x2x2.efg"
-        if not os.path.exists(efg_file):
-            efg_file = os.path.join(
-                os.path.dirname(__file__), "..", "games", "efg", "2s2x2x2.efg"
-            )
-        if not os.path.exists(efg_file):
-            pytest.skip("2s2x2x2.efg not found")
-
-        custom_path = str(tmp_path / "my_custom.ef")
-        result = efg_to_ef(efg_file, save_to=custom_path)
-        assert os.path.exists(result)
-
-    def test_efg_to_ef_pygambit_game(self, tmp_path):
-        """Test that a pygambit Game object can be passed directly."""
-        import pygambit
-
-        efg_file = "games/efg/2s2x2x2.efg"
-        if not os.path.exists(efg_file):
-            efg_file = os.path.join(
-                os.path.dirname(__file__), "..", "games", "efg", "2s2x2x2.efg"
-            )
-        if not os.path.exists(efg_file):
-            pytest.skip("2s2x2x2.efg not found")
-
-        game = pygambit.read_efg(efg_file)
-        result = efg_to_ef(game, save_to=str(tmp_path / "from_game.ef"))
-        assert os.path.exists(result)
-        with open(result) as f:
-            content = f.read()
-        assert "player" in content
-
-    def test_efg_to_ef_file_not_found(self):
-        """Test that FileNotFoundError is raised for missing file."""
-        with pytest.raises(FileNotFoundError):
-            efg_to_ef("nonexistent.efg")
-
-    def test_round_trip_efg_ef_efg(self, tmp_path):
-        """Test EFG -> EF -> EFG round-trip produces a loadable game."""
-        import pygambit
-
-        efg_file = "games/efg/2s2x2x2.efg"
-        if not os.path.exists(efg_file):
-            efg_file = os.path.join(
-                os.path.dirname(__file__), "..", "games", "efg", "2s2x2x2.efg"
-            )
-        if not os.path.exists(efg_file):
-            pytest.skip("2s2x2x2.efg not found")
-
-        # EFG -> EF
-        ef_path = str(tmp_path / "roundtrip.ef")
-        efg_to_ef(efg_file, save_to=ef_path)
-        assert os.path.exists(ef_path)
-
-        # EF -> EFG
-        efg_path = str(tmp_path / "roundtrip.efg")
-        ef_to_efg(ef_path, save_to=efg_path)
-        assert os.path.exists(efg_path)
-
-        # Verify the result is loadable
-        game = pygambit.read_efg(efg_path)
-        assert len(game.players) >= 2
-
-    def test_commandline_to_efg_flag(self):
-        """Test that --to-efg flag is parsed correctly."""
-        from gtdraw.core import commandline
-
-        result = commandline(["gtdraw", "games/example.ef", "--to-efg"])
-        (
-            output_mode,
-            pdf_requested,
-            png_requested,
-            svg_requested,
-            tex_requested,
-            output_file,
-            dpi,
-            font_family,
-            font_bold,
-            font_italic,
-            font_size,
-            custom_colors,
-            horizontal,
-            mirror,
-            legend_position,
-            action_label_dist,
-            iset_fill,
-            iset_fill_opacity,
-            iset_boundary,
-            iset_curved,
-            iset_curved_bend,
-            iset_curved_bend_by,
-            node_size,
-            label_bg,
-            label_bg_color,
-            label_bg_opacity,
-            label_bg_by,
-            label_bg_style,
-            color_scheme,
-            edge_thickness,
-            action_label_position,
-            level_scaling,
-            sublevel_scaling,
-            width_scaling,
-            shared_terminal_depth,
-            to_efg,
-            to_ef,
-            vary_action_label_positions,
-            action_label_position_by,
-            vary_action_label_positions_by,
-            vary_action_label_positions_choices,
-        ) = result
-        assert to_efg is True
-        assert to_ef is False
-
-    def test_commandline_to_ef_flag(self):
-        """Test that --to-ef flag is parsed correctly."""
-        from gtdraw.core import commandline
-
-        result = commandline(["gtdraw", "games/efg/test.efg", "--to-ef"])
-        (
-            output_mode,
-            pdf_requested,
-            png_requested,
-            svg_requested,
-            tex_requested,
-            output_file,
-            dpi,
-            font_family,
-            font_bold,
-            font_italic,
-            font_size,
-            custom_colors,
-            horizontal,
-            mirror,
-            legend_position,
-            action_label_dist,
-            iset_fill,
-            iset_fill_opacity,
-            iset_boundary,
-            iset_curved,
-            iset_curved_bend,
-            iset_curved_bend_by,
-            node_size,
-            label_bg,
-            label_bg_color,
-            label_bg_opacity,
-            label_bg_by,
-            label_bg_style,
-            color_scheme,
-            edge_thickness,
-            action_label_position,
-            level_scaling,
-            sublevel_scaling,
-            width_scaling,
-            shared_terminal_depth,
-            to_efg,
-            to_ef,
-            vary_action_label_positions,
-            action_label_position_by,
-            vary_action_label_positions_by,
-            vary_action_label_positions_choices,
-        ) = result
-        assert to_efg is False
-        assert to_ef is True
-
-    def test_ef_to_efg_2smp(self, tmp_path):
-        """Test conversion of a game with information sets."""
-        ef_file = "games/2smp.ef"
-        if not os.path.exists(ef_file):
-            ef_file = os.path.join(os.path.dirname(__file__), "..", "games", "2smp.ef")
-        if not os.path.exists(ef_file):
-            pytest.skip("2smp.ef not found")
-
-        import pygambit
-
-        out_path = str(tmp_path / "2smp.efg")
-        ef_to_efg(ef_file, save_to=out_path)
-        game = pygambit.read_efg(out_path)
-        assert len(game.players) == 2
 
 
 class TestLabelBackground:
@@ -2854,12 +2589,6 @@ class TestLabelBackground:
             color_scheme,
             edge_thickness,
             action_label_position,
-            level_scaling,
-            sublevel_scaling,
-            width_scaling,
-            shared_terminal_depth,
-            to_efg,
-            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -2980,12 +2709,6 @@ class TestLabelBackground:
             color_scheme,
             edge_thickness,
             action_label_position,
-            level_scaling,
-            sublevel_scaling,
-            width_scaling,
-            shared_terminal_depth,
-            to_efg,
-            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -3032,12 +2755,6 @@ class TestLabelBackground:
             color_scheme,
             edge_thickness,
             action_label_position,
-            level_scaling,
-            sublevel_scaling,
-            width_scaling,
-            shared_terminal_depth,
-            to_efg,
-            to_ef,
             vary_action_label_positions,
             action_label_position_by,
             vary_action_label_positions_by,
@@ -3055,7 +2772,7 @@ class TestVaryActionLabelPositions:
         from gtdraw.core import commandline
 
         result = commandline(["core.py", "test.ef", "--vary-action-label-positions"])
-        assert result[37] is True
+        assert result[31] is True
 
     def test_vary_action_label_positions_layout(self, tmp_path):
         """Test that vary_action_label_positions=True staggers action labels for nodes with multiple children."""
@@ -3128,8 +2845,8 @@ class TestLevelActionLabelPositions:
                 "--action-label-position-by=level",
             ]
         )
-        # action_label_position_by is at index 41
-        assert result[38] == "level"
+        # action_label_position_by is at index 32
+        assert result[32] == "level"
         assert isinstance(result[30], dict)
 
     def test_level_action_label_positions_layout(self, tmp_path):
@@ -3273,46 +2990,6 @@ class TestEF1Format:
         ]
         assert core._detect_ef_version(lines) == 1
 
-    def test_parse_ef_v1_node_ids_are_bare_strings(self, tmp_path):
-        """Parsing an EF 1 file yields node IDs that are bare strings, not 'level,name'."""
-        from gtdraw.converter import parse_ef_file
-
-        path = self._get_ef_path("example_v1.ef")
-        if not os.path.exists(path):
-            pytest.skip("example_v1.ef not found")
-        game = parse_ef_file(path)
-        assert game.version == 1
-        # Root node should have ID "r" (bare alphabetical), not "0,r"
-        assert game.root_id == "r"
-        assert "r" in game.nodes
-        assert "0,r" not in game.nodes
-
-    def test_parse_ef_v1_parent_links(self, tmp_path):
-        """Parent-child links are correctly built in EF 1 format."""
-        from gtdraw.converter import parse_ef_file
-
-        path = self._get_ef_path("example_v1.ef")
-        if not os.path.exists(path):
-            pytest.skip("example_v1.ef not found")
-        game = parse_ef_file(path)
-        # Node "e" (chance node) has parent "r" (root)
-        assert game.nodes["e"].parent_id == "r"
-        assert "e" in game.nodes["r"].children
-
-    def test_parse_ef_v1_iset_assignment(self, tmp_path):
-        """Information sets use bare node IDs in EF 1."""
-        from gtdraw.converter import parse_ef_file
-
-        path = self._get_ef_path("example_v1.ef")
-        if not os.path.exists(path):
-            pytest.skip("example_v1.ef not found")
-        game = parse_ef_file(path)
-        # There should be an iset containing node IDs "f" and "h"
-        assert game.isets, "Expected at least one information set"
-        iset_node_ids = game.isets[0].node_ids
-        assert "f" in iset_node_ids
-        assert "h" in iset_node_ids
-
     def test_render_v1_example(self, tmp_path):
         """EF 1 example file renders without errors."""
         path = self._get_ef_path("example_v1.ef")
@@ -3368,3 +3045,102 @@ class TestEF1Format:
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+# ---------------------------------------------------------------------------
+# Image conversion: pdftocairo only
+# ---------------------------------------------------------------------------
+
+
+class TestPdftocairo:
+    """PNG and SVG come from pdflatex and pdftocairo, and from nothing else."""
+
+    @staticmethod
+    def _fake_run(calls):
+        def run(cmd, **kwargs):
+            calls.append(cmd)
+            if cmd[0] == "pdflatex":
+                out = Path(cmd[cmd.index("-output-directory") + 1]) / "output.pdf"
+                out.write_bytes(b"%PDF-fake")
+            else:  # pdftocairo: the last argument is the output name
+                target = Path(cmd[-1])
+                if "-png" in cmd:
+                    target = target.with_name(target.name + ".png")
+                target.write_bytes(b"IMAGE")
+            return subprocess.CompletedProcess(cmd, 0, "", "")
+
+        return run
+
+    def test_png_uses_pdftocairo_with_dpi(self, tmp_path):
+        calls = []
+        with patch("gtdraw.core.subprocess.run", self._fake_run(calls)):
+            out = core.png(
+                io.StringIO("player 1\nlevel 0 node root player 1\n"),
+                save_to=str(tmp_path / "o"),
+                dpi=123,
+            )
+        assert Path(out).read_bytes() == b"IMAGE"
+        assert [c[0] for c in calls] == ["pdflatex", "pdftocairo"]
+        assert calls[1][1:6] == ["-png", "-r", "123", "-singlefile", calls[1][5]]
+
+    def test_svg_uses_pdftocairo(self, tmp_path):
+        calls = []
+        with patch("gtdraw.core.subprocess.run", self._fake_run(calls)):
+            out = core.svg(
+                io.StringIO("player 1\nlevel 0 node root player 1\n"),
+                save_to=str(tmp_path / "o"),
+            )
+        assert Path(out).read_bytes() == b"IMAGE"
+        assert [c[0] for c in calls] == ["pdflatex", "pdftocairo"]
+        assert calls[1][1] == "-svg"
+
+    @pytest.mark.parametrize("func", ["png", "svg"])
+    def test_missing_pdftocairo_names_tool_and_package(self, func, tmp_path):
+        def run(cmd, **kwargs):
+            if cmd[0] == "pdflatex":
+                out = Path(cmd[cmd.index("-output-directory") + 1]) / "output.pdf"
+                out.write_bytes(b"%PDF-fake")
+                return subprocess.CompletedProcess(cmd, 0, "", "")
+            raise FileNotFoundError(cmd[0])
+
+        with patch("gtdraw.core.subprocess.run", run):
+            with pytest.raises(RuntimeError, match="pdftocairo not found") as e:
+                getattr(core, func)(
+                    io.StringIO("player 1\nlevel 0 node root player 1\n"),
+                    save_to=str(tmp_path / "o"),
+                )
+        assert "poppler" in str(e.value)
+
+    def test_missing_pdflatex_names_tool_and_package(self, tmp_path):
+        with patch("gtdraw.core.subprocess.run", side_effect=FileNotFoundError("x")):
+            with pytest.raises(RuntimeError, match="pdflatex not found") as e:
+                core.pdf(io.StringIO("player 1\nlevel 0 node root player 1\n"))
+        assert "texlive" in str(e.value)
+
+    @requires_tex_tools
+    @pytest.mark.parametrize("func", ["png", "svg"])
+    def test_images_with_only_the_tex_tools_on_path(self, func, tmp_path):
+        """The image is made with a PATH holding pdflatex, pdftocairo and pdflatex's directory.
+
+        pdflatex may need its own directory, which on Linux is /usr/bin and also holds other
+        converters, so this test checks only that the image is made. That pdflatex and
+        pdftocairo are the only tools called is checked by the mocked tests above.
+        """
+        bin_dir = tmp_path / "bin"
+        bin_dir.mkdir()
+        for tool in ("pdflatex", "pdftocairo"):
+            (bin_dir / tool).symlink_to(shutil.which(tool))
+        env = {"PATH": str(bin_dir) + os.pathsep + os.path.dirname(shutil.which("pdflatex"))}
+        code = (
+            "import sys, gtdraw\n"
+            f"out = gtdraw.{func}(sys.argv[1], save_to=sys.argv[2])\n"
+            "print(out)\n"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", code, str(GAMES_DIR / "example.ef"), str(tmp_path / "ex")],
+            env={**os.environ, **env},
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        assert os.path.getsize(result.stdout.strip()) > 0

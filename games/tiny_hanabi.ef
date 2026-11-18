@@ -1,0 +1,65 @@
+player 1 name Pl0
+player 2 name Pl1
+level -2.0 node 1 player 0 
+level 2.0 node 2 player 0 xshift -18.0 from 1 move d0~0.5000000000000000 
+level 6.0 node 3 xshift -9.0 from 2 move d0~0.5000000000000000 
+level 10.0 node 4 xshift -6.0 from 3 move p0a0 
+level 14.0 node 5 xshift -2.0 from 4 move p1a0 payoffs 10.0 10.0 
+level 14.0 node 6 xshift 0.0 from 4 move p1a1 payoffs 0.0 0.0 
+level 14.0 node 7 xshift 2.0 from 4 move p1a2 payoffs 0.0 0.0 
+level 12.0 node 8 xshift 0.0 from 3 move p0a1 
+level 14.0 node 9 xshift -2.0 from 8 move p1a0 payoffs 4.0 4.0 
+level 14.0 node 10 xshift 0.0 from 8 move p1a1 payoffs 8.0 8.0 
+level 14.0 node 11 xshift 2.0 from 8 move p1a2 payoffs 4.0 4.0 
+level 14.0 node 12 xshift 6.0 from 3 move p0a2 
+level 18.0 node 13 xshift -2.0 from 12 move p1a0 payoffs 10.0 10.0 
+level 18.0 node 14 xshift 0.0 from 12 move p1a1 payoffs 0.0 0.0 
+level 18.0 node 15 xshift 2.0 from 12 move p1a2 payoffs 0.0 0.0 
+level 6.0 node 16 xshift 9.0 from 2 move d1~0.5000000000000000 
+level 16.0 node 17 xshift -6.0 from 16 move p0a0 
+level 18.0 node 18 xshift -2.0 from 17 move p1a0 payoffs 0.0 0.0 
+level 18.0 node 19 xshift 0.0 from 17 move p1a1 payoffs 0.0 0.0 
+level 18.0 node 20 xshift 2.0 from 17 move p1a2 payoffs 10.0 10.0 
+level 18.0 node 21 xshift 0.0 from 16 move p0a1 
+level 22.0 node 22 xshift -2.0 from 21 move p1a0 payoffs 4.0 4.0 
+level 22.0 node 23 xshift 0.0 from 21 move p1a1 payoffs 8.0 8.0 
+level 22.0 node 24 xshift 2.0 from 21 move p1a2 payoffs 4.0 4.0 
+level 20.0 node 25 xshift 6.0 from 16 move p0a2 
+level 22.0 node 26 xshift -2.0 from 25 move p1a0 payoffs 0.0 0.0 
+level 22.0 node 27 xshift 0.0 from 25 move p1a1 payoffs 0.0 0.0 
+level 22.0 node 28 xshift 2.0 from 25 move p1a2 payoffs 10.0 10.0 
+level 4.0 node 29 player 0 xshift 18.0 from 1 move d1~0.5000000000000000 
+level 8.0 node 30 xshift -9.0 from 29 move d0~0.5000000000000000 
+level 10.0 node 31 xshift -6.0 from 30 move p0a0 
+level 14.0 node 32 xshift -2.0 from 31 move p1a0 payoffs 0.0 0.0 
+level 14.0 node 33 xshift 0.0 from 31 move p1a1 payoffs 0.0 0.0 
+level 14.0 node 34 xshift 2.0 from 31 move p1a2 payoffs 10.0 10.0 
+level 12.0 node 35 xshift 0.0 from 30 move p0a1 
+level 14.0 node 36 xshift -2.0 from 35 move p1a0 payoffs 4.0 4.0 
+level 14.0 node 37 xshift 0.0 from 35 move p1a1 payoffs 8.0 8.0 
+level 14.0 node 38 xshift 2.0 from 35 move p1a2 payoffs 4.0 4.0 
+level 14.0 node 39 xshift 6.0 from 30 move p0a2 
+level 18.0 node 40 xshift -2.0 from 39 move p1a0 payoffs 0.0 0.0 
+level 18.0 node 41 xshift 0.0 from 39 move p1a1 payoffs 0.0 0.0 
+level 18.0 node 42 xshift 2.0 from 39 move p1a2 payoffs 0.0 0.0 
+level 8.0 node 43 xshift 9.0 from 29 move d1~0.5000000000000000 
+level 16.0 node 44 xshift -6.0 from 43 move p0a0 
+level 18.0 node 45 xshift -2.0 from 44 move p1a0 payoffs 10.0 10.0 
+level 18.0 node 46 xshift 0.0 from 44 move p1a1 payoffs 0.0 0.0 
+level 18.0 node 47 xshift 2.0 from 44 move p1a2 payoffs 0.0 0.0 
+level 18.0 node 48 xshift 0.0 from 43 move p0a1 
+level 22.0 node 49 xshift -2.0 from 48 move p1a0 payoffs 4.0 4.0 
+level 22.0 node 50 xshift 0.0 from 48 move p1a1 payoffs 8.0 8.0 
+level 22.0 node 51 xshift 2.0 from 48 move p1a2 payoffs 4.0 4.0 
+level 20.0 node 52 xshift 6.0 from 43 move p0a2 
+level 22.0 node 53 xshift -2.0 from 52 move p1a0 payoffs 10.0 10.0 
+level 22.0 node 54 xshift 0.0 from 52 move p1a1 payoffs 0.0 0.0 
+level 22.0 node 55 xshift 2.0 from 52 move p1a2 payoffs 0.0 0.0 
+iset 3 16 player 1 
+iset 4 31 player 2 
+iset 8 35 player 2 
+iset 12 39 player 2 
+iset 17 44 player 2 
+iset 21 48 player 2 
+iset 25 52 player 2 
+iset 30 43 player 1 

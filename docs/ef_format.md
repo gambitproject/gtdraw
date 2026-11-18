@@ -134,3 +134,30 @@ iset 4,1 4,2 player 2
 
 When using the `default` color scheme (which lacks the legend used by other color schemes), the player name will be placed between the two middle nodes for an even number of nodes, or before the middle node for an odd number. You can place the player specifier between the respective nodes in the list to position the label differently.
 
+(style-block)=
+## Style block
+
+A drawing can state how it should look, so that it does not depend on the options of whoever draws it. The style block is a run of comment lines of the form
+
+```text
+% gtdraw: <option> <value>
+```
+
+before the first line that is neither blank nor a comment. Other readers of the format see comments. The options are those of `gtdraw.Style` (see [Python API](python_api.md#style-options)): their names are the option names, such as `color_scheme`, `node_size` and `iset_curved`. An option the block does not name keeps its default.
+
+The value is a JSON value (`1.6`, `true`, `"#759138"`, `[4, 5]`, `{"1": "#000000"}`), or a bare word, which is read as a string (`colorblind`). A string with spaces or quotes must be written as a JSON string. In an object, a key that is an integer (`"1"`, `"-3"`) is read as an integer, because the keys of a player or level option are integers.
+
+```text
+% gtdraw: color_scheme custom
+% gtdraw: custom_colors {"0": "#759138", "1": "#000000", "2": "#11a1fd"}
+% gtdraw: font_family sffamily
+% gtdraw: iset_fill true
+% gtdraw: iset_curved_bend {"-3": 0.0, "21": -20.0}
+% gtdraw: iset_curved_bend_by level
+player 1 name I
+...
+```
+
+An unknown option, a repeated option or a value that is not valid for its option is an error, and the message names the line. A `% gtdraw:` line after the first non-comment line is an ordinary comment.
+
+A block overrides the style given by the caller (`style=`) and is overridden by options passed by name; see [Style](python_api.md#style).

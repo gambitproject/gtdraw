@@ -4,7 +4,7 @@ from pathlib import Path
 import os
 import sys
 import warnings
-import yaml
+import dataclasses
 
 # Suppress warnings in the GUI
 warnings.filterwarnings("ignore")
@@ -13,17 +13,9 @@ warnings.filterwarnings("ignore")
 # Add src to path if running from local dev
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from gtdraw import (
-    svg,
-    tikz,
-    tex,
-    pdf,
-    png,
-    count_players,
-    get_game_levels,
-    ef_to_efg,
-    efg_to_ef,
-)
+from gtdraw import Style, svg, tikz, tex, pdf, png
+from gtdraw.core import _count_players, _get_game_levels
+from gtdraw.style import _read_block, _strip_block
 
 
 def _get_scheme_colors(color_scheme: str, num_players: int) -> dict[int, str]:
@@ -65,42 +57,10 @@ def _get_scheme_colors(color_scheme: str, num_players: int) -> dict[int, str]:
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
-# draw library defaults — used to compute per-game YAML diffs
-GTDRAW_DEFAULTS: dict = {
-    "scale_factor": 1.0,
-    "level_scaling": 1.0,
-    "sublevel_scaling": 1.0,
-    "width_scaling": 1.0,
-    "horizontal": False,
-    "mirror": False,
-    "shared_terminal_depth": False,
-    "color_scheme": "default",
-    "edge_thickness": 1.0,
-    "action_label_position": 0.5,
-    "action_label_position_by": "player",
-    "font_family": "rmfamily",
-    "font_bold": False,
-    "font_italic": False,
-    "font_size": "normalsize",
-    "custom_colors": None,
-    "legend_position": "top-left",
-    "action_label_dist": 1.0,
-    "iset_fill": False,
-    "iset_fill_opacity": 0.2,
-    "iset_boundary": "solid",
-    "iset_curved": False,
-    "iset_curved_bend": 10.0,
-    "iset_curved_bend_by": "player",
-    "node_size": 1.5,
-    "label_bg": False,
-    "label_bg_by": "player",
-    "label_bg_style": "player_bg",
-    "label_bg_color": "white",
-    "label_bg_opacity": 0.8,
-    "vary_action_label_positions": False,
-    "vary_action_label_positions_by": "all",
-    "vary_action_label_positions_choices": None,
-}
+# The app's own default style: gtdraw's defaults, with the colour-blind palette.
+# A loaded drawing's style block is read onto it, and a downloaded drawing's block
+# records what differs from it.
+BASE_STYLE = Style(color_scheme="colorblind")
 
 # ── Session-state snapshot helpers ───────────────────────────────────────────
 
@@ -120,76 +80,20 @@ def _apply_snapshot(snap: dict) -> None:
         st.session_state[k] = v
 
 
-# ── YAML helpers ─────────────────────────────────────────────────────────────
+# ── Style helpers ────────────────────────────────────────────────────────────
 
 
-def _yaml_path(base_path: "Path") -> "Path":
-    return base_path / "gui_settings.yaml"
+def _drawing_style(text: str) -> Style:
+    """The app's base style with the drawing's style block read onto it."""
+    return BASE_STYLE.replace(**_read_block(text))
 
 
-def _read_yaml(path: "Path") -> dict:
-    try:
-        with open(path) as f:
-            data = yaml.safe_load(f) or {}
-        return {
-            "defaults": data.get("defaults") or {},
-            "overrides": data.get("overrides") or {},
-        }
-    except Exception:
-        return {"defaults": {}, "overrides": {}}
+def _drawing_with_block(text: str, style: Style) -> str:
+    """The drawing with its style block replaced by one recording how ``style`` differs from the base."""
+    return style.to_block(BASE_STYLE) + "\n".join(_strip_block(text)) + "\n"
 
 
-def _write_game_settings(path: "Path", game_slug: str, settings: dict) -> None:
-    """Write (or clear) per-game overrides in gui_settings.yaml."""
-    data = _read_yaml(path)
-    if settings:
-        data["overrides"][game_slug] = settings
-    elif game_slug in data["overrides"]:
-        del data["overrides"][game_slug]
-    try:
-        with open(path, "w") as f:
-            f.write("# draw GUI master settings\n")
-            f.write(
-                "# Per-game overrides are written here automatically as you adjust settings.\n"
-            )
-            f.write(
-                "# Edit the defaults section to change settings that apply to all games.\n"
-            )
-            f.write(
-                "# Consult https://www.gambit-project.org/draw/ for available settings.\n\n"
-            )
-            yaml.dump(
-                data, f, default_flow_style=False, sort_keys=False, allow_unicode=True
-            )
-    except Exception:
-        pass
-
-
-def _effective_settings_for_game(path: "Path", game_slug: str | None) -> dict:
-    """Merge draw defaults ← yaml defaults ← yaml overrides for game.
-
-    Override keys are matched if the slug equals the key or starts with
-    key + '/', applied shortest-first so more-specific entries win over
-    group-level entries (e.g. 'myerson1991' is applied before
-    'myerson1991/fig2_1').
-    """
-    data = _read_yaml(path)
-    merged = {**GTDRAW_DEFAULTS}
-    merged.update(data["defaults"] or {})
-    if game_slug:
-        overrides = data["overrides"] or {}
-        for key in sorted(overrides, key=len):
-            if game_slug == key or game_slug.startswith(key + "/"):
-                merged.update(overrides[key])
-    return merged
-
-
-def _settings_diff(current: dict) -> dict:
-    """Return only keys that differ from gtdraw library defaults."""
-    return {k: v for k, v in current.items() if v != GTDRAW_DEFAULTS.get(k)}
-
-
-# Font/size display-label ↔ internal-value maps used by YAML loading
+# Font/size display-label ↔ internal-value maps used when applying a style to the widgets
 _FONT_FAMILY_TO_KEY = {
     "rmfamily": "Serif",
     "sffamily": "Sans-Serif",
@@ -203,16 +107,13 @@ _FONT_SIZE_TO_KEY = {
 }
 
 
-def _apply_yaml_to_session_state(settings: dict) -> None:
-    """Map draw param names from YAML onto GUI widget session-state keys."""
+def _apply_style_to_session_state(style: Style) -> None:
+    """Set the GUI widgets' session-state keys from a style."""
+    settings = dataclasses.asdict(style)
     simple = {
         "scale_factor": "gui_scale_factor",
-        "level_scaling": "gui_level_scaling",
-        "sublevel_scaling": "gui_sublevel_scaling",
-        "width_scaling": "gui_width_scaling",
         "horizontal": "gui_horizontal",
         "mirror": "gui_mirror",
-        "shared_terminal_depth": "gui_shared_terminal_depth",
         "edge_thickness": "gui_edge_thickness",
         "node_size": "gui_node_size",
         "action_label_dist": "gui_action_label_dist",
@@ -360,7 +261,8 @@ def run_app():
     )
     st.sidebar.markdown("📖 **[Documentation](https://www.gambit-project.org/draw/)**")
     st.sidebar.markdown(
-        "Welcome to GTDraw! Load a game in EF, EFG, or NFG format, then download your publication-ready image."
+        "Welcome to GTDraw! Load a drawing (.ef) or a strategic game table (.tex), then download your publication-ready image.\n\n"
+        "To draw a game from a Gambit game file (.efg, .nfg), convert it to a drawing with pygambit first."
     )
 
     # Find the games directory by walking upward from this file.
@@ -382,38 +284,16 @@ def run_app():
     example_dir = _games_dir or (base_path / "games")
 
     game_source = None
-    is_efg = False
-    is_nfg = False
+    is_sgame = False
 
-    with st.sidebar.expander("📂 Input Game", expanded=True):
-        import pygambit as gbt
-
-        try:
-            catalog_games_df = gbt.catalog.games()
-            catalog_games = catalog_games_df["Game"].tolist()
-        except Exception:
-            catalog_games = []
-
+    with st.sidebar.expander("📂 Input Drawing", expanded=True):
         options = [("None", "None", "None")]
 
-        for g in catalog_games:
-            options.append(("Catalog", g, g))
-
         if example_dir.exists():
-            ef_examples = sorted(list(example_dir.glob("*.ef")))
-            for e in ef_examples:
-                rel_path = str(e.relative_to(base_path))
-                options.append(("EF", e.name, rel_path))
-
-            efg_examples = sorted(list((example_dir / "efg").glob("*.efg")))
-            for e in efg_examples:
-                rel_path = str(e.relative_to(base_path))
-                options.append(("EFG", e.name, rel_path))
-
-            nfg_examples = sorted(list((example_dir / "nfg").glob("*.nfg")))
-            for e in nfg_examples:
-                rel_path = str(e.relative_to(base_path))
-                options.append(("NFG", e.name, rel_path))
+            for e in sorted(example_dir.glob("*.ef")):
+                options.append(("EF", e.name, str(e.relative_to(base_path))))
+            for e in sorted(example_dir.glob("*.tex")):
+                options.append(("Strategic game", e.name, str(e.relative_to(base_path))))
 
         def format_option(i):
             cat, name, _ = options[i]
@@ -423,17 +303,17 @@ def run_app():
 
         # Default selection
         default_idx = 0
-        target_example_path = "games/example.ef"
+        target_example_path = str(Path("games") / "example.ef")
         for i, opt in enumerate(options):
             if opt[2] == target_example_path:
                 default_idx = i
                 break
 
         help_text = (
-            "**Catalog**: Games from Gambit's catalog.\n\n"
-            "**EF**: GTDraw .ef format games.\n\n"
-            "**EFG**: Gambit .efg files.\n\n"
-            "**NFG**: Gambit .nfg normal form (strategic form) games."
+            "**EF**: a drawing in GTDraw's .ef format.\n\n"
+            "**Strategic game**: the LaTeX body of a strategic game (an sgame table), as a .tex file.\n\n"
+            "To draw a game from a Gambit game file, convert it to a drawing with "
+            "pygambit first."
         )
 
         selected_idx = st.selectbox(
@@ -445,78 +325,54 @@ def run_app():
         )
         example_selection = options[selected_idx]
         if example_selection[0] != "None":
-            cat, name, val = example_selection
-            if cat == "Catalog":
-                game_source = gbt.catalog.load(val)
-                is_efg = True
-            else:
-                game_source = str(base_path / val)
-                if game_source.lower().endswith(".efg"):
-                    is_efg = True
-                elif game_source.lower().endswith(".nfg"):
-                    is_nfg = True
+            game_source = str(base_path / example_selection[2])
+            is_sgame = game_source.lower().endswith(".tex")
 
         uploaded_file = st.file_uploader(
-            "Or upload your own .ef, .efg, or .nfg file", type=["ef", "efg", "nfg"]
+            "Or upload your own .ef or .tex file",
+            type=["ef", "tex"],
+            help="To draw a game from a Gambit game file (.efg, .nfg), convert it to a "
+            "drawing with pygambit first.",
         )
 
     base_filename = "game_tree"
-    game_slug = None  # key for per-game YAML settings
+    game_slug = None  # names the loaded drawing
     if uploaded_file:
         base_filename = Path(uploaded_file.name).stem
         game_slug = base_filename
         suffix = f".{uploaded_file.name.split('.')[-1]}"
-        if suffix.lower() == ".efg":
-            is_efg = True
-        elif suffix.lower() == ".nfg":
-            is_nfg = True
+        is_sgame = suffix.lower() == ".tex"
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             tmp.write(uploaded_file.getvalue())
             game_source = tmp.name
     elif game_source:
-        if isinstance(game_source, str):
-            base_filename = Path(game_source).stem
-            game_slug = base_filename
-        else:
-            base_filename = (
-                getattr(game_source, "title", "catalog_game")
-                .replace(" ", "_")
-                .replace("/", "_")
-            )
-            if not base_filename:
-                base_filename = "catalog_game"
-            # For catalog games, use the catalog slug (e.g. "watson2013/fig1") as key
-            if example_selection[0] == "Catalog":
-                game_slug = example_selection[2]
-            else:
-                game_slug = base_filename
+        base_filename = Path(game_source).stem
+        game_slug = base_filename
 
-    # Apply per-game settings from YAML when game changes
-    _yaml = _yaml_path(base_path)
-    _prev_slug = st.session_state.get("_current_game_slug", "__unset__")
-    if _prev_slug != game_slug:
-        st.session_state["_current_game_slug"] = game_slug
-        if game_slug and _yaml.exists():
-            _loaded = _effective_settings_for_game(_yaml, game_slug)
-            _apply_yaml_to_session_state(_loaded)
-            # Pre-populate _last_saved_params with the loaded diff so the
-            # save-on-change block doesn't immediately overwrite the just-loaded settings
-            st.session_state["_last_saved_params"] = _settings_diff(_loaded)
-        else:
-            st.session_state.pop("_last_saved_params", None)
-        # Reset snapshot so undo tracking starts fresh for the new game
+    # The drawing's style: the app's base style with the drawing's own style block
+    drawing_style = BASE_STYLE
+    if game_source and not is_sgame:
+        try:
+            drawing_style = _drawing_style(
+                Path(game_source).read_text(encoding="utf-8")
+            )
+        except ValueError as e:
+            st.sidebar.error(f"The drawing's style block is not valid: {e}")
+
+    # Set the widgets from it when the drawing changes
+    _drawing_key = (game_slug, drawing_style)
+    if st.session_state.get("_current_drawing", "__unset__") != _drawing_key:
+        st.session_state["_current_drawing"] = _drawing_key
+        if game_slug:
+            _apply_style_to_session_state(drawing_style)
+        # Reset snapshot so undo tracking starts fresh for the new drawing
         st.session_state.pop("_last_snap", None)
 
     # Sidebar: Configuration
-    # Tree-specific layout options (not applicable to NFG)
+    # Tree-specific layout options (not applicable to strategic games)
     horizontal = False
     mirror = False
     scale_factor = 1.0
-    level_scaling = 1.0
-    sublevel_scaling = 1.0
-    width_scaling = 1.0
-    hide_action_labels = False
-    shared_terminal_depth = False
     edge_thickness = 1.0
     node_size = 1.5
     action_label_position = 0.5
@@ -535,7 +391,7 @@ def run_app():
     action_label_position_by = "player"
 
     # ── Undo / Redo / Reset buttons ─────────────────────────────────────────
-    if not is_nfg:
+    if not is_sgame:
         _col_undo, _col_redo, _col_reset = st.sidebar.columns(3)
         with _col_undo:
             if st.button(
@@ -565,21 +421,19 @@ def run_app():
             if st.button(
                 "↺ Reset",
                 use_container_width=True,
-                help="Restore defaults from gui_settings.yaml",
+                help="Restore the style the drawing was loaded with",
                 disabled=not game_slug,
             ):
                 st.session_state.setdefault("undo_stack", []).append(
                     _snapshot_settings()
                 )
                 st.session_state["redo_stack"] = []
-                _write_game_settings(_yaml, game_slug, {})
-                _loaded = _effective_settings_for_game(_yaml, game_slug)
-                _apply_yaml_to_session_state(_loaded)
+                _apply_style_to_session_state(drawing_style)
                 st.session_state.pop("_prev_scheme", None)
                 st.session_state.pop("_last_snap", None)
                 st.rerun()
 
-    if not is_nfg:
+    if not is_sgame:
         with st.sidebar.expander("📐 Layout", expanded=False):
             horizontal = st.checkbox(
                 "Horizontal Layout",
@@ -594,11 +448,6 @@ def run_app():
                 key="gui_mirror",
             )
 
-            if is_efg:
-                shared_terminal_depth = st.checkbox(
-                    "Shared Terminal Node Depth", False, key="gui_shared_terminal_depth"
-                )
-
             scale_factor = st.slider(
                 "Scale factor",
                 0.5,
@@ -609,18 +458,7 @@ def run_app():
                 key="gui_scale_factor",
             )
 
-            if is_efg:
-                level_scaling = st.slider(
-                    "Level Spacing", 0.0, 5.0, 1.0, 0.05, key="gui_level_scaling"
-                )
-                sublevel_scaling = st.slider(
-                    "Sublevel Spacing", 0.0, 5.0, 1.0, 0.05, key="gui_sublevel_scaling"
-                )
-                width_scaling = st.slider(
-                    "Width Spacing", 0.0, 5.0, 1.0, 0.05, key="gui_width_scaling"
-                )
-
-    # Defaults used when aesthetics expander is hidden (NFG path)
+    # Defaults used when aesthetics expander is hidden (strategic-game path)
     color_scheme = "colorblind"
     legend_position = "top-left"
     custom_colors = None
@@ -629,13 +467,13 @@ def run_app():
     font_italic = False
     font_size = "normalsize"
 
-    if not is_nfg:
+    if not is_sgame:
         with st.sidebar.expander("🎨 Aesthetics", expanded=False):
             # Session-state init: default to colorblind
             if "scheme_selector" not in st.session_state:
                 st.session_state["scheme_selector"] = "colorblind"
 
-            _num_p = count_players(game_source) if game_source else 2
+            _num_p = _count_players(game_source) if game_source else 2
 
             # Step 2: scheme-change → reset pickers to new scheme's defaults
             _prev = st.session_state.get("_prev_scheme")
@@ -749,13 +587,9 @@ def run_app():
             st.markdown("---")
             st.markdown("##### Label Styling")
 
-            num_players = count_players(game_source) if game_source else 2
+            num_players = _count_players(game_source) if game_source else 2
             game_levels = (
-                get_game_levels(
-                    game_source,
-                    level_scaling=level_scaling,
-                    sublevel_scaling=sublevel_scaling,
-                )
+                _get_game_levels(game_source)
                 if game_source
                 else list(range(5))
             )
@@ -1039,8 +873,8 @@ def run_app():
                         disabled=not iset_curved,
                     )
 
-    # ── Snapshot tracking (undo) and YAML save ───────────────────────────────
-    if not is_nfg and game_source:
+    # ── Snapshot tracking (undo) ───────────────────────────────
+    if not is_sgame and game_source:
         _current_snap = _snapshot_settings()
         _prev_snap = st.session_state.get("_last_snap")
         _MAX_UNDO = 50
@@ -1052,45 +886,6 @@ def run_app():
             st.session_state["redo_stack"] = []
         st.session_state["_last_snap"] = _current_snap
 
-        if game_slug and _yaml.exists():
-            _current_params = {
-                "scale_factor": scale_factor,
-                "level_scaling": level_scaling,
-                "sublevel_scaling": sublevel_scaling,
-                "width_scaling": width_scaling,
-                "horizontal": horizontal,
-                "mirror": mirror,
-                "shared_terminal_depth": shared_terminal_depth,
-                "color_scheme": color_scheme,
-                "custom_colors": custom_colors,
-                "edge_thickness": edge_thickness,
-                "action_label_position": action_label_position,
-                "action_label_position_by": action_label_position_by,
-                "font_family": font_family,
-                "font_bold": font_bold,
-                "font_italic": font_italic,
-                "font_size": font_size,
-                "legend_position": legend_position,
-                "action_label_dist": action_label_dist,
-                "iset_fill": iset_fill,
-                "iset_fill_opacity": iset_fill_opacity,
-                "iset_boundary": iset_boundary,
-                "iset_curved": iset_curved,
-                "iset_curved_bend": iset_curved_bend,
-                "iset_curved_bend_by": iset_curved_bend_by,
-                "node_size": node_size,
-                "label_bg": label_bg,
-                "label_bg_by": label_bg_by,
-                "label_bg_style": label_bg_style,
-                "label_bg_opacity": label_bg_opacity,
-                "vary_action_label_positions": vary_action_label_positions,
-                "vary_action_label_positions_by": vary_action_label_positions_by,
-                "vary_action_label_positions_choices": vary_action_label_positions_choices,
-            }
-            _diff = _settings_diff(_current_params)
-            if _diff != st.session_state.get("_last_saved_params"):
-                _write_game_settings(_yaml, game_slug, _diff)
-                st.session_state["_last_saved_params"] = _diff
 
     # Main Area: Display
     if not game_source:
@@ -1119,20 +914,20 @@ def run_app():
             base_name = f"gui_temp_{os.getpid()}"
             output_base = str(work_dir / base_name)
 
-            if is_nfg:
-                # NFG: get the LaTeX body (always available, no pdflatex needed)
-                tikz_code = tikz(game=game_source)
-                tex_path = tex(game=game_source, save_to=output_base + ".tex")
+            if is_sgame:
+                # Strategic game: get the LaTeX body (always available, no pdflatex needed)
+                tikz_code = tikz(game_source)
+                tex_path = tex(game_source, save_to=output_base + ".tex")
                 with open(tex_path, "r") as f:
                     tex_data = f.read()
 
                 # Try to render as PNG; fall back gracefully if pdflatex/sgame unavailable
                 png_data = None
                 pdf_data = None
-                nfg_render_error = None
+                sgame_render_error = None
                 try:
                     png_path = str(work_dir / f"{base_name}.png")
-                    png(game=game_source, save_to=png_path)
+                    png(game_source, save_to=png_path)
                     with open(png_path, "rb") as f:
                         png_data = f.read()
                     import base64
@@ -1144,13 +939,13 @@ def run_app():
                         f'object-fit:contain;display:block;margin:auto;" />',
                         unsafe_allow_html=True,
                     )
-                    pdf_path = pdf(game=game_source, save_to=output_base + ".pdf")
+                    pdf_path = pdf(game_source, save_to=output_base + ".pdf")
                     with open(pdf_path, "rb") as f:
                         pdf_data = f.read()
                 except RuntimeError as e:
-                    nfg_render_error = str(e)
+                    sgame_render_error = str(e)
 
-                if nfg_render_error:
+                if sgame_render_error:
                     st.warning(
                         "⚠️ Could not compile payoff table to image — pdflatex or the "
                         "`sgame` LaTeX package may not be installed.\n\n"
@@ -1158,7 +953,7 @@ def run_app():
                         "use a full TeX distribution."
                     )
                     with st.expander("Show pdflatex error details"):
-                        st.code(nfg_render_error)
+                        st.code(sgame_render_error)
                     st.markdown(
                         "**LaTeX source** (copy into a `.tex` file to compile locally):"
                     )
@@ -1201,22 +996,14 @@ def run_app():
                             )
                 return
 
-            svg_path = str(work_dir / f"{base_name}.svg")
-
-            svg_code = svg(
-                game=game_source,
-                save_to=svg_path,
+            # The style the widgets give. Passed as options so that it, not the
+            # drawing's own style block, decides the preview and the downloads.
+            current_style = Style(
                 scale_factor=scale_factor,
-                level_scaling=level_scaling,
-                sublevel_scaling=sublevel_scaling,
-                width_scaling=width_scaling,
-                hide_action_labels=hide_action_labels,
-                shared_terminal_depth=shared_terminal_depth,
                 show_grid=False,
                 color_scheme=color_scheme,
                 edge_thickness=edge_thickness,
                 action_label_position=action_label_position,
-                responsive_sizing=True,
                 font_family=font_family,
                 font_bold=font_bold,
                 font_italic=font_italic,
@@ -1242,6 +1029,16 @@ def run_app():
                 action_label_position_by=action_label_position_by,
                 vary_action_label_positions_by=vary_action_label_positions_by,
                 vary_action_label_positions_choices=vary_action_label_positions_choices,
+            )
+            style_options = dataclasses.asdict(current_style)
+
+            svg_path = str(work_dir / f"{base_name}.svg")
+
+            svg_code = svg(
+                game_source,
+                save_to=svg_path,
+                responsive_sizing=True,
+                **style_options,
             )
 
             if not os.path.exists(svg_path):
@@ -1256,212 +1053,40 @@ def run_app():
 
             # Pre-generate all download formats
             tikz_code = tikz(
-                game=game_source,
-                save_to=output_base + ".tikz",
-                scale_factor=scale_factor,
-                level_scaling=level_scaling,
-                sublevel_scaling=sublevel_scaling,
-                width_scaling=width_scaling,
-                hide_action_labels=hide_action_labels,
-                shared_terminal_depth=shared_terminal_depth,
-                show_grid=False,
-                color_scheme=color_scheme,
-                edge_thickness=edge_thickness,
-                action_label_position=action_label_position,
-                font_family=font_family,
-                font_bold=font_bold,
-                font_italic=font_italic,
-                font_size=font_size,
-                custom_colors=custom_colors,
-                horizontal=horizontal,
-                mirror=mirror,
-                legend_position=legend_position,
-                action_label_dist=action_label_dist,
-                iset_fill=iset_fill,
-                iset_fill_opacity=iset_fill_opacity,
-                iset_boundary=iset_boundary,
-                iset_curved=iset_curved,
-                iset_curved_bend=iset_curved_bend,
-                iset_curved_bend_by=iset_curved_bend_by,
-                node_size=node_size,
-                label_bg=label_bg,
-                label_bg_color=label_bg_color,
-                label_bg_opacity=label_bg_opacity,
-                label_bg_by=label_bg_by,
-                label_bg_style=label_bg_style,
-                vary_action_label_positions=vary_action_label_positions,
-                action_label_position_by=action_label_position_by,
-                vary_action_label_positions_by=vary_action_label_positions_by,
-                vary_action_label_positions_choices=vary_action_label_positions_choices,
+                game_source,
+                **style_options,
             )
 
             tex_path = tex(
-                game=game_source,
+                game_source,
                 save_to=output_base + ".tex",
-                scale_factor=scale_factor,
-                level_scaling=level_scaling,
-                sublevel_scaling=sublevel_scaling,
-                width_scaling=width_scaling,
-                hide_action_labels=hide_action_labels,
-                shared_terminal_depth=shared_terminal_depth,
-                color_scheme=color_scheme,
-                edge_thickness=edge_thickness,
-                action_label_position=action_label_position,
-                font_family=font_family,
-                font_bold=font_bold,
-                font_italic=font_italic,
-                font_size=font_size,
-                custom_colors=custom_colors,
-                horizontal=horizontal,
-                mirror=mirror,
-                legend_position=legend_position,
-                action_label_dist=action_label_dist,
-                iset_fill=iset_fill,
-                iset_fill_opacity=iset_fill_opacity,
-                iset_boundary=iset_boundary,
-                iset_curved=iset_curved,
-                iset_curved_bend=iset_curved_bend,
-                iset_curved_bend_by=iset_curved_bend_by,
-                node_size=node_size,
-                label_bg=label_bg,
-                label_bg_color=label_bg_color,
-                label_bg_opacity=label_bg_opacity,
-                label_bg_by=label_bg_by,
-                label_bg_style=label_bg_style,
-                vary_action_label_positions=vary_action_label_positions,
-                action_label_position_by=action_label_position_by,
-                vary_action_label_positions_by=vary_action_label_positions_by,
-                vary_action_label_positions_choices=vary_action_label_positions_choices,
+                **style_options,
             )
             with open(tex_path, "r") as f:
                 tex_data = f.read()
 
             pdf_path = pdf(
-                game=game_source,
+                game_source,
                 save_to=output_base + ".pdf",
-                scale_factor=scale_factor,
-                level_scaling=level_scaling,
-                sublevel_scaling=sublevel_scaling,
-                width_scaling=width_scaling,
-                hide_action_labels=hide_action_labels,
-                shared_terminal_depth=shared_terminal_depth,
-                color_scheme=color_scheme,
-                edge_thickness=edge_thickness,
-                action_label_position=action_label_position,
-                font_family=font_family,
-                font_bold=font_bold,
-                font_italic=font_italic,
-                font_size=font_size,
-                custom_colors=custom_colors,
-                horizontal=horizontal,
-                mirror=mirror,
-                legend_position=legend_position,
-                action_label_dist=action_label_dist,
-                iset_fill=iset_fill,
-                iset_fill_opacity=iset_fill_opacity,
-                iset_boundary=iset_boundary,
-                iset_curved=iset_curved,
-                iset_curved_bend=iset_curved_bend,
-                iset_curved_bend_by=iset_curved_bend_by,
-                node_size=node_size,
-                label_bg=label_bg,
-                label_bg_color=label_bg_color,
-                label_bg_opacity=label_bg_opacity,
-                label_bg_by=label_bg_by,
-                label_bg_style=label_bg_style,
-                vary_action_label_positions=vary_action_label_positions,
-                action_label_position_by=action_label_position_by,
-                vary_action_label_positions_by=vary_action_label_positions_by,
-                vary_action_label_positions_choices=vary_action_label_positions_choices,
+                **style_options,
             )
             with open(pdf_path, "rb") as f:
                 pdf_data = f.read()
 
             png_path = png(
-                game=game_source,
+                game_source,
                 save_to=output_base + ".png",
-                scale_factor=scale_factor,
-                level_scaling=level_scaling,
-                sublevel_scaling=sublevel_scaling,
-                width_scaling=width_scaling,
-                hide_action_labels=hide_action_labels,
-                shared_terminal_depth=shared_terminal_depth,
-                color_scheme=color_scheme,
-                edge_thickness=edge_thickness,
-                action_label_position=action_label_position,
                 dpi=300,
-                font_family=font_family,
-                font_bold=font_bold,
-                font_italic=font_italic,
-                font_size=font_size,
-                custom_colors=custom_colors,
-                horizontal=horizontal,
-                mirror=mirror,
-                legend_position=legend_position,
-                action_label_dist=action_label_dist,
-                iset_fill=iset_fill,
-                iset_fill_opacity=iset_fill_opacity,
-                iset_boundary=iset_boundary,
-                iset_curved=iset_curved,
-                iset_curved_bend=iset_curved_bend,
-                iset_curved_bend_by=iset_curved_bend_by,
-                node_size=node_size,
-                label_bg=label_bg,
-                label_bg_color=label_bg_color,
-                label_bg_opacity=label_bg_opacity,
-                label_bg_by=label_bg_by,
-                label_bg_style=label_bg_style,
-                vary_action_label_positions=vary_action_label_positions,
-                action_label_position_by=action_label_position_by,
-                vary_action_label_positions_by=vary_action_label_positions_by,
-                vary_action_label_positions_choices=vary_action_label_positions_choices,
+                **style_options,
             )
             with open(png_path, "rb") as f:
                 png_data = f.read()
 
             # Sidebar: Download Buttons
             with st.sidebar.expander("📥 Downloads", expanded=False):
-                # Pre-generate EF and EFG data for download
-                ef_data = None
-                efg_data = None
-                try:
-                    if is_efg:
-                        # Input was EFG/catalog: generate the EF file
-                        ef_download_path = efg_to_ef(
-                            game_source,
-                            save_to=output_base + ".ef",
-                            level_scaling=level_scaling,
-                            sublevel_scaling=sublevel_scaling,
-                            width_scaling=width_scaling,
-                            shared_terminal_depth=shared_terminal_depth,
-                        )
-                        with open(ef_download_path, "r") as f:
-                            ef_data = f.read()
-                        # For EFG, read the original or generate from game
-                        if isinstance(game_source, str) and os.path.exists(game_source):
-                            with open(game_source, "r") as f:
-                                efg_data = f.read()
-                        else:
-                            # Catalog game: convert EF back to EFG
-                            efg_download_path = ef_to_efg(
-                                ef_download_path,
-                                save_to=output_base + ".efg",
-                            )
-                            with open(efg_download_path, "r") as f:
-                                efg_data = f.read()
-                    else:
-                        # Input was EF: read the original file
-                        with open(game_source, "r") as f:
-                            ef_data = f.read()
-                        # Convert to EFG
-                        efg_download_path = ef_to_efg(
-                            game_source,
-                            save_to=output_base + ".efg",
-                        )
-                        with open(efg_download_path, "r") as f:
-                            efg_data = f.read()
-                except Exception as conv_err:
-                    st.caption(f"⚠️ Format conversion unavailable: {conv_err}")
+                # The drawing itself, with a style block for what differs from the base
+                with open(game_source, "r", encoding="utf-8") as f:
+                    ef_data = _drawing_with_block(f.read(), current_style)
 
                 c1, c2 = st.columns(2)
                 with c1:
@@ -1495,14 +1120,6 @@ def run_app():
                         width="stretch",
                     )
                 with c2:
-                    if efg_data is not None:
-                        st.download_button(
-                            "EFG",
-                            efg_data,
-                            f"{base_filename}.efg",
-                            "text/plain",
-                            width="stretch",
-                        )
                     st.download_button(
                         "LaTeX",
                         tex_data,
@@ -1515,55 +1132,6 @@ def run_app():
                         png_data,
                         f"{base_filename}.png",
                         "image/png",
-                        width="stretch",
-                    )
-
-                settings = {
-                    "scale_factor": scale_factor,
-                    "level_scaling": level_scaling,
-                    "sublevel_scaling": sublevel_scaling,
-                    "width_scaling": width_scaling,
-                    "horizontal": horizontal,
-                    "mirror": mirror,
-                    "shared_terminal_depth": shared_terminal_depth,
-                    "color_scheme": color_scheme,
-                    "edge_thickness": edge_thickness,
-                    "action_label_position": action_label_position,
-                    "action_label_position_by": action_label_position_by,
-                    "action_label_dist": action_label_dist,
-                    "vary_action_label_positions": vary_action_label_positions,
-                    "vary_action_label_positions_by": vary_action_label_positions_by,
-                    "font_family": font_family,
-                    "font_bold": font_bold,
-                    "font_italic": font_italic,
-                    "font_size": font_size,
-                    "node_size": node_size,
-                    "label_bg": label_bg,
-                    "label_bg_color": label_bg_color,
-                    "label_bg_opacity": label_bg_opacity,
-                    "iset_fill": iset_fill,
-                    "iset_fill_opacity": iset_fill_opacity,
-                    "iset_boundary": iset_boundary,
-                    "legend_position": legend_position,
-                }
-                if custom_colors:
-                    settings["custom_colors"] = custom_colors
-                if vary_action_label_positions_choices:
-                    settings["vary_action_label_positions_choices"] = (
-                        vary_action_label_positions_choices
-                    )
-                settings_yaml = yaml.dump(
-                    {base_filename: settings},
-                    default_flow_style=False,
-                    sort_keys=False,
-                    allow_unicode=True,
-                )
-                with c2:
-                    st.download_button(
-                        "Settings",
-                        settings_yaml,
-                        f"{base_filename}_settings.yaml",
-                        "text/plain",
                         width="stretch",
                     )
 
